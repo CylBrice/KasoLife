@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
@@ -90,6 +92,12 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
+        {/* Langue + thème */}
+        <div className="mb-4 flex items-center justify-end gap-2">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+
         {/* En-tête : logo centré + tagline */}
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <Logo />

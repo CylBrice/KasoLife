@@ -4,7 +4,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <Link href="/" className={`flex items-center gap-1.5 ${className ?? ""}`}>
       <span className="flex items-baseline">
-        <span className="font-brand text-2xl font-extrabold tracking-tight text-emerald">
+        <span className="font-brand text-2xl font-extrabold tracking-tight text-emerald dark:text-[#C24A63]">
           Kaso
         </span>
         <span className="font-brand text-2xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">

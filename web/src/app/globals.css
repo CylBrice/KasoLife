@@ -32,9 +32,9 @@
     --c-ink-surface: 18 32 46;    /* #12202E */
     --c-ink-raised: 27 46 64;     /* #1B2E40 */
     --c-ink-line: 42 63 84;       /* #2A3F54 */
-    --c-gold: 194 74 99;          /* #C24A63 */
-    --c-gold-dim: 139 21 56;      /* #8B1538 */
-    --c-gold-bright: 224 112 138; /* #E0708A */
+    --c-gold: 20 184 166;         /* #14B8A6 — tous les boutons passent au teal en sombre */
+    --c-gold-dim: 15 148 136;     /* #0F9488 */
+    --c-gold-bright: 94 234 212;  /* #5EEAD4 */
     --c-coral: 91 149 221;        /* #5B95DD */
     --c-coral-dim: 59 120 196;    /* #3B78C4 */
     --c-sage: 159 180 206;        /* #9FB4CE */
