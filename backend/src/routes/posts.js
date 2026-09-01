@@ -418,13 +418,14 @@ router.get('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// ── POST /posts — créer un post (créateur uniquement)
+// ── POST /posts — créer un post (créateur uniquement, avec support scheduled_at)
 router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
   try {
     const {
       caption, media_type, media_url, thumbnail_url, access_level, price_xcon,
       moderation_status, moderation_reason, ai_tags,
       content_hash, duplicate_of, category_mismatch,
+      scheduled_at, // Optionnel : date/heure de publication programmée
     } = req.body;
 
     if (!MEDIA_TYPES.includes(media_type))
@@ -456,6 +457,10 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), 
     const isFlaggedByAI = validModerationStatus === 'FLAGGED' || validModerationStatus === 'REJECTED'
       || isDuplicate || isCategoryMismatch;
 
+    // Si scheduled_at est fourni, le post n'est pas immédiatement publié
+    const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
+    const shouldPublish = !isScheduled; // Publier maintenant si pas de date programmée
+
     const { data: post, error } = await supabase.from('posts').insert({
       id: uuidv4(), creator_id: req.user.id, category_id: profile.category_id,
       caption: caption || null, media_type, media_url: media_url || null,
@@ -467,6 +472,8 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), 
       duplicate_of: isDuplicate ? duplicate_of : null,
       category_mismatch: isCategoryMismatch,
       is_flagged: isFlaggedByAI,
+      scheduled_at: isScheduled ? scheduled_at : null,
+      is_published: shouldPublish,
     }).select().single();
     if (error) throw error;
 
@@ -509,6 +516,48 @@ router.put('/:id', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN')
     const { data, error } = await supabase.from('posts').update(updates).eq('id', id).select().single();
     if (error) throw error;
     res.json({ message: 'Post mis à jour', post: data });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// ── GET /posts/scheduled — récupérer tous les posts programmés du créateur
+router.get('/scheduled', authMiddleware, async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase.from('posts')
+      .select('id, caption, media_url, scheduled_at, created_at')
+      .eq('creator_id', req.user.id)
+      .eq('is_published', false)
+      .order('scheduled_at', { ascending: true });
+
+    if (error) throw error;
+    res.json({ posts: posts || [] });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// ── PUT /posts/:id/reschedule — modifier la date programmée (créateur seulement)
+router.put('/:id/reschedule', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { scheduled_at } = req.body;
+
+    const { data: post } = await supabase.from('posts')
+      .select('creator_id, scheduled_at').eq('id', id).single();
+    if (!post) return res.status(404).json({ error: 'Post introuvable' });
+    if (post.creator_id !== req.user.id)
+      return res.status(403).json({ error: 'Accès refusé' });
+
+    // Si scheduled_at est null, annuler la programmation et publier maintenant
+    // Si scheduled_at est une date future, programmer la publication
+    const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
+    const { error } = await supabase.from('posts')
+      .update({
+        scheduled_at: isScheduled ? scheduled_at : null,
+        is_published: !isScheduled, // Publier maintenant si pas de programmation
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ message: isScheduled ? `Post programmé pour ${scheduled_at}` : 'Programmation annulée, post publié' });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 

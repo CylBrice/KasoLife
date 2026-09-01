@@ -334,6 +334,28 @@ cron.schedule('*/30 * * * *', async () => {
 
 
 // ============================================================
+// CRON #8 — Publication automatique des posts programmés (toutes les minutes)
+// ============================================================
+cron.schedule('* * * * *', async () => {
+  try {
+    const now = new Date().toISOString();
+    const { data: scheduled } = await supabase.from('posts')
+      .select('id, creator_id').eq('is_published', false)
+      .lte('scheduled_at', now);
+
+    if (!scheduled || scheduled.length === 0) return;
+
+    for (const post of scheduled) {
+      await supabase.from('posts')
+        .update({ is_published: true, updated_at: now })
+        .eq('id', post.id);
+    }
+    logger.info('CRON#8', `${scheduled.length} post(s) programmé(s) publié(s)`);
+  } catch (e) { captureError('CRON#8-PUBLISH-SCHEDULED', e); }
+});
+
+
+// ============================================================
 // DÉMARRAGE SERVEUR
 // ============================================================
 if (require.main === module) {
