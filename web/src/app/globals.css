@@ -7,16 +7,56 @@
     --font-fraunces: 'Fraunces', serif;
     --font-inter: 'Inter', sans-serif;
     --font-space-mono: 'Space Mono', monospace;
+
+    /* ── Mode clair (référence) ── */
+    --c-ink: 227 242 253;         /* #E3F2FD */
+    --c-ink-surface: 255 255 255; /* #FFFFFF */
+    --c-ink-raised: 210 233 251;  /* #D2E9FB */
+    --c-ink-line: 144 202 249;    /* #90CAF9 */
+    --c-gold: 139 21 56;          /* #8B1538 */
+    --c-gold-dim: 107 14 42;      /* #6B0E2A */
+    --c-gold-bright: 184 63 82;   /* #B83F52 */
+    --c-coral: 21 101 192;        /* #1565C0 */
+    --c-coral-dim: 13 71 161;     /* #0D47A1 */
+    --c-sage: 74 111 165;         /* #4A6FA5 */
+    --c-sage-muted: 124 147 179;  /* #7C93B3 */
+    --c-cream: 11 37 69;          /* #0B2545 */
+    --c-emerald: 15 148 136;      /* #0F9488 */
+    --c-emerald-bright: 20 184 166; /* #14B8A6 */
+    --c-brick: 220 38 38;         /* #DC2626 */
+  }
+
+  /* ── Mode sombre — même rôle par couleur, contraste inversé ── */
+  .dark {
+    --c-ink: 11 22 34;            /* #0B1622 */
+    --c-ink-surface: 18 32 46;    /* #12202E */
+    --c-ink-raised: 27 46 64;     /* #1B2E40 */
+    --c-ink-line: 42 63 84;       /* #2A3F54 */
+    --c-gold: 194 74 99;          /* #C24A63 */
+    --c-gold-dim: 139 21 56;      /* #8B1538 */
+    --c-gold-bright: 224 112 138; /* #E0708A */
+    --c-coral: 91 149 221;        /* #5B95DD */
+    --c-coral-dim: 59 120 196;    /* #3B78C4 */
+    --c-sage: 159 180 206;        /* #9FB4CE */
+    --c-sage-muted: 107 133 163;  /* #6B85A3 */
+    --c-cream: 234 242 250;       /* #EAF2FA */
+    --c-emerald: 20 184 166;      /* #14B8A6 */
+    --c-emerald-bright: 94 234 212; /* #5EEAD4 */
+    --c-brick: 248 113 113;       /* #F87171 */
   }
 
   html {
     color-scheme: light;
   }
+  html.dark {
+    color-scheme: dark;
+  }
 
   body {
-    background-color: #E3F2FD;
-    color: #0B2545;
+    background-color: rgb(var(--c-ink));
+    color: rgb(var(--c-cream));
     font-feature-settings: "tnum" 1;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Chiffres tabulaires pour l'alignement */
@@ -26,13 +66,13 @@
 
   /* Focus clavier visible */
   :focus-visible {
-    outline: 2px solid #8B1538;
+    outline: 2px solid rgb(var(--c-gold));
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::selection {
-    background-color: #8B1538;
+    background-color: rgb(var(--c-gold));
     color: #FFFFFF;
   }
 }
@@ -44,8 +84,8 @@
 
   /* Surface carte standard */
   .card-surface {
-    background-color: #FFFFFF;
-    border: 1px solid rgba(144, 202, 249, 0.5);
+    background-color: rgb(var(--c-ink-surface));
+    border: 1px solid rgb(var(--c-ink-line) / 0.5);
     border-radius: 0.75rem;
   }
 
@@ -82,13 +122,13 @@
   /* Scrollbar fine (prévisualisation logs) */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #90CAF9 transparent;
+    scrollbar-color: rgb(var(--c-ink-line)) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #90CAF9;
+    background: rgb(var(--c-ink-line));
     border-radius: 4px;
   }
 

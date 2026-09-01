@@ -6,6 +6,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CategoryNav } from "@/components/creators/category-nav";
 import { DiscoverFeed } from "@/components/posts/discover-feed";
 import { useT } from "@/i18n/locale-context";
@@ -46,6 +47,7 @@ function HomeFeed() {
         <Logo />
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
+          <ThemeToggle />
           <button
             onClick={() => { setShowFilters((v) => !v); ensureCategories(); }}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-cream backdrop-blur-sm"

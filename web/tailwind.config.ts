@@ -10,35 +10,38 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Tokens pilotés par variables CSS (globals.css) — basculent
+        // automatiquement entre clair/sombre via la classe .dark sur <html>,
+        // sans qu'aucun composant utilisant bg-ink/text-cream/etc. n'ait à changer.
         ink: {
-          DEFAULT: "#E3F2FD",   // fond principal bleu très clair
-          surface: "#FFFFFF",   // cartes, panneaux (blanc — ressort sur le fond clair)
-          raised: "#D2E9FB",    // éléments surélevés, hover (légèrement plus soutenu)
-          line: "#90CAF9",      // bordures discrètes (bleu moyen, visibles sur fond clair)
+          DEFAULT: "rgb(var(--c-ink) / <alpha-value>)",
+          surface: "rgb(var(--c-ink-surface) / <alpha-value>)",
+          raised: "rgb(var(--c-ink-raised) / <alpha-value>)",
+          line: "rgb(var(--c-ink-line) / <alpha-value>)",
         },
         paper: {
-          DEFAULT: "#FBF8F3",   // fond clair (formulaires, admin)
+          DEFAULT: "#FBF8F3",   // fond clair (formulaires, admin) — volontairement fixe
           surface: "#F2EDE3",
         },
         gold: {
-          DEFAULT: "#8B1538",   // bordeaux principal — CTA, unlock (contraste fort sur fond clair)
-          dim: "#6B0E2A",
-          bright: "#B83F52",
+          DEFAULT: "rgb(var(--c-gold) / <alpha-value>)",
+          dim: "rgb(var(--c-gold-dim) / <alpha-value>)",
+          bright: "rgb(var(--c-gold-bright) / <alpha-value>)",
         },
         coral: {
-          DEFAULT: "#1565C0",   // bleu soutenu — texte actif, live, alertes (contraste sur fond clair)
-          dim: "#0D47A1",
+          DEFAULT: "rgb(var(--c-coral) / <alpha-value>)",
+          dim: "rgb(var(--c-coral-dim) / <alpha-value>)",
         },
         sage: {
-          DEFAULT: "#4A6FA5",   // bleu-gris moyen pour texte atténué
-          muted: "#7C93B3",     // bleu-gris clair pour texte très atténué
+          DEFAULT: "rgb(var(--c-sage) / <alpha-value>)",
+          muted: "rgb(var(--c-sage-muted) / <alpha-value>)",
         },
-        cream: "#0B2545",       // bleu marine foncé — texte principal sur fond clair
+        cream: "rgb(var(--c-cream) / <alpha-value>)",
         emerald: {
-          DEFAULT: "#0F9488",   // teal foncé — succès, revenus, abonnement actif (contraste sur fond clair)
-          bright: "#14B8A6",    // teal moyen pour accents
+          DEFAULT: "rgb(var(--c-emerald) / <alpha-value>)",
+          bright: "rgb(var(--c-emerald-bright) / <alpha-value>)",
         },
-        brick: "#DC2626",       // rouge — erreurs/danger (contraste sur fond clair)
+        brick: "rgb(var(--c-brick) / <alpha-value>)",
       },
       fontFamily: {
         display: ["var(--font-fraunces)", "serif"],

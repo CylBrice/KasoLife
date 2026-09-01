@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "./language-switcher";
+import { ThemeToggle } from "./theme-toggle";
 import { useT } from "@/i18n/locale-context";
 
 export function Navbar() {
@@ -23,6 +24,7 @@ export function Navbar() {
         </nav>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/connexion">{t("nav.login")}</Link>
           </Button>

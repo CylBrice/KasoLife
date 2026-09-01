@@ -3,6 +3,20 @@ import { Inter, Fraunces, Space_Mono, Plus_Jakarta_Sans } from "next/font/google
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LocaleProvider } from "@/i18n/locale-context";
+import { ThemeProvider } from "@/contexts/theme-context";
+
+// Applique la classe .dark AVANT l'hydratation React pour éviter un flash
+// du mauvais thème au chargement (lit la préférence sauvegardée, sinon la
+// préférence système).
+const THEME_INIT_SCRIPT = `
+(function() {
+  try {
+    var stored = localStorage.getItem('kasolife_theme');
+    var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (isDark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,13 +60,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body
         className={`${inter.variable} ${fraunces.variable} ${spaceMono.variable} ${jakarta.variable} font-sans antialiased`}
       >
-        <LocaleProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </LocaleProvider>
+        <ThemeProvider>
+          <LocaleProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
