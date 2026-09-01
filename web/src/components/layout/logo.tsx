@@ -3,11 +3,13 @@ import Link from "next/link";
 export function Logo({ className }: { className?: string }) {
   return (
     <Link href="/" className={`flex items-center gap-1.5 ${className ?? ""}`}>
-      <span className="font-brand text-xl font-extrabold tracking-tight text-cream">
-        Kaso
-      </span>
-      <span className="font-brand text-xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">
-        Life
+      <span className="flex items-baseline">
+        <span className="font-brand text-xl font-extrabold tracking-tight text-emerald">
+          Kaso
+        </span>
+        <span className="font-brand text-xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">
+          Life
+        </span>
       </span>
       <svg width="16" height="16" viewBox="0 0 20 20" className="shrink-0 -ml-0.5">
         <defs>
