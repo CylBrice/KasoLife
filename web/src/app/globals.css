@@ -14,8 +14,8 @@
   }
 
   body {
-    background-color: #0E1F1B;
-    color: #F4F1EA;
+    background-color: #65A1E6;
+    color: #FFFFFF;
     font-feature-settings: "tnum" 1;
   }
 
@@ -26,14 +26,14 @@
 
   /* Focus clavier visible */
   :focus-visible {
-    outline: 2px solid #E8A33D;
+    outline: 2px solid #D946A6;
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::selection {
-    background-color: #E8A33D;
-    color: #0E1F1B;
+    background-color: #D946A6;
+    color: #FFFFFF;
   }
 }
 
@@ -44,8 +44,8 @@
 
   /* Surface carte standard */
   .card-surface {
-    background-color: #16302A;
-    border: 1px solid rgba(42, 74, 65, 0.5);
+    background-color: #7CB3F0;
+    border: 1px solid rgba(74, 127, 184, 0.5);
     border-radius: 0.75rem;
   }
 
@@ -82,13 +82,13 @@
   /* Scrollbar fine (prévisualisation logs) */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #2A4A41 transparent;
+    scrollbar-color: #4A7FB8 transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #2A4A41;
+    background: #4A7FB8;
     border-radius: 4px;
   }
 

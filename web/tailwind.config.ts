@@ -11,34 +11,34 @@ const config: Config = {
     extend: {
       colors: {
         ink: {
-          DEFAULT: "#0E1F1B",   // fond principal (mode sombre par défaut)
-          surface: "#16302A",  // cartes, panneaux
-          raised: "#1E3D35",   // éléments surélevés, hover
-          line: "#2A4A41",     // bordures discrètes
+          DEFAULT: "#65A1E6",   // fond principal bleu ciel
+          surface: "#7CB3F0",   // cartes, panneaux (bleu ciel plus clair)
+          raised: "#5B95DD",    // éléments surélevés, hover (bleu ciel plus foncé)
+          line: "#4A7FB8",      // bordures discrètes (bleu foncé)
         },
         paper: {
-          DEFAULT: "#FBF8F3",  // fond clair (formulaires, admin)
+          DEFAULT: "#FBF8F3",   // fond clair (formulaires, admin)
           surface: "#F2EDE3",
         },
         gold: {
-          DEFAULT: "#D946A6",  // rose sombre principal — CTA, unlock
+          DEFAULT: "#D946A6",   // rose sombre principal — CTA, unlock
           dim: "#A91777",
           bright: "#E879C2",
         },
         coral: {
-          DEFAULT: "#65A1E6",  // bleu ciel — actif, live, alertes
-          dim: "#4A7FB8",
+          DEFAULT: "#FFFFFF",   // blanc — texte actif, live, alertes (contraste sur bleu)
+          dim: "#F0F4F8",       // gris clair pour variantes
         },
         sage: {
-          DEFAULT: "#9CB5AC",  // texte atténué
-          muted: "#6E8A80",
+          DEFAULT: "#3B5998",   // bleu foncé pour texte atténué
+          muted: "#2D5A8C",     // bleu encore plus foncé pour texte très atténué
         },
-        cream: "#F4F1EA",      // texte principal sur fond sombre
+        cream: "#FFFFFF",       // blanc — texte principal sur fond bleu ciel
         emerald: {
-          DEFAULT: "#65A1E6",  // bleu ciel — succès, revenus, abonnement actif
-          bright: "#8BC0F0",
+          DEFAULT: "#2DD4BF",   // teal — succès, revenus, abonnement actif (contraste sur bleu)
+          bright: "#5DEDE8",    // teal clair pour accents
         },
-        brick: "#C84B31",      // erreurs/danger
+        brick: "#EF4444",       // rouge vif pour erreurs/danger (contraste sur bleu)
       },
       fontFamily: {
         display: ["var(--font-fraunces)", "serif"],
