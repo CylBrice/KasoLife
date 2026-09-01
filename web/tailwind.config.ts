@@ -21,9 +21,9 @@ const config: Config = {
           surface: "#F2EDE3",
         },
         gold: {
-          DEFAULT: "#FF8C42",   // orange foncé principal — CTA, unlock
-          dim: "#E67E30",
-          bright: "#FFB366",
+          DEFAULT: "#8B1538",   // bordeaux principal — CTA, unlock
+          dim: "#6B0E2A",
+          bright: "#B83F52",
         },
         coral: {
           DEFAULT: "#FFFFFF",   // blanc — texte actif, live, alertes (contraste sur bleu)
