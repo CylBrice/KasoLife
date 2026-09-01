@@ -154,17 +154,19 @@ router.post('/cinetpay', async (req, res) => {
       return res.status(400).json({ error: 'Signature invalide' });
     }
 
-    // C2 : l'idempotence est garantie atomiquement dans creditWalletDeposit
-    // via INSERT ON CONFLICT DO NOTHING sur gateway_ref (index UNIQUE en base)
-    // Ce check préliminaire reste pour éviter un appel API CinetPay inutile
-    const { data: existing } = await supabase.from('transactions')
-      .select('id').eq('gateway_ref', cpm_trans_id).single();
-    if (existing) {
-      console.log(`Webhook: Transaction ${cpm_trans_id} déjà traitée`);
+    // Retrouve la ligne DEPOT_PENDING créée atomiquement par reserve_kyc_cumul
+    // lors de /wallet/deposit (son gateway_ref a été renseigné avec ce même
+    // cpm_trans_id). Si absente ou déjà convertie → déjà traitée (idempotent).
+    const { data: pending } = await supabase.from('transactions')
+      .select('id, user_id, amount_xcon').eq('gateway_ref', cpm_trans_id)
+      .eq('type', 'DEPOT_PENDING').single();
+    if (!pending) {
+      console.log(`Webhook: Transaction ${cpm_trans_id} introuvable ou déjà traitée`);
       return res.json({ message: 'Transaction déjà traitée' });
     }
 
-    // Vérification CinetPay avec retry
+    // Vérification CinetPay avec retry — c'est CinetPay, jamais le body du
+    // webhook, qui fait foi pour le montant réellement payé.
     const verified = await verifyWithRetry(cpm_trans_id);
     if (!verified) {
       console.error(`Webhook: Transaction ${cpm_trans_id} non vérifiée après 3 tentatives`);
@@ -177,7 +179,14 @@ router.post('/cinetpay', async (req, res) => {
       return res.status(400).json({ error: 'Transaction non vérifiée' });
     }
 
-    const montantXcon = toXcon(parseInt(cpm_amount));
+    const montantXcon = toXcon(verified.amountFCFA);
+
+    // Le userId issu de la signature HMAC (source sûre) doit correspondre au
+    // propriétaire de la réservation — sinon incohérence suspecte, on rejette.
+    if (pending.user_id !== userId) {
+      console.error(`Webhook: incohérence userId HMAC=${userId} vs pending=${pending.user_id}`);
+      return res.status(400).json({ error: 'Incohérence utilisateur' });
+    }
 
     // Vérifier que l'utilisateur existe
     const { data: user } = await supabase.from('users')
@@ -187,8 +196,29 @@ router.post('/cinetpay', async (req, res) => {
       return res.status(400).json({ error: 'Utilisateur introuvable' });
     }
 
-    // Bonus parrainage AVANT d'insérer la transaction (count = 0 à ce stade)
+    // Bonus parrainage — AVANT la conversion PENDING→DEPOT : processReferralBonus
+    // détecte le "1er dépôt" en comptant les transactions de type DEPOT déjà
+    // existantes, donc doit s'exécuter tant que celle-ci est encore PENDING.
     await processReferralBonus(userId, montantXcon);
+
+    // Garantie d'idempotence RÉELLE : l'UPDATE conditionné sur type='DEPOT_PENDING'
+    // n'affecte 0 ligne si un webhook concurrent a déjà converti cette même
+    // réservation — un seul gagne la course (verrou de ligne Postgres).
+    const txUpdate = await supabase.from('transactions')
+      .update({
+        type: 'DEPOT',
+        amount_xcon: montantXcon,
+        gateway: 'CINETPAY', gateway_ref: cpm_trans_id,
+        description: `Dépôt via CinetPay — ${montantXcon} xcon (${verified.currency || cpm_currency || 'XAF'})`,
+      })
+      .eq('id', pending.id).eq('type', 'DEPOT_PENDING')
+      .select('id').single();
+
+    if (txUpdate.error || !txUpdate.data) {
+      console.log(`Webhook: Transaction ${cpm_trans_id} déjà créditée (course concurrente)`);
+      return res.json({ message: 'Transaction déjà traitée' });
+    }
+    const txInsert = { data: txUpdate.data };
 
     // Créditer le wallet
     await supabase.rpc('credit_wallet', { p_user_id: userId, p_amount: montantXcon });
@@ -201,17 +231,13 @@ router.post('/cinetpay', async (req, res) => {
       .update({ total_deposited: newTotalDeposited })
       .eq('user_id', userId);
 
-    // Enregistrer la transaction
+    // Mettre à jour balance_after maintenant que le solde réel est connu
     const { data: walletAfter } = await supabase.from('wallets')
       .select('balance_xcon').eq('user_id', userId).single();
 
-    await supabase.from('transactions').insert({
-      id: uuidv4(), user_id: userId, type: 'DEPOT',
-      amount_xcon: montantXcon,
-      balance_after: walletAfter.balance_xcon,
-      gateway: 'CINETPAY', gateway_ref: cpm_trans_id,
-      description: `Dépôt via CinetPay — ${montantXcon} xcon (${cpm_currency || 'XAF'})`,
-    });
+    await supabase.from('transactions')
+      .update({ balance_after: walletAfter.balance_xcon })
+      .eq('id', txInsert.data.id);
 
     // Notification push
     sendPushNotification(
@@ -241,8 +267,16 @@ router.post('/cinetpay', async (req, res) => {
 
 // ── GET /webhook/reconcile — Réconciliation manuelle (admin) ──────────────────
 router.get('/reconcile', async (req, res) => {
-  const { secret } = req.query;
-  if (secret !== process.env.RECONCILE_SECRET) {
+  // Header (jamais query string, loggée par proxies/serveurs) + comparaison
+  // à temps constant pour éviter une attaque par timing sur le secret.
+  const provided = req.get('x-reconcile-secret') || '';
+  const expected = process.env.RECONCILE_SECRET || '';
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  const valid = expected.length > 0
+    && providedBuf.length === expectedBuf.length
+    && crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!valid) {
     return res.status(403).json({ error: 'Accès refusé' });
   }
   try {
@@ -272,24 +306,25 @@ router.get('/reconcile', async (req, res) => {
 });
 
 // ── Fonction partagée : créditer wallet après confirmation dépôt ──────────────
-const creditWalletDeposit = async (userId, montantXcon, txId, provider) => {
-  // C2 : idempotence atomique — l'index UNIQUE sur gateway_ref garantit
-  // qu'un double webhook ne peut jamais créditer deux fois le même dépôt
-  const txInsert = await supabase.from('transactions').insert({
-    id: require('crypto').randomUUID(), user_id: userId,
-    type: 'DEPOT', amount_xcon: montantXcon,
-    balance_after: 0,
-    gateway: provider.toUpperCase(), gateway_ref: txId,
-    description: `Dépôt confirmé via ${provider}`,
-  }).select('id').single();
+// Convertit la ligne DEPOT_PENDING existante (créée atomiquement par
+// reserve_kyc_cumul lors de /wallet/deposit) en DEPOT confirmé, au lieu
+// d'insérer une nouvelle ligne — évite un doublon de gateway_ref (qui
+// violerait l'index UNIQUE, migration 007) et un double comptage du
+// plafond KYC mensuel.
+const creditWalletDeposit = async (pendingTxId, userId, montantXcon, txId, provider) => {
+  const { data: updated, error: updateErr } = await supabase.from('transactions')
+    .update({
+      type: 'DEPOT',
+      gateway: provider.toUpperCase(), gateway_ref: txId,
+      description: `Dépôt confirmé via ${provider}`,
+    })
+    .eq('id', pendingTxId).eq('type', 'DEPOT_PENDING')
+    .select('id').single();
 
-  // Si la transaction existe déjà (UNIQUE violation) → déjà crédité
-  if (txInsert.error) {
-    if (txInsert.error.code === '23505') return { alreadyCredited: true };
-    throw txInsert.error;
-  }
+  // Aucune ligne affectée = déjà convertie par un webhook concurrent (idempotent)
+  if (updateErr || !updated) return { alreadyCredited: true };
 
-  // Créditer le wallet seulement après insertion réussie
+  // Créditer le wallet seulement après conversion réussie
   const { error: creditErr } = await supabase.rpc('credit_wallet', {
     p_user_id: userId, p_amount: montantXcon,
   });
@@ -301,7 +336,7 @@ const creditWalletDeposit = async (userId, montantXcon, txId, provider) => {
   // Mettre à jour balance_after maintenant qu'on a le solde réel
   await supabase.from('transactions')
     .update({ balance_after: wallet?.balance_xcon || 0 })
-    .eq('gateway_ref', txId);
+    .eq('id', pendingTxId);
 
   const { sendPushNotification } = require('../services/notifications');
   await sendPushNotification(
@@ -332,11 +367,11 @@ router.post('/campay', async (req, res) => {
 
     // Retrouver la transaction pending en base via gateway_ref
     const { data: tx } = await supabase.from('transactions')
-      .select('user_id, amount_xcon').eq('gateway_ref', external_reference)
+      .select('id, user_id, amount_xcon').eq('gateway_ref', external_reference)
       .eq('type', 'DEPOT_PENDING').single();
     if (!tx) return;
 
-    await creditWalletDeposit(tx.user_id, tx.amount_xcon, external_reference, 'campay');
+    await creditWalletDeposit(tx.id, tx.user_id, tx.amount_xcon, external_reference, 'campay');
   } catch (err) {
     console.error('[Webhook Campay]', err.message);
   }
@@ -357,11 +392,11 @@ router.post('/fapshi', async (req, res) => {
     if (!verified) return;
 
     const { data: tx } = await supabase.from('transactions')
-      .select('user_id, amount_xcon').eq('gateway_ref', externalId)
+      .select('id, user_id, amount_xcon').eq('gateway_ref', externalId)
       .eq('type', 'DEPOT_PENDING').single();
     if (!tx) return;
 
-    await creditWalletDeposit(tx.user_id, tx.amount_xcon, externalId, 'fapshi');
+    await creditWalletDeposit(tx.id, tx.user_id, tx.amount_xcon, externalId, 'fapshi');
   } catch (err) {
     console.error('[Webhook Fapshi]', err.message);
   }
