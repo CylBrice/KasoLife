@@ -21,13 +21,13 @@ const config: Config = {
           surface: "#F2EDE3",
         },
         gold: {
-          DEFAULT: "#E8A33D",  // accent principal — CTA, unlock
-          dim: "#C98A2E",
-          bright: "#F5BE63",
+          DEFAULT: "#3B82F6",  // bleu principal — CTA, unlock
+          dim: "#1E40AF",
+          bright: "#60A5FA",
         },
         coral: {
-          DEFAULT: "#F0664C",  // accent secondaire — actif, live, alertes douces
-          dim: "#D6543B",
+          DEFAULT: "#FF6B6B",  // coral vif — actif, live, alertes
+          dim: "#FF5252",
         },
         sage: {
           DEFAULT: "#9CB5AC",  // texte atténué
@@ -35,8 +35,8 @@ const config: Config = {
         },
         cream: "#F4F1EA",      // texte principal sur fond sombre
         emerald: {
-          DEFAULT: "#1E7A5F",  // succès, revenus, abonnement actif
-          bright: "#2BAE85",
+          DEFAULT: "#FF6B6B",  // coral — succès, revenus, abonnement actif
+          bright: "#FF8282",
         },
         brick: "#C84B31",      // erreurs/danger
       },
