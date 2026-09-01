@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function GlobalErrorBoundary({
   error,
@@ -24,12 +25,9 @@ export default function GlobalErrorBoundary({
         Quelque chose s'est mal passé de notre côté. Réessayez, et si le
         problème persiste, contactez le support.
       </p>
-      <button
-        onClick={reset}
-        className="mt-2 rounded-full bg-gold px-6 py-2 text-sm font-semibold text-white transition hover:bg-gold-bright"
-      >
+      <Button onClick={reset} className="mt-2 rounded-full">
         Réessayer
-      </button>
+      </Button>
     </div>
   );
 }

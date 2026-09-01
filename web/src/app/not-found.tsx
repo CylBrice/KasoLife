@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -11,12 +12,9 @@ export default function NotFound() {
       <p className="max-w-sm text-sm text-sage">
         Cette page n'existe pas ou a été déplacée.
       </p>
-      <Link
-        href="/"
-        className="mt-2 rounded-full bg-gold px-6 py-2 text-sm font-semibold text-white transition hover:bg-gold-bright"
-      >
-        Retour à l'accueil
-      </Link>
+      <Button asChild className="mt-2 rounded-full">
+        <Link href="/">Retour à l'accueil</Link>
+      </Button>
     </div>
   );
 }

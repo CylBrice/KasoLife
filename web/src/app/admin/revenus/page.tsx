@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubTabs } from "@/components/admin/sub-tabs";
 import { Button } from "@/components/ui/button";
+import { PillToggle } from "@/components/ui/pill-toggle";
 import { fmtNum, formatFCFA } from "@/lib/utils";
 import { api } from "@/lib/api";
 
@@ -109,10 +110,9 @@ export default function FinancesPage() {
         {["overview", "detail", "period"].includes(tab) && (
           <div className="flex rounded-xl border border-ink-line/50 bg-ink-raised p-1 gap-1">
             {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-              <button key={p} onClick={() => setPeriod(p)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === p ? "bg-gold text-white" : "text-sage hover:text-cream"}`}>
+              <PillToggle key={p} active={period === p} onClick={() => setPeriod(p)} className="px-3 py-1.5 text-xs">
                 {PERIOD_LABELS[p]}
-              </button>
+              </PillToggle>
             ))}
           </div>
         )}
@@ -345,10 +345,9 @@ export default function FinancesPage() {
           <div className="flex items-center justify-between">
             <div className="flex rounded-xl border border-ink-line/50 bg-ink-raised p-1 gap-1">
               {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-                <button key={p} onClick={() => { setCanauxPeriod(p); setTimeout(loadCanaux, 50); }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${canauxPeriod === p ? "bg-gold text-white" : "text-sage hover:text-cream"}`}>
+                <PillToggle key={p} active={canauxPeriod === p} onClick={() => { setCanauxPeriod(p); setTimeout(loadCanaux, 50); }} className="px-3 py-1.5 text-xs">
                   {PERIOD_LABELS[p]}
-                </button>
+                </PillToggle>
               ))}
             </div>
             <Button size="sm" variant="secondary" onClick={loadCanaux} disabled={canauxLoading}>

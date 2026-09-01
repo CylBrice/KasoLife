@@ -3,6 +3,7 @@
 import { Languages } from "lucide-react";
 import { useLocale, LOCALES, type Locale } from "@/i18n/locale-context";
 import { cn } from "@/lib/utils";
+import { PillToggle } from "@/components/ui/pill-toggle";
 
 const LOCALE_LABELS: Record<Locale, string> = { fr: "FR", en: "EN" };
 
@@ -24,17 +25,14 @@ export function LanguageSwitcher({ className }: { className?: string }) {
     >
       <Languages className="ml-1.5 h-3.5 w-3.5 text-sage-muted" />
       {LOCALES.map((loc) => (
-        <button
+        <PillToggle
           key={loc}
+          active={locale === loc}
           onClick={() => setLocale(loc)}
-          aria-pressed={locale === loc}
-          className={cn(
-            "rounded-full px-2 py-1 text-xs font-medium transition-colors",
-            locale === loc ? "bg-gold text-white" : "text-sage hover:text-cream"
-          )}
+          className="rounded-full px-2 py-1 text-xs"
         >
           {LOCALE_LABELS[loc]}
-        </button>
+        </PillToggle>
       ))}
     </div>
   );

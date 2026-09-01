@@ -5,6 +5,7 @@ import { Shield, ShieldAlert, ShieldOff, ChevronDown, Activity } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PillToggle } from "@/components/ui/pill-toggle";
 import { SubTabs } from "@/components/admin/sub-tabs";
 import { formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -203,10 +204,10 @@ function PromoteForm({ onDone }: { onDone: () => void }) {
           className="rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none" />
         <div className="flex gap-2">
           {(["ADMIN","USER"] as const).map(r => (
-            <button key={r} onClick={() => setRole(r)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${role === r ? "bg-gold text-white" : "bg-ink-raised text-sage hover:text-cream"}`}>
+            <PillToggle key={r} active={role === r} onClick={() => setRole(r)}
+              className="px-4 py-2 text-sm" inactiveClassName="bg-ink-raised">
               {r === "ADMIN" ? "→ Promouvoir Admin" : "→ Rétrograder USER"}
-            </button>
+            </PillToggle>
           ))}
         </div>
         <Button onClick={handle} disabled={loading || !userId.trim()}>

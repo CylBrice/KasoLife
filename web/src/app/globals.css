@@ -13,9 +13,9 @@
     --c-ink-surface: 255 255 255; /* #FFFFFF */
     --c-ink-raised: 210 233 251;  /* #D2E9FB */
     --c-ink-line: 144 202 249;    /* #90CAF9 */
-    --c-gold: 139 21 56;          /* #8B1538 */
-    --c-gold-dim: 107 14 42;      /* #6B0E2A */
-    --c-gold-bright: 184 63 82;   /* #B83F52 */
+    --c-gold: 194 74 99;          /* #C24A63 — essai */
+    --c-gold-dim: 139 21 56;      /* #8B1538 */
+    --c-gold-bright: 224 112 138; /* #E0708A */
     --c-coral: 21 101 192;        /* #1565C0 */
     --c-coral-dim: 13 71 161;     /* #0D47A1 */
     --c-sage: 74 111 165;         /* #4A6FA5 */

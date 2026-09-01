@@ -8,6 +8,7 @@ import { Logo } from "@/components/layout/logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { PillToggle } from "@/components/ui/pill-toggle";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
@@ -110,24 +111,12 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
         <div className="rounded-2xl border border-ink-line bg-ink-surface p-6 shadow-lg shadow-black/20">
           {/* Onglets : bascule instantanée, pas de rechargement */}
           <div className="mb-6 flex rounded-xl bg-ink p-1">
-            <button
-              type="button"
-              onClick={() => switchTab("login")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                tab === "login" ? "bg-gold text-white" : "text-sage hover:text-cream"
-              }`}
-            >
+            <PillToggle active={tab === "login"} onClick={() => switchTab("login")} className="flex-1 py-2.5 text-sm font-semibold">
               {t("nav.login")}
-            </button>
-            <button
-              type="button"
-              onClick={() => switchTab("signup")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                tab === "signup" ? "bg-gold text-white" : "text-sage hover:text-cream"
-              }`}
-            >
+            </PillToggle>
+            <PillToggle active={tab === "signup"} onClick={() => switchTab("signup")} className="flex-1 py-2.5 text-sm font-semibold">
               {t("nav.signup")}
-            </button>
+            </PillToggle>
           </div>
 
           {error && (

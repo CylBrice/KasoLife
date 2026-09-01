@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { formatRelativeDate } from "@/lib/utils";
@@ -142,13 +143,9 @@ export default function SupportPage() {
             className="flex-1 resize-none rounded-xl border border-ink-line bg-ink-raised px-4 py-2.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none"
             style={{ maxHeight: 96 }}
           />
-          <button
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold text-white disabled:opacity-40 hover:bg-gold-bright transition-colors"
-          >
+          <Button onClick={handleSend} disabled={!text.trim() || sending} size="icon">
             <Send className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
       <BottomNav />
