@@ -3,7 +3,8 @@
 import {
   createContext, useContext, useEffect, useState, type ReactNode,
 } from "react";
-import { api, setAuthToken, clearAuthToken, getAuthToken } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { api, setAuthToken, clearAuthToken, getAuthToken, AUTH_UNAUTHORIZED_EVENT } from "@/lib/api";
 import type { UserProfile, Wallet } from "@/types";
 
 interface AuthContextType {
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchMe = async () => {
     try {
@@ -53,6 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     fetchMe().finally(() => setLoading(false));
   }, []);
+
+  // Session expirée/révoquée (401 sur une requête API) : purge l'état en
+  // mémoire immédiatement, sinon l'UI continue d'afficher "connecté" jusqu'au
+  // prochain rechargement de page.
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setWallet(null);
+      router.push("/connexion");
+    };
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, [router]);
 
   const login = async (phone: string, password: string) => {
     const { data } = await api.post("/auth/login", { phone, password });

@@ -204,7 +204,7 @@ function PromoteForm({ onDone }: { onDone: () => void }) {
         <div className="flex gap-2">
           {(["ADMIN","USER"] as const).map(r => (
             <button key={r} onClick={() => setRole(r)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${role === r ? "bg-gold text-ink" : "bg-ink-raised text-sage hover:text-cream"}`}>
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${role === r ? "bg-gold text-white" : "bg-ink-raised text-sage hover:text-cream"}`}>
               {r === "ADMIN" ? "→ Promouvoir Admin" : "→ Rétrograder USER"}
             </button>
           ))}

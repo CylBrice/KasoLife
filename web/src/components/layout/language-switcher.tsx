@@ -30,7 +30,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           aria-pressed={locale === loc}
           className={cn(
             "rounded-full px-2 py-1 text-xs font-medium transition-colors",
-            locale === loc ? "bg-gold text-ink" : "text-sage hover:text-cream"
+            locale === loc ? "bg-gold text-white" : "text-sage hover:text-cream"
           )}
         >
           {LOCALE_LABELS[loc]}

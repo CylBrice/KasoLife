@@ -150,7 +150,7 @@ export function PromoCodeManager() {
                 <Button
                   onClick={() => handleToggle(code.id, code.is_active)}
                   size="sm"
-                  variant={code.is_active ? 'default' : 'outline'}
+                  variant={code.is_active ? 'primary' : 'outline'}
                   className="text-xs"
                 >
                   {code.is_active ? 'Actif' : 'Inactif'}
