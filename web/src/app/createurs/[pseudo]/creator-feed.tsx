@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { PostCard } from "@/components/posts/post-card";
+import { StoryBar } from "@/components/posts/story-bar";
 import type { Post } from "@/types";
 
 export function CreatorFeed({ creatorId }: { creatorId: string }) {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,10 +43,13 @@ export function CreatorFeed({ creatorId }: { creatorId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} onUnlocked={handleUnlocked} />
-      ))}
+    <div>
+      <StoryBar isAuthenticated={!!user} />
+      <div className="flex flex-col gap-3">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} onUnlocked={handleUnlocked} />
+        ))}
+      </div>
     </div>
   );
 }
