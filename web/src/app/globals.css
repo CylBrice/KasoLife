@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-fraunces: 'Fraunces', serif;
+    --font-inter: 'Inter', sans-serif;
+    --font-space-mono: 'Space Mono', monospace;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #0E1F1B;
+    color: #F4F1EA;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Chiffres tabulaires pour l'alignement */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus clavier visible */
+  :focus-visible {
+    outline: 2px solid #E8A33D;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: #E8A33D;
+    color: #0E1F1B;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Surface carte standard */
+  .card-surface {
+    background-color: #16302A;
+    border: 1px solid rgba(42, 74, 65, 0.5);
+    border-radius: 0.75rem;
+  }
+
+  /* Voile de verrouillage (PPV) */
+  .lock-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .lock-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('/lattice.svg');
+    background-size: 48px 48px;
+    background-repeat: repeat;
+    opacity: 0.85;
+    backdrop-filter: blur(18px) saturate(60%);
+    transition: opacity 0.4s ease, backdrop-filter 0.4s ease;
+  }
+  .lock-overlay.unlocking::after {
+    opacity: 0;
+    backdrop-filter: blur(0px) saturate(100%);
+  }
+
+  /* Scrollbar invisible (sidebar mobile, onglets) */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Scrollbar fine (prévisualisation logs) */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #2A4A41 transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #2A4A41;
+    border-radius: 4px;
+  }
+
+  /* Truncate multi-lignes */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

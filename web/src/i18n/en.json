@@ -1,0 +1,51 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "An error occurred.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "search": "Search",
+    "noResult": "No results."
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "applications": "Applications",
+    "reports": "Reports",
+    "fraud": "Fraud",
+    "payouts": "Payouts",
+    "users": "Users",
+    "aiFeatures": "AI",
+    "maintenance": "Maintenance",
+    "revenue": "Finances",
+    "support": "Support",
+    "configuration": "Config",
+    "admins": "Admins",
+    "audit": "Audit Log"
+  },
+  "wallet": {
+    "availableBalance": "Available balance",
+    "deposit": "Top up",
+    "withdraw": "Withdraw",
+    "history": "History",
+    "tx": {
+      "DEPOSIT": "Deposit",
+      "WITHDRAWAL": "Withdrawal",
+      "SUBSCRIPTION": "Subscription",
+      "TIP": "Tip",
+      "PPV": "PPV Content",
+      "COMMISSION": "Commission",
+      "REFUND": "Refund"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "messages": "Messages",
+    "wallet": "Wallet",
+    "profile": "Profile",
+    "discover": "Discover"
+  }
+}

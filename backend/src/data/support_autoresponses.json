@@ -1,0 +1,272 @@
+[
+  {
+    "id": "ACC-01",
+    "category": "compte",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["age", "mineur", "majeur", "18 ans", "inscription", "conditions", "eligib", "minimum age", "underage"],
+    "response_fr": "KasoLife est réservé aux personnes de 18 ans et plus. Vous devez fournir une date de naissance valide lors de l'inscription. Tout compte mineur sera clôturé conformément à nos CGU.",
+    "response_en": "KasoLife is strictly for users aged 18 and over. A valid date of birth is required at registration. Any underage account will be closed per our Terms of Service."
+  },
+  {
+    "id": "ACC-02",
+    "category": "compte",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["pseudo", "pseudonyme", "nom d'utilisateur", "changer pseudo"],
+    "response_fr": "Votre pseudonyme doit contenir entre 3 et 20 caractères. Caractères autorisés : lettres a-z (minuscules et majuscules), chiffres 0-9, et les caractères spéciaux suivants : . _ -",
+    "response_en": "Your username must be between 3 and 20 characters. Allowed characters: letters a-z (lowercase and uppercase), digits 0-9, and the following special characters: . _ -"
+  },
+  {
+    "id": "ACC-03",
+    "category": "compte",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["mot de passe", "oublié", "password", "reset", "forgot"],
+    "response_fr": "Sur l'écran de connexion, appuyez sur \"Mot de passe oublié ?\", saisissez votre numéro de téléphone. Vous recevrez un code SMS valable 15 minutes pour créer un nouveau mot de passe.",
+    "response_en": "On the login screen, tap \"Forgot password?\" and enter your phone number. You will receive an SMS code valid for 15 minutes to create a new password."
+  },
+  {
+    "id": "ACC-04",
+    "category": "compte",
+    "priority": "HIGH",
+    "escalate_to_admin": true,
+    "keywords": ["suspendu", "bloqué", "compte bloqué", "banni", "suspended", "banned"],
+    "response_fr": "Votre compte a été temporairement suspendu. Cette décision peut faire suite à une vérification de sécurité ou une infraction aux CGU. Notre équipe examine votre dossier — nous vous contacterons sous 24 à 48h.",
+    "response_en": "Your account has been temporarily suspended. This may follow a security check or a Terms of Service violation. Our team is reviewing your case — we will contact you within 24-48h."
+  },
+  {
+    "id": "ACC-05",
+    "category": "compte",
+    "priority": "HIGH",
+    "escalate_to_admin": true,
+    "keywords": ["double compte", "deux comptes", "compte volé", "piraté", "hacked", "stolen account"],
+    "response_fr": "Un seul compte est autorisé par personne sur KasoLife. Si votre numéro est déjà utilisé et que vous n'êtes pas à l'origine de cette inscription, contactez-nous immédiatement pour sécuriser votre compte.",
+    "response_en": "Only one account is allowed per person on KasoLife. If your number is already in use and you did not create that account, contact us immediately to secure your account."
+  },
+  {
+    "id": "KYC-01",
+    "category": "kyc",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["kyc", "verification identite", "pourquoi kyc", "identity verification", "why kyc"],
+    "response_fr": "La vérification d'identité (KYC) est obligatoire pour devenir créateur et pour effectuer des retraits. Elle protège tous les utilisateurs contre la fraude et garantit que les paiements sont versés à la bonne personne.",
+    "response_en": "Identity verification (KYC) is required to become a creator and to make withdrawals. It protects all users from fraud and ensures payments go to the right person."
+  },
+  {
+    "id": "KYC-02",
+    "category": "kyc",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["limite depot", "limite retrait", "plafond", "deposit limit", "withdrawal limit"],
+    "response_fr": "Sans KYC : dépôt et retrait limités selon votre profil. Avec un KYC vérifié : vous pouvez devenir créateur, recevoir des paiements et retirer vos revenus sans limite mensuelle. Complétez votre vérification dans l'application pour débloquer ces fonctionnalités.",
+    "response_en": "Without KYC: deposits and withdrawals are limited. With verified KYC: you can become a creator, receive payments and withdraw your earnings without a monthly cap. Complete verification in the app to unlock these features."
+  },
+  {
+    "id": "KYC-03",
+    "category": "kyc",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["kyc refuse", "kyc en attente", "kyc rejected", "kyc pending", "verification echouee"],
+    "response_fr": "Votre vérification d'identité est en cours de traitement (délai : 24-48h). Si elle a été refusée, vérifiez que votre document est lisible, non expiré, et correspond bien à vos informations d'inscription, puis recommencez la procédure.",
+    "response_en": "Your identity verification is being processed (24-48h). If it was rejected, make sure your document is readable, not expired, and matches your registration details, then retry the process."
+  },
+  {
+    "id": "WAL-01",
+    "category": "wallet",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["deposer", "recharger", "ajouter argent", "deposit", "top up", "recharge"],
+    "response_fr": "Allez dans Wallet → Déposer. Choisissez MTN Mobile Money ou Orange Money, saisissez le montant (minimum 500 xcon = 500 FCFA) et confirmez sur votre téléphone. Le crédit est instantané.",
+    "response_en": "Go to Wallet → Deposit. Choose MTN Mobile Money or Orange Money, enter the amount (minimum 500 xcon = 500 FCFA) and confirm on your phone. Credit is instant."
+  },
+  {
+    "id": "WAL-02",
+    "category": "wallet",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["retirer", "retrait wallet", "withdraw wallet"],
+    "response_fr": "Wallet → Retirer. Saisissez le montant (minimum 500 xcon), choisissez votre opérateur et numéro Mobile Money. Une commission de 1,5% est prélevée.",
+    "response_en": "Wallet → Withdraw. Enter the amount (minimum 500 xcon), choose your operator and Mobile Money number. A 1.5% fee applies."
+  },
+  {
+    "id": "WAL-03",
+    "category": "wallet",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["retrait pas recu", "retrait en attente", "withdrawal pending", "withdrawal not received"],
+    "response_fr": "Les retraits depuis votre wallet sont traités en quelques minutes. Les retraits de revenus créateur (depuis le solde en attente) sont validés manuellement sous 24-48h. Si vous n'avez rien reçu après ce délai, répondez à ce message.",
+    "response_en": "Wallet withdrawals are processed within minutes. Creator earnings payouts (from pending balance) are manually reviewed within 24-48h. If you haven't received anything after that, reply to this message."
+  },
+  {
+    "id": "WAL-04",
+    "category": "wallet",
+    "priority": "HIGH",
+    "escalate_to_admin": true,
+    "keywords": ["debite non credite", "depot non recu", "argent perdu", "debited not credited", "deposit not received"],
+    "response_fr": "Si votre Mobile Money a été débité mais votre solde xcon non crédité, notez votre référence de transaction et répondez à ce message. Notre équipe vérifie et corrige sous 2h en jours ouvrables.",
+    "response_en": "If your Mobile Money was debited but your xcon balance was not credited, note your transaction reference and reply to this message. Our team will check and fix it within 2h on business days."
+  },
+  {
+    "id": "WAL-05",
+    "category": "wallet",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["xcon", "monnaie", "currency", "qu'est ce que xcon"],
+    "response_fr": "Le xcon est la monnaie de KasoLife (1 xcon = 1 FCFA). Vous l'utilisez pour vous abonner aux créateurs, acheter du contenu payant à l'unité et envoyer des pourboires. Vous pouvez le déposer et le retirer librement.",
+    "response_en": "Xcon is KasoLife's currency (1 xcon = 1 FCFA). You use it to subscribe to creators, buy pay-per-view content, and send tips. You can deposit and withdraw it freely."
+  },
+  {
+    "id": "WAL-06",
+    "category": "wallet",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["mobile money indisponible", "reseau indisponible", "network unavailable"],
+    "response_fr": "Nous sommes désolés pour ce désagrément. Il se peut que le réseau Mobile Money soit temporairement indisponible. Nous vous invitons à patienter entre 5 et 10 minutes avant de réessayer. Si le problème persiste, répondez à ce message.",
+    "response_en": "We're sorry for the inconvenience. The Mobile Money network may be temporarily unavailable. Please wait 5 to 10 minutes before retrying. If the problem persists, reply to this message."
+  },
+  {
+    "id": "WAL-07",
+    "category": "wallet",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["changement numero", "nouveau numero mobile money", "phone number change"],
+    "response_fr": "Suite à un changement de numéro Mobile Money, les retraits sont temporairement bloqués pendant 24h sur le nouveau numéro. Il s'agit d'une mesure de sécurité pour protéger votre argent. Les dépôts restent disponibles.",
+    "response_en": "After changing your Mobile Money number, withdrawals are temporarily blocked for 24h on the new number. This is a security measure to protect your funds. Deposits remain available."
+  },
+  {
+    "id": "CREA-01",
+    "category": "createur",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["devenir createur", "candidature createur", "become creator", "creator application"],
+    "response_fr": "Pour devenir créateur sur KasoLife : 1) Complétez votre vérification d'identité (KYC). 2) Allez dans Profil → Devenir créateur. 3) Choisissez une catégorie et fixez votre prix d'abonnement. Votre candidature sera examinée par notre équipe sous 24-48h.",
+    "response_en": "To become a creator on KasoLife: 1) Complete identity verification (KYC). 2) Go to Profile → Become a creator. 3) Choose a category and set your subscription price. Your application will be reviewed within 24-48h."
+  },
+  {
+    "id": "CREA-02",
+    "category": "createur",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["candidature refusee", "candidature en attente", "application rejected", "application pending"],
+    "response_fr": "Votre candidature créateur est en cours d'examen (délai : 24-48h). Si elle a été refusée, le motif vous est communiqué par notification — vous pourrez soumettre une nouvelle candidature après correction.",
+    "response_en": "Your creator application is under review (24-48h). If rejected, the reason is sent to you via notification — you can submit a new application after addressing it."
+  },
+  {
+    "id": "CREA-03",
+    "category": "createur",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["commission", "pourcentage", "combien je gagne", "how much do i earn", "creator earnings"],
+    "response_fr": "KasoLife prélève une commission de 20% sur les abonnements, pourboires et contenus payants (PPV). Vous recevez donc 80% de chaque transaction sur votre solde en attente, que vous pouvez ensuite retirer (commission de retrait : 1,5%, minimum 5 000 FCFA).",
+    "response_en": "KasoLife takes a 20% commission on subscriptions, tips, and pay-per-view content. You receive 80% of each transaction in your pending balance, which you can then withdraw (withdrawal fee: 1.5%, minimum 5,000 FCFA)."
+  },
+  {
+    "id": "SUB-01",
+    "category": "abonnement",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["abonnement", "s'abonner", "subscribe", "subscription"],
+    "response_fr": "Pour vous abonner à un créateur, visitez son profil et appuyez sur \"S'abonner\". Le montant de l'abonnement est débité de votre wallet et l'accès est valable 30 jours, renouvelé automatiquement sauf désactivation.",
+    "response_en": "To subscribe to a creator, visit their profile and tap \"Subscribe\". The subscription amount is debited from your wallet and access lasts 30 days, automatically renewed unless cancelled."
+  },
+  {
+    "id": "SUB-02",
+    "category": "abonnement",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["annuler abonnement", "desabonner", "cancel subscription", "unsubscribe", "renouvellement"],
+    "response_fr": "Pour annuler le renouvellement automatique, allez dans Mes abonnements → sélectionnez le créateur → Annuler le renouvellement. Votre accès reste actif jusqu'à la fin de la période déjà payée.",
+    "response_en": "To cancel auto-renewal, go to My subscriptions → select the creator → Cancel renewal. Your access remains active until the end of the already-paid period."
+  },
+  {
+    "id": "SUB-03",
+    "category": "abonnement",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["abonnement en pause", "solde insuffisant abonnement", "subscription past due"],
+    "response_fr": "Votre abonnement n'a pas pu être renouvelé automatiquement par manque de solde. Rechargez votre wallet — le renouvellement sera tenté à nouveau lors de la prochaine vérification automatique.",
+    "response_en": "Your subscription could not be auto-renewed due to insufficient balance. Top up your wallet — renewal will be retried during the next automatic check."
+  },
+  {
+    "id": "CON-01",
+    "category": "contenu",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["ppv", "contenu payant", "acheter contenu", "pay per view", "unlock content"],
+    "response_fr": "Le contenu PPV (payant à l'unité) est débloqué en appuyant sur \"Acheter\" — le montant est débité de votre wallet une seule fois et le contenu vous reste accessible définitivement.",
+    "response_en": "PPV (pay-per-view) content is unlocked by tapping \"Buy\" — the amount is debited from your wallet once and the content remains accessible to you permanently."
+  },
+  {
+    "id": "CON-02",
+    "category": "contenu",
+    "priority": "MEDIUM",
+    "escalate_to_admin": true,
+    "keywords": ["signaler contenu", "contenu inapproprie", "report content", "inappropriate content"],
+    "response_fr": "Merci de votre signalement. Notre équipe de modération examine tout contenu signalé sous 24h et applique les sanctions nécessaires en cas d'infraction à nos règles communautaires (catégories autorisées : Fitness, Musique, Coaching, Art, Cuisine, Mode, Gaming, Business).",
+    "response_en": "Thank you for your report. Our moderation team reviews all reported content within 24h and applies sanctions if our community guidelines are violated (allowed categories: Fitness, Music, Coaching, Art, Cooking, Fashion, Gaming, Business)."
+  },
+  {
+    "id": "TEC-01",
+    "category": "technique",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["bug", "crash", "ne fonctionne pas", "ne marche pas", "not working", "app crashes"],
+    "response_fr": "Essayez dans l'ordre : 1) Fermer et rouvrir l'app. 2) Vérifier votre connexion internet. 3) Vider le cache (Paramètres → Apps → KasoLife → Vider cache). 4) Désinstaller et réinstaller. Si le problème persiste, décrivez-le précisément ici.",
+    "response_en": "Try in order: 1) Close and reopen the app. 2) Check your internet connection. 3) Clear cache (Settings → Apps → KasoLife → Clear cache). 4) Uninstall and reinstall. If the issue persists, describe it precisely here."
+  },
+  {
+    "id": "TEC-02",
+    "category": "technique",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["notifications", "pas de notification", "no notifications"],
+    "response_fr": "Vérifiez que les notifications KasoLife sont activées dans les paramètres de votre téléphone (Paramètres → Notifications → KasoLife). Sur iOS, autorisez les notifications lors de la première ouverture de l'app.",
+    "response_en": "Check that KasoLife notifications are enabled in your phone settings (Settings → Notifications → KasoLife). On iOS, allow notifications when first opening the app."
+  },
+  {
+    "id": "TEC-03",
+    "category": "technique",
+    "priority": "MEDIUM",
+    "escalate_to_admin": false,
+    "keywords": ["maintenance", "indisponible", "site down", "service unavailable"],
+    "response_fr": "La plateforme est temporairement en maintenance. Vos fonds, abonnements et contenus sont sécurisés et préservés. Le service sera rétabli très prochainement — vous recevrez une notification dès la reprise.",
+    "response_en": "The platform is temporarily under maintenance. Your funds, subscriptions and content are safe and preserved. Service will resume shortly — you'll get a notification once back online."
+  },
+  {
+    "id": "TEC-04",
+    "category": "technique",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["ecran d'accueil", "installer app", "add to home screen", "install app"],
+    "response_fr": "Pour ajouter KasoLife sur votre écran d'accueil : iPhone (Safari) → bouton Partager → 'Sur l'écran d'accueil' → Ajouter. Android (Chrome) → menu 3 points → 'Ajouter à l'écran d'accueil'.",
+    "response_en": "To add KasoLife to your home screen: iPhone (Safari) → Share button → 'Add to Home Screen' → Add. Android (Chrome) → 3-dot menu → 'Add to Home screen'."
+  },
+  {
+    "id": "CGU-01",
+    "category": "cgu",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["cgu", "conditions generales", "terms of service", "regles"],
+    "response_fr": "Nos Conditions Générales d'Utilisation sont disponibles dans l'app : Menu → CGU. Elles couvrent les catégories de contenu autorisées, la devise xcon, les commissions, les retraits et la confidentialité.",
+    "response_en": "Our Terms of Service are available in the app: Menu → Terms. They cover allowed content categories, the xcon currency, commissions, withdrawals and privacy."
+  },
+  {
+    "id": "CGU-02",
+    "category": "cgu",
+    "priority": "MEDIUM",
+    "escalate_to_admin": true,
+    "keywords": ["fermer mon compte", "supprimer mon compte", "close account", "delete account"],
+    "response_fr": "Vous pouvez demander la fermeture définitive de votre compte en répondant à ce message. Notez que tout solde en attente devra être retiré avant la clôture (KYC requis pour les créateurs).",
+    "response_en": "You can request permanent account closure by replying to this message. Note that any pending balance must be withdrawn before closure (KYC required for creators)."
+  },
+  {
+    "id": "CGU-03",
+    "category": "cgu",
+    "priority": "LOW",
+    "escalate_to_admin": false,
+    "keywords": ["donnees personnelles", "confidentialite", "personal data", "privacy", "rgpd"],
+    "response_fr": "Vos données sont utilisées uniquement pour la gestion de votre compte, les transactions et la conformité réglementaire. Pour toute demande de suppression de données, contactez support@kasolife.com.",
+    "response_en": "Your data is used only for account management, transactions, and regulatory compliance. For any data deletion request, contact support@kasolife.com."
+  }
+]
