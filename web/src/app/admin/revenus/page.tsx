@@ -110,7 +110,7 @@ export default function FinancesPage() {
           <div className="flex rounded-xl border border-ink-line/50 bg-ink-raised p-1 gap-1">
             {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
               <button key={p} onClick={() => setPeriod(p)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === p ? "bg-gold text-ink" : "text-sage hover:text-cream"}`}>
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === p ? "bg-gold text-white" : "text-sage hover:text-cream"}`}>
                 {PERIOD_LABELS[p]}
               </button>
             ))}
@@ -346,7 +346,7 @@ export default function FinancesPage() {
             <div className="flex rounded-xl border border-ink-line/50 bg-ink-raised p-1 gap-1">
               {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
                 <button key={p} onClick={() => { setCanauxPeriod(p); setTimeout(loadCanaux, 50); }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${canauxPeriod === p ? "bg-gold text-ink" : "text-sage hover:text-cream"}`}>
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${canauxPeriod === p ? "bg-gold text-white" : "text-sage hover:text-cream"}`}>
                   {PERIOD_LABELS[p]}
                 </button>
               ))}

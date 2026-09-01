@@ -145,7 +145,7 @@ export default function SupportPage() {
           <button
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold text-ink disabled:opacity-40 hover:bg-gold-bright transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold text-white disabled:opacity-40 hover:bg-gold-bright transition-colors"
           >
             <Send className="h-4 w-4" />
           </button>

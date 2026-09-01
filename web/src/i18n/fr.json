@@ -3,13 +3,19 @@
     "loading": "Chargement…",
     "error": "Une erreur est survenue.",
     "save": "Enregistrer",
+    "saving": "Enregistrement…",
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "delete": "Supprimer",
     "edit": "Modifier",
     "back": "Retour",
     "search": "Rechercher",
-    "noResult": "Aucun résultat."
+    "noResult": "Aucun résultat.",
+    "close": "Fermer",
+    "comingSoon": "Bientôt disponible",
+    "language": "Langue",
+    "yes": "Oui",
+    "no": "Non"
   },
   "admin": {
     "dashboard": "Tableau de bord",
@@ -28,9 +34,14 @@
   },
   "wallet": {
     "availableBalance": "Solde disponible",
+    "pendingEarnings": "Revenus en attente",
     "deposit": "Recharger",
+    "depositLabel": "Montant à recharger",
+    "depositContinue": "Continuer le dépôt",
     "withdraw": "Retirer",
+    "withdrawLabel": "Montant à retirer",
     "history": "Historique",
+    "noTransactions": "Aucune transaction pour le moment.",
     "tx": {
       "DEPOSIT": "Dépôt",
       "WITHDRAWAL": "Retrait",
@@ -46,6 +57,131 @@
     "messages": "Messages",
     "wallet": "Wallet",
     "profile": "Profil",
-    "discover": "Découvrir"
+    "discover": "Découvrir",
+    "all": "Tout",
+    "subscriptions": "Abonnements",
+    "becomeCreator": "Devenir créateur",
+    "filterByCategory": "Filtrer par catégorie",
+    "login": "Connexion",
+    "signup": "Inscription"
+  },
+  "home": {
+    "noContent": "Aucun contenu pour le moment",
+    "noContentSub": "Suivez des créateurs pour voir leurs publications apparaître ici."
+  },
+  "auth": {
+    "loginTitle": "Connexion",
+    "loginSubtitle": "Ravi de vous revoir sur KasoLife",
+    "signupTitle": "Créer un compte",
+    "signupSubtitle": "Rejoignez la communauté KasoLife",
+    "phone": "Numéro de téléphone",
+    "password": "Mot de passe",
+    "pseudo": "Pseudo",
+    "pseudoHint": "3 à 20 caractères, lettres, chiffres et underscores",
+    "fullName": "Nom complet",
+    "birthDate": "Date de naissance",
+    "country": "Pays",
+    "ageNotice": "Vous devez avoir au moins 18 ans pour utiliser KasoLife.",
+    "loginButton": "Se connecter",
+    "signupButton": "Créer mon compte",
+    "loggingIn": "Connexion…",
+    "signingUp": "Création du compte…",
+    "loginError": "Numéro de téléphone ou mot de passe incorrect.",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "noAccount": "Pas encore de compte ?"
+  },
+  "becomeCreator": {
+    "title": "Devenir créateur",
+    "displayName": "Nom affiché",
+    "subscriptionPrice": "Prix d'abonnement mensuel (xcon)",
+    "verifyIdentity": "Vérifier mon identité",
+    "submit": "Envoyer ma candidature",
+    "submitting": "Envoi en cours…"
+  },
+  "creatorCard": {
+    "subscribers": "abonnés"
+  },
+  "creatorDashboard": {
+    "revenue30d": "Revenus (30 jours)",
+    "subscribersStat": "Abonnés",
+    "publicationsStat": "Publications",
+    "pendingBalance": "Solde en attente",
+    "noPosts": "Vous n'avez publié aucun contenu pour le moment.",
+    "noSubscribers": "Aucun abonné pour le moment.",
+    "subscribedSince": "Abonné depuis le {date}",
+    "notRenewed": "Non renouvelé",
+    "textOnly": "Texte seul",
+    "videoStudio": "Studio vidéo",
+    "exportImportError": "Impossible d'exporter ou d'importer les données."
+  },
+  "creatorProfile": {
+    "notFound": "Ce créateur est introuvable.",
+    "posts": "publications",
+    "subscribers": "abonnés"
+  },
+  "kyc": {
+    "start": "Vérifier mon identité",
+    "starting": "Préparation de la vérification…",
+    "backToProfile": "Retour au profil",
+    "result": {
+      "processing": "Votre vérification d'identité est en cours de traitement.",
+      "verified": "Votre identité a été vérifiée avec succès !",
+      "becomeCreator": "Devenir créateur"
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "none": "Aucune conversation pour le moment.",
+    "typeMessage": "Écrivez un message…",
+    "media": "Média",
+    "sendError": "Impossible d'envoyer le message.",
+    "tipError": "Impossible d'envoyer le pourboire.",
+    "unlockError": "Impossible de débloquer ce contenu."
+  },
+  "post": {
+    "unlock": "Débloquer",
+    "unlockFor": "Débloquer pour {price} xcon",
+    "unlocking": "Déblocage…",
+    "subscribersOnly": "Réservé aux abonnés",
+    "subscribeToAccess": "Abonnez-vous pour accéder à ce contenu",
+    "subscribers": "abonnés",
+    "viewProfile": "Voir le profil",
+    "purchaseError": "Impossible de finaliser l'achat."
+  },
+  "postEditor": {
+    "captionPlaceholder": "Écrivez une légende…",
+    "uploadPrompt": "Glissez un fichier ou cliquez pour parcourir",
+    "uploadingProgress": "Envoi en cours… {progress}%",
+    "generateWithAI": "Générer avec l'IA",
+    "generating": "Génération en cours…",
+    "visibilityPublic": "Public",
+    "visibilitySubscribers": "Abonnés uniquement",
+    "visibilityPPV": "Payant (PPV)",
+    "mediaType": {
+      "IMAGE": "Image",
+      "VIDEO": "Vidéo",
+      "AUDIO": "Audio",
+      "TEXT": "Texte"
+    },
+    "publish": "Publier",
+    "publishing": "Publication…"
+  },
+  "profile": {
+    "logout": "Déconnexion",
+    "phoneNumber": "Numéro de téléphone",
+    "sendCode": "Envoyer le code",
+    "smsCode": "Code SMS",
+    "verified": "Vérifié",
+    "unverified": "Non vérifié",
+    "mobileMoneyNumbers": "Numéros Mobile Money",
+    "aboutPlaceholder": "Parlez un peu de vous…"
+  },
+  "subscriptions": {
+    "title": "Mes abonnements",
+    "none": "Vous n'êtes abonné à aucun créateur pour le moment.",
+    "discover": "Découvrir des créateurs",
+    "renewsOn": "Renouvelle le {date}",
+    "cancelRenewal": "Annuler le renouvellement",
+    "reactivate": "Réactiver"
   }
 }

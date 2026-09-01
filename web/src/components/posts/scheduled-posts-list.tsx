@@ -115,7 +115,7 @@ export function ScheduledPostsList() {
               <div className="flex items-center gap-1 text-xs text-sage-muted mt-1">
                 <Clock className="w-3 h-3" />
                 <span>{scheduled.toLocaleString()}</span>
-                {isoon && <span className="text-coral ml-2">Bientôt !</span>}
+                {issoon && <span className="text-coral ml-2">Bientôt !</span>}
               </div>
             </div>
             <div className="flex gap-1 flex-col">

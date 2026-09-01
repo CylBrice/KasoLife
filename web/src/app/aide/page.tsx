@@ -240,7 +240,7 @@ export default function AidePage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-sage-muted">Tu n&apos;as pas trouvé ta réponse ?</p>
-          <Link href="/support" className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">
+          <Link href="/support" className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-medium text-white hover:bg-gold-bright transition-colors">
             <IconChat />
             Contacter le support
           </Link>

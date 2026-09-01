@@ -3,7 +3,13 @@ import Cookies from "js-cookie";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+  timeout: 15000,
 });
+
+/** Événement émis quand une requête échoue en 401 — AuthProvider s'y abonne
+ * pour vider son état et rediriger, au lieu de laisser l'UI croire à tort
+ * que l'utilisateur est toujours connecté. */
+export const AUTH_UNAUTHORIZED_EVENT = "kasolife:unauthorized";
 
 // Attache le token JWT à chaque requête si présent
 api.interceptors.request.use((config) => {
@@ -14,12 +20,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Sur 401, nettoie la session locale (la page concernée gère la redirection)
+// Sur 401, nettoie la session locale et notifie l'app (AuthProvider redirige)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       Cookies.remove("kasolife_token");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+      }
     }
     return Promise.reject(error);
   }
