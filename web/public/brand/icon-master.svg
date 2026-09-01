@@ -6,7 +6,7 @@
     </linearGradient>
     <linearGradient id="kFill" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#B83F52"/>
-      <stop offset="45%" stop-color="#BBDEFB"/>
+      <stop offset="40%" stop-color="#BBDEFB"/>
       <stop offset="100%" stop-color="#90CAF9"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
