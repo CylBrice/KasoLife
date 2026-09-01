@@ -44,6 +44,7 @@ const config: Config = {
         display: ["var(--font-fraunces)", "serif"],
         sans: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-space-mono)", "monospace"],
+        brand: ["var(--font-jakarta)", "sans-serif"],
       },
       backgroundImage: {
         "lattice": "url('/lattice.svg')",

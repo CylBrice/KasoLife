@@ -2,17 +2,22 @@ import Link from "next/link";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={`flex items-center gap-2 ${className ?? ""}`}>
-      <svg width="28" height="28" viewBox="0 0 48 48" className="shrink-0">
-        <rect width="48" height="48" rx="10" fill="#16302A" />
-        <g stroke="#E8A33D" strokeWidth="3" fill="none" strokeLinecap="round">
-          <path d="M10 10 L38 38 M38 10 L10 38" opacity="0.9" />
-        </g>
-        <circle cx="24" cy="24" r="4" fill="#E8A33D" />
-      </svg>
-      <span className="font-display text-lg font-semibold tracking-tight text-cream">
-        KasoLife
+    <Link href="/" className={`flex items-center gap-1.5 ${className ?? ""}`}>
+      <span className="font-brand text-xl font-extrabold tracking-tight text-cream">
+        Kaso
       </span>
+      <span className="font-brand text-xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">
+        Life
+      </span>
+      <svg width="16" height="16" viewBox="0 0 20 20" className="shrink-0 -ml-0.5">
+        <defs>
+          <linearGradient id="logo-dot" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#0F9488" />
+            <stop offset="100%" stopColor="#8B1538" />
+          </linearGradient>
+        </defs>
+        <circle cx="10" cy="10" r="9" fill="url(#logo-dot)" />
+      </svg>
     </Link>
   );
 }

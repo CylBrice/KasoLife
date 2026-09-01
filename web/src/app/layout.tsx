@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces, Space_Mono } from "next/font/google";
+import { Inter, Fraunces, Space_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LocaleProvider } from "@/i18n/locale-context";
@@ -25,6 +25,15 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
+// Alternative gratuite (Google Fonts) au look d'Aeonik — utilisée pour le
+// wordmark de marque. Remplaçable par Aeonik si une licence est acquise.
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["700", "800"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "KasoLife — Soutenez vos créateurs préférés",
   description:
@@ -39,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body
-        className={`${inter.variable} ${fraunces.variable} ${spaceMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${fraunces.variable} ${spaceMono.variable} ${jakarta.variable} font-sans antialiased`}
       >
         <LocaleProvider>
           <AuthProvider>{children}</AuthProvider>
