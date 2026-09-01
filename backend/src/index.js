@@ -80,6 +80,9 @@ const supportRouter       = require('./routes/support');
 const configRouter        = require('./routes/config');
 const kycRouter           = require('./routes/kyc');
 const docsRouter          = require('./routes/docs');
+const promoCodesRouter    = require('./routes/promo-codes');
+const broadcastsRouter    = require('./routes/broadcasts');
+const analyticsRouter     = require('./routes/analytics');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -146,6 +149,9 @@ app.use('/support',       supportRouter);
 app.use('/config',        configRouter);
 app.use('/kyc',           kycRouter);
 app.use('/docs',          docsRouter);
+app.use('/promo-codes',   promoCodesRouter);
+app.use('/messages/broadcast', broadcastsRouter);
+app.use('/creators/me/analytics', analyticsRouter);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));
