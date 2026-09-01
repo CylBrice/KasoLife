@@ -35,13 +35,19 @@ const initDeposit = async (userId, montantXcon, returnUrl) => {
 };
 
 // ── Vérifier une transaction ──────────────────────────────────────────────────
+// Retourne le montant/devise RÉELLEMENT confirmés par CinetPay (jamais ceux du
+// webhook, falsifiables) — null si la transaction n'est pas ACCEPTED.
 const verifyTransaction = async (txId) => {
   const { data } = await axios.post(CINETPAY_VERIFY, {
     apikey:         process.env.CINETPAY_API_KEY,
     site_id:        process.env.CINETPAY_SITE_ID,
     transaction_id: txId,
   });
-  return data.data?.status === 'ACCEPTED';
+  if (data.data?.status !== 'ACCEPTED') return null;
+  return {
+    amountFCFA: Number(data.data.amount),
+    currency:   data.data.currency,
+  };
 };
 
 // ── Initier un retrait vers Mobile Money ──────────────────────────────────────

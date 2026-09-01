@@ -107,14 +107,21 @@ router.post('/deposit', depositLimit, authMiddleware, requireKYC, requireNotWall
     const { data: user } = await supabase.from('users')
       .select('kyc_status').eq('id', req.user.id).single();
     const limits = await getKycLimits(user?.kyc_status);
-    if (limits.depot_max > 0) {
-      const depotMois = await getMonthlyCumul(req.user.id, 'DEPOT');
-      if (depotMois + montant_xcon > limits.depot_max) {
+
+    // Vérification + réservation atomique du plafond (verrou DB, ferme la
+    // course entre deux dépôts simultanés — voir migration 008)
+    const { data: reservationId, error: kycErr } = await supabase.rpc('reserve_kyc_cumul', {
+      p_user_id: req.user.id, p_type: 'DEPOT', p_pending_type: 'DEPOT_PENDING',
+      p_amount: montant_xcon, p_max_month: limits.depot_max,
+    });
+    if (kycErr) {
+      if (kycErr.message?.includes('KYC_LIMIT_EXCEEDED')) {
         return res.status(400).json({
-          error: `Plafond dépôt mensuel atteint. Plafond : ${limits.depot_max} xcon. Déjà déposé : ${depotMois} xcon. Complétez votre KYC pour des limites plus élevées.`,
+          error: `Plafond dépôt mensuel atteint (${limits.depot_max} xcon). Complétez votre KYC pour des limites plus élevées.`,
           kyc_upgrade_required: true,
         });
       }
+      throw kycErr;
     }
 
     // Point 3 : utiliser user_mobile_money (table officielle), mobile_money_id requis
@@ -128,16 +135,9 @@ router.post('/deposit', depositLimit, authMiddleware, requireKYC, requireNotWall
     let phone; try { phone = decrypt(mmDep.phone); } catch { phone = mmDep.phone; }
     const operator = mmDep.operator;
 
-    // M1 : créer DEPOT_PENDING en base AVANT l'appel agrégateur
-    // Garantit la traçabilité même si le webhook arrive avant la réponse frontend
-    const pendingTxId = require('crypto').randomUUID();
-    const pendingRef  = `PENDING_${Date.now()}_${req.user.id.slice(0, 8)}`;
-    await supabase.from('transactions').insert({
-      id: pendingTxId, user_id: req.user.id,
-      type: 'DEPOT_PENDING', amount_xcon: montant_xcon,
-      balance_after: 0, gateway_ref: pendingRef,
-      description: `Dépôt initié — ${montant_xcon} xcon`,
-    });
+    // La ligne DEPOT_PENDING existe déjà (créée atomiquement par reserve_kyc_cumul
+    // ci-dessus) — on la complète avec la référence agrégateur.
+    const pendingTxId = reservationId;
 
     const result = await initDeposit(req.user.id, montant_xcon, phone, operator);
 
@@ -179,15 +179,23 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     const { data: userKyc } = await supabase.from('users')
       .select('kyc_status').eq('id', userId).single();
     const limits = await getKycLimits(userKyc?.kyc_status);
-    if (limits.retrait_max > 0) {
-      const retraitMois = await getMonthlyCumul(userId, 'RETRAIT');
-      if (retraitMois + montant_xcon > limits.retrait_max) {
+
+    // Vérification + réservation atomique du plafond (verrou DB — migration 008)
+    const { data: kycReservationId, error: kycErr } = await supabase.rpc('reserve_kyc_cumul', {
+      p_user_id: userId, p_type: 'RETRAIT', p_pending_type: 'RETRAIT_PENDING',
+      p_amount: montant_xcon, p_max_month: limits.retrait_max,
+    });
+    if (kycErr) {
+      if (kycErr.message?.includes('KYC_LIMIT_EXCEEDED')) {
         return res.status(400).json({
-          error: `Plafond retrait mensuel atteint. Plafond : ${limits.retrait_max} xcon. Complétez votre KYC pour des limites plus élevées.`,
+          error: `Plafond retrait mensuel atteint (${limits.retrait_max} xcon). Complétez votre KYC pour des limites plus élevées.`,
           kyc_upgrade_required: true,
         });
       }
+      throw kycErr;
     }
+    // Annule la réservation si une étape suivante échoue avant la confirmation
+    const releaseReservation = () => supabase.from('transactions').delete().eq('id', kycReservationId).then(() => {}, () => {});
 
     // Limite journalière
     const retraitMaxDay     = await getConfig('RETRAIT_MAX_DAY_XCON', RETRAIT_MAX_DAY_XCON);
@@ -250,6 +258,7 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     try {
       payoutResult = await initPayout(targetPhone, montant_verse, targetOperator, userId, preferredProvider);
     } catch (payoutErr) {
+      await releaseReservation();
       return res.status(502).json({
         error: `Passerelle de paiement indisponible. Votre solde n'a pas été modifié. Réessayez dans quelques minutes.`,
       });
@@ -259,7 +268,10 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     const { error: debitErr } = await supabase.rpc('debit_wallet', {
       p_user_id: userId, p_amount: montant_xcon,
     });
-    if (debitErr) return res.status(400).json({ error: debitErr.message });
+    if (debitErr) {
+      await releaseReservation();
+      return res.status(400).json({ error: debitErr.message });
+    }
 
     await supabase.from('platform_revenue').insert({
       source_type: 'COMMISSION_RETRAIT', amount_xcon: commission, user_id: userId,
@@ -272,21 +284,23 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     // Point 11 : incrémentation atomique total_withdrawn
     await supabase.rpc('increment_total_withdrawn', { p_user_id: userId, p_amount: montant_xcon });
 
-    await supabase.from('transactions').insert([
-      {
-        id: uuidv4(), user_id: userId, type: 'RETRAIT',
-        amount_xcon: montant_xcon,
+    // Convertit la réservation KYC (RETRAIT_PENDING) en transaction finale —
+    // garde le même id pour que le plafond mensuel continue à la compter.
+    await supabase.from('transactions')
+      .update({
+        type: 'RETRAIT',
         balance_after: walletAfter.balance_xcon,
         gateway:     (payoutResult.provider || 'cinetpay').toUpperCase(),
         gateway_ref: payoutResult.txId,
         description: `Retrait ${targetOperator} ${targetPhone}`,
-      },
-      {
-        id: uuidv4(), user_id: userId, type: 'COMMISSION_RETRAIT',
-        amount_xcon: commission,
-        balance_after: walletAfter.balance_xcon,
-      },
-    ]);
+      })
+      .eq('id', kycReservationId);
+
+    await supabase.from('transactions').insert({
+      id: uuidv4(), user_id: userId, type: 'COMMISSION_RETRAIT',
+      amount_xcon: commission,
+      balance_after: walletAfter.balance_xcon,
+    });
 
     res.json({
       success:            true,
