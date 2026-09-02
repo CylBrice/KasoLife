@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useT } from "@/i18n/locale-context";
 import { useEffect } from "react";
@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const t = useT();
   const { user, loading } = useAuth();
   const router = useRouter();
-  const isSuperAdmin = user?.role === "SUPERADMIN";
+  const isSuperAdmin = ["super_admin","root_admin"].includes(user?.role);
 
   /* ── Onglets communs ADMIN + SUPERADMIN ── */
   const NAV_COMMON: NavItem[] = [
@@ -42,10 +42,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push("/connexion"); return; }
-    if (user.role !== "ADMIN" && user.role !== "SUPERADMIN") router.push("/");
+    if (!["admin","super_admin","root_admin"].includes(user.role)) router.push("/");
   }, [loading, user, router]);
 
-  if (loading || !user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) return null;
+  if (loading || !user || (!["admin","super_admin","root_admin"].includes(user.role))) return null;
 
   return <DashboardShell navItems={NAV} isSuperAdmin={isSuperAdmin}>{children}</DashboardShell>;
 }

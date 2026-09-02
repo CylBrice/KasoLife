@@ -1,19 +1,20 @@
 // ============================================================
-// KASOLIFE — Routes /admin v1.0
-// Dashboard, gestion utilisateurs, validation candidatures créateurs,
-// modération de contenu, gestion des retraits (payouts), maintenance
-// Toutes les routes nécessitent role ADMIN ou SUPERADMIN
+// KASOLIFE — Routes /admin v2.0
+// Hiérarchie : user < influencer < admin < super_admin < root_admin
+// requireMinRole('admin')      → admin, super_admin, root_admin
+// requireMinRole('super_admin')→ super_admin, root_admin
+// requireMinRole('root_admin') → root_admin uniquement
 // ============================================================
 'use strict';
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole, canModifyRole } = require('../middleware/auth');
 const { sendPushNotification } = require('../services/notifications');
 const { invalidateAIConfigCache } = require('../services/aiModeration');
 
 const router = express.Router();
-router.use(authMiddleware, requireRole('ADMIN', 'SUPERADMIN'));
+router.use(authMiddleware, requireMinRole('admin'));
 
 // ── Helper : date de début selon période
 const periodStart = (period) => {
@@ -36,7 +37,7 @@ router.get('/stats', async (req, res) => {
   try {
     const [users, creators, posts, revenue, wallets, activeSubs] = await Promise.all([
       supabase.from('users').select('id', { count: 'exact', head: true }),
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'CREATOR'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'influencer'),
       supabase.from('posts').select('id', { count: 'exact', head: true }),
       supabase.from('platform_revenue').select('amount_xcon'),
       supabase.from('wallets').select('balance_xcon, pending_balance_xcon'),
@@ -119,7 +120,7 @@ router.get('/actions', async (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════════
 
 // ── GET /admin/config — toutes les clés platform_config
-router.get('/config', requireRole('SUPERADMIN'), async (req, res) => {
+router.get('/config', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('platform_config')
       .select('key, value, description, updated_at, updated_by')
@@ -130,7 +131,7 @@ router.get('/config', requireRole('SUPERADMIN'), async (req, res) => {
 });
 
 // ── PUT /admin/config/:key — modifier une clé platform_config
-router.put('/config/:key', requireRole('SUPERADMIN'), async (req, res) => {
+router.put('/config/:key', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
@@ -166,12 +167,12 @@ router.put('/config/:key', requireRole('SUPERADMIN'), async (req, res) => {
 // GESTION DES ADMINS — SUPERADMIN uniquement
 // ════════════════════════════════════════════════════════════════════════════════
 
-// ── GET /admin/admins — liste de tous les admins et superadmins
-router.get('/admins', requireRole('SUPERADMIN'), async (req, res) => {
+// ── GET /admin/admins — liste de tous les admins, super_admins, root_admin
+router.get('/admins', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('users')
       .select('id, pseudo, name, role, is_active, kyc_status, created_at, last_active')
-      .in('role', ['ADMIN', 'SUPERADMIN'])
+      .in('role', ['admin', 'super_admin', 'root_admin'])
       .order('role').order('created_at');
     if (error) throw error;
 
@@ -194,23 +195,27 @@ router.get('/admins', requireRole('SUPERADMIN'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── PUT /admin/admins/:id/role — changer le rôle d'un utilisateur (USER→ADMIN ou ADMIN→USER)
-// SUPERADMIN ne peut pas être rétrogradé par cette route (protection)
-router.put('/admins/:id/role', requireRole('SUPERADMIN'), async (req, res) => {
+// ── PUT /admin/users/:id/role — promouvoir ou rétrograder un utilisateur
+// Matrice : admin→influencer max | super_admin→admin max | root_admin→tout
+router.put('/users/:id/role', async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
+    const VALID_ROLES = ['user', 'influencer', 'admin', 'super_admin', 'root_admin'];
 
-    if (!['USER', 'ADMIN'].includes(role))
-      return res.status(400).json({ error: 'Rôle invalide — valeurs acceptées : USER, ADMIN' });
+    if (!VALID_ROLES.includes(role))
+      return res.status(400).json({ error: `Rôle invalide — valeurs acceptées : ${VALID_ROLES.join(', ')}` });
 
     const { data: target } = await supabase.from('users')
       .select('id, pseudo, role').eq('id', id).single();
     if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    if (target.role === 'SUPERADMIN')
-      return res.status(403).json({ error: 'Impossible de modifier le rôle d\'un SUPERADMIN' });
     if (target.id === req.user.id)
       return res.status(403).json({ error: 'Impossible de modifier votre propre rôle' });
+
+    if (!canModifyRole(req.user.role, target.role, role))
+      return res.status(403).json({
+        error: `Un ${req.user.role} ne peut pas changer le rôle d'un ${target.role} vers ${role}`,
+      });
 
     await supabase.from('users').update({ role }).eq('id', id);
 
@@ -220,13 +225,12 @@ router.put('/admins/:id/role', requireRole('SUPERADMIN'), async (req, res) => {
       metadata: { pseudo: target.pseudo, old_role: target.role, new_role: role },
     });
 
-    const action = role === 'ADMIN' ? 'promu Admin' : 'rétrogradé Utilisateur';
-    res.json({ message: `@${target.pseudo} ${action}`, id, role });
+    res.json({ message: `@${target.pseudo} : rôle changé de ${target.role} → ${role}`, id, role });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── POST /admin/admins/:id/suspend — suspendre un admin (SUPERADMIN only)
-router.post('/admins/:id/suspend', requireRole('SUPERADMIN'), async (req, res) => {
+// ── POST /admin/admins/:id/suspend — suspendre un admin (super_admin seulement, pas root_admin)
+router.post('/admins/:id/suspend', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -235,12 +239,13 @@ router.post('/admins/:id/suspend', requireRole('SUPERADMIN'), async (req, res) =
     const { data: target } = await supabase.from('users')
       .select('id, pseudo, role').eq('id', id).single();
     if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    if (target.role === 'SUPERADMIN')
-      return res.status(403).json({ error: 'Impossible de suspendre un SUPERADMIN' });
+    if (target.role === 'super_admin' || target.role === 'root_admin')
+      return res.status(403).json({ error: 'Impossible de suspendre un super_admin ou root_admin par cette route' });
     if (target.id === req.user.id)
       return res.status(403).json({ error: 'Impossible de se suspendre soi-même' });
 
     await supabase.from('users').update({ is_active: false }).eq('id', id);
+    await supabase.from('refresh_tokens').update({ revoked: true }).eq('user_id', id);
 
     await supabase.from('admin_actions').insert({
       admin_id: req.user.id, action: 'SUSPEND_ADMIN',
@@ -248,17 +253,19 @@ router.post('/admins/:id/suspend', requireRole('SUPERADMIN'), async (req, res) =
       metadata: { pseudo: target.pseudo, reason: reason.trim() },
     });
 
-    res.json({ message: `Compte admin @${target.pseudo} suspendu` });
+    res.json({ message: `Compte @${target.pseudo} suspendu` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── POST /admin/admins/:id/reactivate — réactiver un admin (SUPERADMIN only)
-router.post('/admins/:id/reactivate', requireRole('SUPERADMIN'), async (req, res) => {
+// ── POST /admin/admins/:id/reactivate — réactiver un admin (super_admin seulement)
+router.post('/admins/:id/reactivate', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { data: target } = await supabase.from('users')
       .select('id, pseudo, role').eq('id', id).single();
     if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (target.role === 'super_admin' || target.role === 'root_admin')
+      return res.status(403).json({ error: 'Impossible de réactiver un super_admin ou root_admin par cette route' });
 
     await supabase.from('users').update({ is_active: true }).eq('id', id);
 
@@ -268,7 +275,61 @@ router.post('/admins/:id/reactivate', requireRole('SUPERADMIN'), async (req, res
       metadata: { pseudo: target.pseudo },
     });
 
-    res.json({ message: `Compte admin @${target.pseudo} réactivé` });
+    res.json({ message: `Compte @${target.pseudo} réactivé` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
+// GESTION DES SUPER ADMINS — root_admin uniquement
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ── POST /admin/super-admins/:id/suspend — suspendre un super_admin (root_admin only)
+router.post('/super-admins/:id/suspend', requireMinRole('root_admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    if (!reason?.trim()) return res.status(400).json({ error: 'Motif requis' });
+
+    const { data: target } = await supabase.from('users')
+      .select('id, pseudo, role').eq('id', id).single();
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (target.role !== 'super_admin')
+      return res.status(400).json({ error: 'Cet utilisateur n\'est pas un super_admin' });
+    if (target.id === req.user.id)
+      return res.status(403).json({ error: 'Impossible de se suspendre soi-même' });
+
+    await supabase.from('users').update({ is_active: false }).eq('id', id);
+    await supabase.from('refresh_tokens').update({ revoked: true }).eq('user_id', id);
+
+    await supabase.from('admin_actions').insert({
+      admin_id: req.user.id, action: 'SUSPEND_SUPER_ADMIN',
+      target_type: 'user', target_id: id,
+      metadata: { pseudo: target.pseudo, reason: reason.trim() },
+    });
+
+    res.json({ message: `Compte super_admin @${target.pseudo} suspendu` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /admin/super-admins/:id/reactivate — réactiver un super_admin (root_admin only)
+router.post('/super-admins/:id/reactivate', requireMinRole('root_admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: target } = await supabase.from('users')
+      .select('id, pseudo, role').eq('id', id).single();
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (target.role !== 'super_admin')
+      return res.status(400).json({ error: 'Cet utilisateur n\'est pas un super_admin' });
+
+    await supabase.from('users').update({ is_active: true }).eq('id', id);
+
+    await supabase.from('admin_actions').insert({
+      admin_id: req.user.id, action: 'REACTIVATE_SUPER_ADMIN',
+      target_type: 'user', target_id: id,
+      metadata: { pseudo: target.pseudo },
+    });
+
+    res.json({ message: `Compte super_admin @${target.pseudo} réactivé` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -278,7 +339,7 @@ router.post('/admins/:id/reactivate', requireRole('SUPERADMIN'), async (req, res
 // ════════════════════════════════════════════════════════════════════════════════
 
 // ── GET /admin/audit — journal paginé des actions admin avec filtres
-router.get('/audit', requireRole('SUPERADMIN'), async (req, res) => {
+router.get('/audit', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { action, admin_id, target_type, page = 1, limit = 50 } = req.query;
     const safeLmt = Math.min(Number(limit) || 50, 100);
@@ -336,9 +397,11 @@ router.get('/users', async (req, res) => {
 });
 
 const canModerate = (actorRole, targetRole) => {
-  if (targetRole === 'SUPERADMIN') return false;
-  if (actorRole === 'SUPERADMIN') return ['USER', 'CREATOR', 'ADMIN'].includes(targetRole);
-  if (actorRole === 'ADMIN')      return ['USER', 'CREATOR'].includes(targetRole);
+  if (targetRole === 'root_admin') return false;
+  if (actorRole === 'root_admin') return true;
+  if (targetRole === 'super_admin') return false;
+  if (actorRole === 'super_admin') return ['user', 'influencer', 'admin'].includes(targetRole);
+  if (actorRole === 'admin') return ['user', 'influencer'].includes(targetRole);
   return false;
 };
 
@@ -388,24 +451,11 @@ router.put('/users/:id/reactivate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/users/:id/promote', requireRole('SUPERADMIN'), async (req, res) => {
-  try {
-    const { role } = req.body;
-    if (!['USER', 'CREATOR', 'ADMIN'].includes(role))
-      return res.status(400).json({ error: 'Rôle invalide' });
-
-    const { data: target } = await supabase.from('users').select('id, role').eq('id', req.params.id).single();
-    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    if (target.role === 'SUPERADMIN') return res.status(403).json({ error: 'Impossible de modifier un SUPERADMIN' });
-
-    await supabase.from('users').update({ role }).eq('id', req.params.id);
-
-    await supabase.from('admin_actions').insert({
-      admin_id: req.user.id, action: 'CHANGE_ROLE',
-      target_type: 'user', target_id: req.params.id, metadata: { new_role: role, previous_role: target.role },
-    });
-    res.json({ message: `Rôle mis à jour : ${role}` });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+// Route legacy — redirige vers PUT /admin/users/:id/role
+router.post('/users/:id/promote', async (req, res) => {
+  req.url = `/${req.params.id}/role`;
+  req.method = 'PUT';
+  router.handle(req, res, () => {});
 });
 
 
@@ -437,7 +487,7 @@ router.post('/creator-applications/:id/approve', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     if (user.kyc_status !== 'VERIFIED')
       return res.status(400).json({ error: "L'utilisateur doit avoir un KYC vérifié pour devenir créateur" });
-    if (user.role === 'CREATOR') return res.status(400).json({ error: 'Cet utilisateur est déjà créateur' });
+    if (user.role === 'influencer') return res.status(400).json({ error: 'Cet utilisateur est déjà influenceur' });
 
     let subscriptionPrice = 1000;
     try {
@@ -451,7 +501,7 @@ router.post('/creator-applications/:id/approve', async (req, res) => {
     });
     if (profileErr) throw profileErr;
 
-    await supabase.from('users').update({ role: 'CREATOR' }).eq('id', application.user_id);
+    await supabase.from('users').update({ role: 'influencer' }).eq('id', application.user_id);
 
     await supabase.from('creator_applications').update({
       status: 'APPROVED', reviewed_by: req.user.id, reviewed_at: new Date().toISOString(),
@@ -715,8 +765,8 @@ router.post('/maintenance/set', async (req, res) => {
     const { status, is_emergency } = req.body;
     const VALID = ['ACTIF', 'READ_ONLY', 'MAINTENANCE', 'FORCE_MAINTENANCE'];
     if (!VALID.includes(status)) return res.status(400).json({ error: 'Statut invalide' });
-    if (status === 'FORCE_MAINTENANCE' && req.user.role !== 'SUPERADMIN')
-      return res.status(403).json({ error: 'Seul un SUPERADMIN peut forcer la maintenance totale' });
+    if (status === 'FORCE_MAINTENANCE' && !['super_admin', 'root_admin'].includes(req.user.role))
+      return res.status(403).json({ error: 'Seul un super_admin ou root_admin peut forcer la maintenance totale' });
 
     const { data: current } = await supabase.from('platform_maintenance')
       .select('status').order('updated_at', { ascending: false }).limit(1).single();
@@ -908,7 +958,7 @@ router.post('/fraud-flags/:id/review', async (req, res) => {
 // CATÉGORIES
 // ════════════════════════════════════════════════════════════════════════════════
 
-router.post('/categories', requireRole('SUPERADMIN'), async (req, res) => {
+router.post('/categories', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { name, slug, description, icon } = req.body;
     if (!name || !slug) return res.status(400).json({ error: 'Nom et slug requis' });
@@ -922,7 +972,7 @@ router.post('/categories', requireRole('SUPERADMIN'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/categories/:id', requireRole('SUPERADMIN'), async (req, res) => {
+router.put('/categories/:id', requireMinRole('super_admin'), async (req, res) => {
   try {
     const { is_active, name, description, icon } = req.body;
     const updates = {};

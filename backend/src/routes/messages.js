@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /messages v1.0
 // Messagerie privée (texte/media, gratuit ou PPV) + pourboires (tips)
 // ============================================================
@@ -104,7 +104,7 @@ router.post('/:userId', authMiddleware, async (req, res) => {
       if (price < PPV_PRICE_MIN || price > PPV_PRICE_MAX)
         return res.status(400).json({ error: `Le prix doit être entre ${PPV_PRICE_MIN} et ${PPV_PRICE_MAX} FCFA` });
       // Seuls les créateurs peuvent envoyer des messages payants
-      if (req.user.role !== 'CREATOR' && !['ADMIN', 'SUPERADMIN'].includes(req.user.role))
+      if (req.user.role === 'user' && !['admin','super_admin','root_admin'].includes(req.user.role))
         return res.status(403).json({ error: 'Seuls les créateurs peuvent envoyer des messages payants' });
     } else {
       isPaid = true; // message gratuit considéré "payé" pour simplifier l'affichage
@@ -129,7 +129,7 @@ router.post('/:userId', authMiddleware, async (req, res) => {
         if (result.distress) {
           // Notifie les admins pour suivi humain (les ressources de crise ne sont
           // jamais affichées automatiquement à l'utilisateur — suivi humain requis)
-          const { data: admins } = await supabase.from('users').select('id').in('role', ['ADMIN', 'SUPERADMIN']);
+          const { data: admins } = await supabase.from('users').select('id').in('role', ['admin','super_admin','root_admin']);
           for (const admin of admins || []) {
             await supabase.from('notifications').insert({
               id: uuidv4(), user_id: admin.id,
@@ -211,7 +211,7 @@ router.post('/:userId/tip', authMiddleware, requireNotWalletFrozen, async (req, 
 
     const { data: receiver } = await supabase.from('users').select('id, role, is_active').eq('id', userId).single();
     if (!receiver || !receiver.is_active) return res.status(404).json({ error: 'Destinataire introuvable' });
-    if (receiver.role !== 'CREATOR') return res.status(400).json({ error: 'Les pourboires sont réservés aux créateurs' });
+    if (receiver.role === 'user') return res.status(400).json({ error: 'Les pourboires sont réservés aux créateurs' });
 
     if (post_id) {
       const { data: post } = await supabase.from('posts').select('id').eq('id', post_id).eq('creator_id', userId).single();

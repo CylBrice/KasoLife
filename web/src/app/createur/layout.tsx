@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,7 @@ export default function CreateurLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push("/connexion"); return; }
-    if (user.role !== "CREATOR" && user.role !== "ADMIN" && user.role !== "SUPERADMIN") {
+    if (!["influencer","admin","super_admin","root_admin"].includes(user.role) && !["admin","super_admin","root_admin"].includes(user.role)) {
       router.push("/devenir-createur");
     }
   }, [loading, user, router]);

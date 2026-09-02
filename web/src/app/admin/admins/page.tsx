@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Shield, ShieldAlert, ShieldOff, ChevronDown, Activity } from "lucide-react";
@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 type Tab = "list" | "activity" | "promote";
 
 interface AdminUser {
-  id: string; pseudo: string; name: string; role: "ADMIN"|"SUPERADMIN";
+  id: string; pseudo: string; name: string; role: "admin"|"super_admin";
   is_active: boolean; kyc_status: string; created_at: string;
   last_active: string|null; actions_30d: number;
 }
@@ -41,7 +41,7 @@ export default function AdminsPage() {
   const handleAction = async (id: string, action: "promote"|"demote"|"suspend"|"reactivate") => {
     setError(null); setActingOn(id);
     try {
-      if (action === "promote")    await api.put(`/admin/admins/${id}/role`, { role: "ADMIN" });
+      if (action === "promote")    await api.put(`/admin/users/${id}/role`, { role: "admin" });
       else if (action === "demote") await api.put(`/admin/admins/${id}/role`, { role: "USER" });
       else if (action === "suspend") {
         const r = prompt("Motif de suspension :"); if (!r) return;
@@ -52,13 +52,13 @@ export default function AdminsPage() {
     finally { setActingOn(null); }
   };
 
-  const superAdmins    = admins.filter(a => a.role === "SUPERADMIN");
+  const superAdmins    = admins.filter(a => a.["super_admin","root_admin"].includes(role));
   const regularAdmins  = admins.filter(a => a.role === "ADMIN");
   const totalActions   = admins.reduce((s, a) => s + a.actions_30d, 0);
 
   const AdminCard = ({ admin }: { admin: AdminUser }) => {
     const ex = expandedId === admin.id;
-    const isSA = admin.role === "SUPERADMIN";
+    const isSA = admin.["super_admin","root_admin"].includes(role);
     return (
       <Card className={!admin.is_active ? "opacity-60" : ""}>
         <CardContent className="p-4">

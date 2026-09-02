@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Route Support
 // Statuts : OPEN / CLOSED
 // Priorités : LOW / MEDIUM / HIGH / URGENT
@@ -15,7 +15,7 @@ const sanitizeHtml = require('sanitize-html');
 const path         = require('path');
 const fs           = require('fs');
 const supabase     = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 const { sendPushNotification } = require('../services/notifications');
 const { sendSMS } = require('../services/sms');
 const {
@@ -89,7 +89,7 @@ const findAutoResponse = (message, lang = 'fr') => {
 const notifySuperAdmins = async (title, body, data = {}) => {
   try {
     const { data: admins } = await supabase.from('users')
-      .select('id, phone').eq('role', 'SUPERADMIN').eq('is_active', true);
+      .select('id, phone').eq('role', 'super_admin').eq('is_active', true);
     if (!admins?.length) return;
     await Promise.all(admins.map(async (admin) => {
       await sendPushNotification(admin.id, title, body, data).catch(() => {});
@@ -237,7 +237,7 @@ router.put('/:id/mark-read', authMiddleware, async (req, res) => {
 });
 
 // ── POST /support/:id/reply — Répondre (admin) ────────────────────────────────
-router.post('/:id/reply', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.post('/:id/reply', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { message } = req.body;
@@ -282,7 +282,7 @@ router.post('/:id/reply', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), as
 });
 
 // ── PUT /support/admin/:id/status — Changer statut OPEN/CLOSED ───────────────
-router.put('/admin/:id/status', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.put('/admin/:id/status', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -296,7 +296,7 @@ router.put('/admin/:id/status', authMiddleware, requireRole('ADMIN', 'SUPERADMIN
 });
 
 // ── PUT /support/admin/:id/priority — Changer priorité ───────────────────────
-router.put('/admin/:id/priority', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.put('/admin/:id/priority', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { priority } = req.body;
@@ -320,7 +320,7 @@ router.put('/admin/:id/priority', authMiddleware, requireRole('ADMIN', 'SUPERADM
 });
 
 // ── GET /support/admin/all — Tous les tickets (admin) ────────────────────────
-router.get('/admin/all', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/admin/all', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { limit = 50, offset = 0, status, priority } = req.query;
     let query = supabase.from('support_messages')
@@ -337,7 +337,7 @@ router.get('/admin/all', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), asy
 });
 
 // ── GET /support/admin/unread — Compteur non lus (admin) ─────────────────────
-router.get('/admin/unread', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/admin/unread', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { count } = await supabase.from('support_messages')
       .select('id', { count: 'exact', head: true })
@@ -347,7 +347,7 @@ router.get('/admin/unread', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), 
 });
 
 // ── GET /support/admin/conversation/:userId ───────────────────────────────────
-router.get('/admin/conversation/:userId', authMiddleware, requireRole('ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/admin/conversation/:userId', authMiddleware, requireMinRole('admin'), async (req, res) => {
   try {
     const { userId } = req.params;
     if (!validUUID(userId)) return res.status(400).json({ error: 'Identifiant invalide' });
@@ -360,7 +360,7 @@ router.get('/admin/conversation/:userId', authMiddleware, requireRole('ADMIN', '
 });
 
 // ── GET /support/admin/emails — Emails de notification ───────────────────────
-router.get('/admin/emails', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.get('/admin/emails', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('support_notification_emails')
       .select('*').order('created_at', { ascending: true });
@@ -370,7 +370,7 @@ router.get('/admin/emails', authMiddleware, requireRole('SUPERADMIN'), async (re
 });
 
 // ── POST /support/admin/emails — Ajouter un email ────────────────────────────
-router.post('/admin/emails', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.post('/admin/emails', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { email } = req.body;
     if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
@@ -384,7 +384,7 @@ router.post('/admin/emails', authMiddleware, requireRole('SUPERADMIN'), async (r
 });
 
 // ── DELETE /support/admin/emails/:id ─────────────────────────────────────────
-router.delete('/admin/emails/:id', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.delete('/admin/emails/:id', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!validUUID(id)) return res.status(400).json({ error: 'Identifiant invalide' });
@@ -394,7 +394,7 @@ router.delete('/admin/emails/:id', authMiddleware, requireRole('SUPERADMIN'), as
 });
 
 // ── POST /support/admin/ai-report — Rapport IA sur 7 derniers jours ──────────
-router.post('/admin/ai-report', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.post('/admin/ai-report', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const since = new Date(Date.now() - 7 * 24 * 3600000).toISOString();
     const { data: messages } = await supabase.from('support_messages')
@@ -468,7 +468,7 @@ Sois concis, factuel, orienté action.`,
 });
 
 // ── GET /support/admin/ai-reports — Liste des rapports ───────────────────────
-router.get('/admin/ai-reports', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.get('/admin/ai-reports', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('support_ai_reports')
       .select('id, generated_by, messages_count, period_start, period_end, created_at')
@@ -479,7 +479,7 @@ router.get('/admin/ai-reports', authMiddleware, requireRole('SUPERADMIN'), async
 });
 
 // ── GET /support/admin/ai-reports/:id — Détail d'un rapport ──────────────────
-router.get('/admin/ai-reports/:id', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.get('/admin/ai-reports/:id', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!validUUID(id)) return res.status(400).json({ error: 'Identifiant invalide' });
@@ -491,7 +491,7 @@ router.get('/admin/ai-reports/:id', authMiddleware, requireRole('SUPERADMIN'), a
 });
 
 // ── DELETE /support/admin/ai-reports/:id ─────────────────────────────────────
-router.delete('/admin/ai-reports/:id', authMiddleware, requireRole('SUPERADMIN'), async (req, res) => {
+router.delete('/admin/ai-reports/:id', authMiddleware, requireMinRole('super_admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!validUUID(id)) return res.status(400).json({ error: 'Identifiant invalide' });

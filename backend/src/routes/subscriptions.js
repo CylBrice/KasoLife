@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /subscriptions v1.0
 // Abonnement créateur (récurrent, 30 jours), annulation, renouvellement
 // Commission plateforme : 20% prélevés sur chaque paiement
@@ -39,7 +39,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 // ── GET /subscriptions/subscribers — abonnés du créateur connecté
 router.get('/subscribers', authMiddleware, async (req, res) => {
   try {
-    if (!['CREATOR', 'ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (req.user.role === 'user')
       return res.status(403).json({ error: 'Accès réservé aux créateurs' });
 
     const { page = 1, limit = 30 } = req.query;
@@ -75,7 +75,7 @@ router.post('/:creatorId', authMiddleware, requireNotWalletFrozen, async (req, r
 
     const { data: creator } = await supabase.from('users')
       .select('id, role').eq('id', creatorId).single();
-    if (!creator || creator.role !== 'CREATOR')
+    if (!creator || !['influencer','admin','super_admin','root_admin'].includes(creator.role))
       return res.status(404).json({ error: 'Créateur introuvable' });
 
     const { data: profile } = await supabase.from('creator_profiles')

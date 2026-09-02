@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -57,7 +57,7 @@ export default function WalletPage() {
                 {formatFCFA(wallet?.balance_xcon ?? 0)}
               </p>
             </div>
-            {user.role === "CREATOR" && (
+            {user.['influencer','admin','super_admin','root_admin'].includes(role) && (
               <div>
                 <p className="text-sm text-sage">{t("wallet.pendingEarnings")}</p>
                 <p className="font-mono text-xl tabular text-emerald-bright">

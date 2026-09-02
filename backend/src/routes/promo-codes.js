@@ -6,12 +6,12 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 // ── POST /promo-codes — créer un code promo (créateur)
-router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.post('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const {
       code, discount_percent, discount_amount, max_uses, applies_to, expires_at
@@ -62,7 +62,7 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), 
 });
 
 // ── GET /promo-codes — lister mes codes promo
-router.get('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data: codes, error } = await supabase.from('promo_codes')
       .select('id, code, discount_percent, discount_amount, max_uses, uses_count, is_active, applies_to, expires_at, created_at')
@@ -87,7 +87,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     if (error || !code) return res.status(404).json({ error: 'Code introuvable' });
 
     // Si ce n'est pas le créateur et ce n'est pas un admin, on ne montre que les infos publiques
-    if (code.creator_id !== req.user.id && !['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
+    if (code.creator_id !== req.user.id && !['admin', 'super_admin', 'root_admin'].includes(req.user.role)) {
       return res.json({ code: code.code, discount_percent: code.discount_percent, discount_amount: code.discount_amount });
     }
 

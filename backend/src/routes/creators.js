@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /creators v1.0
 // Candidature créateur, profils publics, découverte par catégorie
 // Devenir créateur nécessite KYC_VERIFIED (paiements/retraits sécurisés)
@@ -7,7 +7,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireKYC, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireKYC, requireMinRole } = require('../middleware/auth');
 const { decrypt } = require('../services/encryption');
 const {
   SUBSCRIPTION_PRICE_MIN, SUBSCRIPTION_PRICE_MAX,
@@ -110,7 +110,7 @@ router.get('/:pseudo', async (req, res) => {
     const { data: user } = await supabase.from('users')
       .select('id, pseudo, avatar_url, banner_url, bio, role, created_at')
       .ilike('pseudo', pseudo).single();
-    if (!user || user.role !== 'CREATOR')
+    if (!user || !['influencer','admin','super_admin','root_admin'].includes(user.role))
       return res.status(404).json({ error: 'Créateur introuvable' });
 
     const { data: profile } = await supabase.from('creator_profiles')
@@ -159,7 +159,7 @@ router.post('/apply', authMiddleware, requireKYC, async (req, res) => {
   try {
     const { category_id, display_name, motivation, subscription_price_xcon } = req.body;
 
-    if (req.user.role === 'CREATOR')
+    if (['influencer','admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(400).json({ error: 'Vous êtes déjà créateur' });
 
     if (!category_id || !display_name)
@@ -212,7 +212,7 @@ router.get('/apply/status', authMiddleware, async (req, res) => {
 // ── GET /creators/price-suggestion?category_id=... — suggestion de prix d'abonnement (IA)
 // Utilisable avant candidature (choix du prix de départ) et après (ajustement).
 // ── PUT /creators/me — mise à jour du profil créateur (créateur connecté)
-router.put('/me', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.put('/me', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { display_name, subscription_price_xcon, welcome_message, is_accepting_subs } = req.body;
     const updates = { updated_at: new Date().toISOString() };
@@ -243,7 +243,7 @@ router.put('/me', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'),
 });
 
 // ── GET /creators/me/stats — statistiques pour le tableau de bord créateur
-router.get('/me/stats', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/me/stats', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data: profile } = await supabase.from('creator_profiles')
       .select('subscribers_count, posts_count, total_likes, subscription_price_xcon')
@@ -280,7 +280,7 @@ router.get('/me/stats', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERAD
 });
 
 // ── GET /creators/me/sentiment — répartition du sentiment des commentaires récents
-router.get('/me/sentiment', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/me/sentiment', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
 
@@ -309,7 +309,7 @@ router.get('/me/sentiment', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUP
 });
 
 // ── GET /creators/me/digest — dernier résumé hebdomadaire généré par l'IA
-router.get('/me/digest', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/me/digest', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('creator_digests')
       .select('*').eq('creator_id', req.user.id)

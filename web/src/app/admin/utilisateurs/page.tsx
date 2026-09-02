@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Search, Ban, RotateCcw, ShieldCheck, ShieldAlert } from "lucide-react";
@@ -12,7 +12,7 @@ import type { AdminUser } from "@/types";
 type Tab = "list" | "kyc" | "suspended";
 
 const ROLE_VARIANT: Record<string, "gold" | "emerald" | "default"> = {
-  SUPERADMIN: "gold", ADMIN: "gold", CREATOR: "emerald", USER: "default",
+  super_admin: "gold", root_admin: "gold", admin: "gold", influencer: "emerald", user: "default",
 };
 const KYC_VARIANT: Record<string, "gold" | "emerald" | "default" | "coral"> = {
   VERIFIED: "emerald", PENDING: "gold", FAILED: "coral", SUPPORT: "coral",

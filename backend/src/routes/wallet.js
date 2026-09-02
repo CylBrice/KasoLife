@@ -251,7 +251,7 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     }
 
     // Récupérer le provider préféré du user si SUPERADMIN
-    const preferredProvider = req.user?.role === 'SUPERADMIN'
+    const preferredProvider = ['super_admin', 'root_admin'].includes(req.user?.role)
       ? (req.body.preferred_provider || null) : null;
 
     let payoutResult;

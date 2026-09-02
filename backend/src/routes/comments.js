@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /posts/:postId/comments v1.0
 // CRUD commentaires : créer, lire, supprimer, liker, épingler
 // Support threading (réponses aux commentaires)
@@ -8,7 +8,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 const { moderateText } = require('../services/aiModeration');
 
 const router = express.Router({ mergeParams: true }); // pour accéder à :postId
@@ -373,7 +373,7 @@ router.delete('/:commentId/like', authMiddleware, async (req, res) => {
 });
 
 // ── PUT /posts/:postId/comments/:commentId/pin — épingler un commentaire (créateur du post seulement)
-router.put('/:commentId/pin', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.put('/:commentId/pin', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { postId, commentId } = req.params;
     const userId = req.user.id;

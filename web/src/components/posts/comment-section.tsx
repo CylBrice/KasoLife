@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Heart, MessageCircle, Trash2, Pin } from 'lucide-react';
@@ -204,7 +204,7 @@ export function CommentSection({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm">{comment.user.pseudo}</span>
-              {comment.user.role === 'CREATOR' && (
+              {comment.user.['influencer','admin','super_admin','root_admin'].includes(role) && (
                 <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Créateur</span>
               )}
               {comment.is_pinned && (

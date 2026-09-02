@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /stories v1.0
 // CRUD stories : contenu éphémère 24h
 // ============================================================
@@ -103,7 +103,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const { data: user } = await supabase.from('users')
       .select('role').eq('id', creatorId).single();
 
-    if (user?.role !== 'CREATOR') {
+    if (!['influencer','admin','super_admin','root_admin'].includes(user?.role)) {
       return res.status(403).json({ error: 'Only creators can post stories' });
     }
 

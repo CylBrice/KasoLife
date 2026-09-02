@@ -5,12 +5,12 @@
 'use strict';
 const express = require('express');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET /analytics — statistiques du créateur
-router.get('/', authMiddleware, requireRole('CREATOR'), async (req, res) => {
+router.get('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { period = '30d' } = req.query;
     const days = parseInt(period.replace('d', '')) || 30;
@@ -73,7 +73,7 @@ router.get('/', authMiddleware, requireRole('CREATOR'), async (req, res) => {
 });
 
 // GET /analytics/retention — taux de retention
-router.get('/retention', authMiddleware, requireRole('CREATOR'), async (req, res) => {
+router.get('/retention', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data: result, error } = await supabase.rpc('get_creator_retention', {
       p_creator_id: req.user.id,

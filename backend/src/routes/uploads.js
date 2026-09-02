@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /uploads v1.0
 // Upload de médias (avatars, bannières, contenu posts) vers Supabase Storage
 // Buckets attendus : 'avatars' (public), 'banners' (public), 'posts' (public/privé selon config bucket)
@@ -8,7 +8,7 @@ const express = require('express');
 const multer  = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 const {
   compressImage, compressVideo, compressAudio, generateVideoThumbnail,
   computePerceptualHash, hammingDistance,
@@ -56,7 +56,7 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
     if (!ALLOWED_MIME[type]) return res.status(400).json({ error: 'Type de média invalide' });
 
     // Seuls les créateurs peuvent uploader du contenu de post
-    if (type.startsWith('post_') && !['CREATOR', 'ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (type.startsWith('post_') && req.user.role === 'user')
       return res.status(403).json({ error: 'Réservé aux créateurs' });
 
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier fourni' });
@@ -255,7 +255,7 @@ router.delete('/', authMiddleware, async (req, res) => {
     if (!bucket || !filePath) return res.status(400).json({ error: 'bucket et path requis' });
 
     // Vérifier que le fichier appartient bien à l'utilisateur (préfixe userId/)
-    if (!filePath.startsWith(`${req.user.id}/`) && !['ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
     const { error } = await supabase.storage.from(bucket).remove([filePath]);
@@ -267,11 +267,11 @@ router.delete('/', authMiddleware, async (req, res) => {
 
 // ── POST /uploads/generate-caption — génère une légende IA pour un média déjà uploadé
 // Body : { bucket, path, category_name?, tone? }
-router.post('/generate-caption', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.post('/generate-caption', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { bucket, path: filePath, category_name, tone } = req.body;
     if (!bucket || !filePath) return res.status(400).json({ error: 'bucket et path requis' });
-    if (!filePath.startsWith(`${req.user.id}/`) && !['ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
     const { data, error } = await supabase.storage.from(bucket).download(filePath);

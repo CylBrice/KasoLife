@@ -45,7 +45,7 @@ export interface UserProfile {
   id: string;
   pseudo: string;
   name?: string;
-  role: "USER" | "CREATOR" | "ADMIN" | "SUPERADMIN";
+  role: "user" | "influencer" | "admin" | "super_admin" | "root_admin";
   avatar_url?: string;
   banner_url?: string;
   bio?: string;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -45,7 +45,7 @@ export default function DevenirCreateurPage() {
 
   if (loading || !user) return null;
 
-  if (user.role === "CREATOR") {
+  if (user.['influencer','admin','super_admin','root_admin'].includes(role)) {
     return (
       <PageShell>
         <Card><CardContent className="p-6 text-center">

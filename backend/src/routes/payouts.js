@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /payouts v1.0
 // Demandes de retrait des revenus créateur (pending_balance_xcon)
 // Validation manuelle par un admin (voir routes/admin.js /payouts/:id/approve)
@@ -7,14 +7,14 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireKYC, requireRole, requireNotWalletFrozen } = require('../middleware/auth');
+const { authMiddleware, requireKYC, requireMinRole, requireNotWalletFrozen } = require('../middleware/auth');
 const { decrypt } = require('../services/encryption');
 const { MIN_PAYOUT_AMOUNT, WITHDRAWAL_COMMISSION_RATE } = require('../config/constants');
 
 const router = express.Router();
 
 // ── GET /payouts/me — historique des demandes de retrait du créateur
-router.get('/me', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/me', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data, error } = await supabase.from('payouts')
       .select('*').eq('creator_id', req.user.id)
@@ -25,7 +25,7 @@ router.get('/me', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'),
 });
 
 // ── POST /payouts — demander un retrait depuis le solde en attente
-router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), requireKYC, requireNotWalletFrozen, async (req, res) => {
+router.post('/', authMiddleware, requireMinRole('influencer'), requireKYC, requireNotWalletFrozen, async (req, res) => {
   try {
     const { amount_xcon, mobile_money_id } = req.body;
 
@@ -76,7 +76,7 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), 
 });
 
 // ── DELETE /payouts/:id — annuler une demande en attente
-router.delete('/:id', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.delete('/:id', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { id } = req.params;
     const { data: payout } = await supabase.from('payouts').select('*').eq('id', id).single();

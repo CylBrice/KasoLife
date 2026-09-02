@@ -1,13 +1,23 @@
 // ============================================================
-// KASOLIFE — Middleware Auth v1.0
-// Access Token 15min (JWT)
-// requireKYC : bloque les actions sensibles (devenir créateur, retraits) si kyc_status != VERIFIED
-// requireRole : contrôle d'accès USER / CREATOR / ADMIN / SUPERADMIN
+// KASOLIFE — Middleware Auth v2.0
+// Hiérarchie des rôles :
+//   user=1 | influencer=2 | admin=3 | super_admin=4 | root_admin=5
+// requireMinRole(minRole) : autorise le rang >= minRole
+// requireExactRole(...roles) : autorise uniquement les rôles listés
 // ============================================================
 'use strict';
 const jwt      = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 const { MAINTENANCE_BLOCKS_WALLET, MAINTENANCE_BLOCKS_ALL } = require('../config/constants');
+
+// ── Hiérarchie des rôles
+const ROLE_RANK = {
+  user:        1,
+  influencer:  2,
+  admin:       3,
+  super_admin: 4,
+  root_admin:  5,
+};
 
 // ── Cache léger statut maintenance (rafraîchi toutes les 30s)
 let _maintCache = { status: 'ACTIF', ts: 0 };
@@ -42,8 +52,8 @@ const authMiddleware = async (req, res, next) => {
       .select('id, role, is_active, kyc_status, language')
       .eq('id', decoded.userId).single();
 
-    if (!user)          return res.status(401).json({ error: 'Utilisateur introuvable' });
-    if (!user.is_active)return res.status(403).json({ error: 'Compte suspendu — contactez le support' });
+    if (!user)           return res.status(401).json({ error: 'Utilisateur introuvable' });
+    if (!user.is_active) return res.status(403).json({ error: 'Compte suspendu — contactez le support' });
 
     req.user = user;
     next();
@@ -53,8 +63,22 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
+// ── requireMinRole : autorise rang >= minRole
+// Exemples :
+//   requireMinRole('influencer') → influencer, admin, super_admin, root_admin
+//   requireMinRole('admin')      → admin, super_admin, root_admin
+//   requireMinRole('super_admin')→ super_admin, root_admin
+//   requireMinRole('root_admin') → root_admin uniquement
+const requireMinRole = (minRole) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
+  const userRank = ROLE_RANK[req.user.role] || 0;
+  const minRank  = ROLE_RANK[minRole] || 99;
+  if (userRank < minRank)
+    return res.status(403).json({ error: 'Accès non autorisé pour ce rôle' });
+  next();
+};
+
 // ── requireKYC : bloque si kyc_status != VERIFIED
-// Utilisé pour : devenir créateur, créer des retraits
 const requireKYC = (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   if (req.user.kyc_status === 'VERIFIED') return next();
@@ -78,22 +102,6 @@ const requireKYC = (req, res, next) => {
     code: 'KYC_REQUIRED',
     redirect: '/kyc',
   });
-};
-
-// ── requireRole : contrôle d'accès par rôle (USER / CREATOR / ADMIN / SUPERADMIN)
-const requireRole = (...roles) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
-  if (!roles.includes(req.user.role))
-    return res.status(403).json({ error: 'Accès non autorisé pour ce rôle' });
-  next();
-};
-
-// ── requireCreator : vérifie que l'utilisateur est un créateur actif (ou admin)
-const requireCreator = (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
-  if (!['CREATOR', 'ADMIN', 'SUPERADMIN'].includes(req.user.role))
-    return res.status(403).json({ error: 'Accès réservé aux créateurs' });
-  next();
 };
 
 // ── requireNotWalletFrozen : vérifie le statut de maintenance pour le wallet
@@ -126,12 +134,44 @@ const requireNotMaintenance = async (req, res, next) => {
   }
 };
 
+// ── Helper : vérifie si un acteur peut modifier la cible selon la matrice des rôles
+// Retourne true si l'action est autorisée
+const canModifyRole = (actorRole, targetRole, newRole) => {
+  const actorRank  = ROLE_RANK[actorRole]  || 0;
+  const targetRank = ROLE_RANK[targetRole] || 0;
+  const newRank    = ROLE_RANK[newRole]    || 0;
+
+  // root_admin peut tout faire
+  if (actorRole === 'root_admin') return true;
+
+  // Personne ne touche à un root_admin
+  if (targetRole === 'root_admin') return false;
+
+  // Personne ne peut promouvoir vers root_admin (sauf root_admin lui-même, géré au-dessus)
+  if (newRole === 'root_admin') return false;
+
+  // super_admin ne peut pas toucher un autre super_admin
+  if (actorRole === 'super_admin' && targetRole === 'super_admin') return false;
+
+  // super_admin peut promouvoir jusqu'à admin (pas super_admin)
+  if (actorRole === 'super_admin') return newRank <= ROLE_RANK['admin'];
+
+  // admin peut promouvoir uniquement vers influencer, et rétrograder user/influencer
+  if (actorRole === 'admin') {
+    if (targetRank >= ROLE_RANK['admin']) return false; // ne touche pas aux admins+
+    return newRank <= ROLE_RANK['influencer'];
+  }
+
+  return false;
+};
+
 module.exports = {
+  ROLE_RANK,
   authMiddleware,
   requireKYC,
-  requireRole,
-  requireCreator,
+  requireMinRole,
   requireNotWalletFrozen,
   requireNotMaintenance,
   getMaintStatus,
+  canModifyRole,
 };

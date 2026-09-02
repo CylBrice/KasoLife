@@ -188,7 +188,7 @@ router.post('/register', registerLimit, async (req, res) => {
     const { error: userError } = await supabase.from('users').insert({
       id: userId, phone: phoneEncrypted, pseudo, name: nameEncrypted, password_hash,
       country_iso: country_iso.toUpperCase(), language, birth_date,
-      kyc_status: 'PENDING', referred_by: parrainId, role: 'USER',
+      kyc_status: 'PENDING', referred_by: parrainId, role: 'user',
     });
     if (userError) throw userError;
 
@@ -384,7 +384,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
     // Profil créateur si applicable
     let creatorProfile = null;
-    if (user?.role === 'CREATOR') {
+    if (user?.role === 'influencer') {
       const { data: cp } = await supabase.from('creator_profiles')
         .select('*, category:categories(name, slug)').eq('user_id', req.user.id).single();
       creatorProfile = cp;

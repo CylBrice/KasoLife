@@ -167,7 +167,7 @@ app.use((err, req, res, _next) => {
 const notifySuperAdminAlert = async (title, body, data = {}) => {
   try {
     const { data: admins } = await supabase.from('users')
-      .select('id').eq('role', 'SUPERADMIN').eq('is_active', true);
+      .select('id').in('role', ['super_admin', 'root_admin']).eq('is_active', true);
     await Promise.all((admins || []).map(a =>
       sendPushNotification(a.id, title, body, data).catch(() => {})
     ));

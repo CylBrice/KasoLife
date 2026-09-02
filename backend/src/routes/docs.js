@@ -28,7 +28,7 @@ const swaggerSpec = {
         properties: {
           id:          { type: 'string', format: 'uuid' },
           pseudo:      { type: 'string', example: 'CreatorKM' },
-          role:        { type: 'string', enum: ['USER', 'CREATOR', 'ADMIN', 'SUPERADMIN'] },
+          role:        { type: 'string', enum: ['user', 'influencer', 'admin', 'super_admin', 'root_admin'] },
           country_iso: { type: 'string', example: 'CM' },
           language:    { type: 'string', enum: ['fr', 'en'] },
           kyc_status:  { type: 'string', enum: ['PENDING', 'VERIFIED', 'FAILED', 'SUPPORT'] },

@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /messages/broadcast v1.0
 // Mass messaging for creators
 // ============================================================
@@ -6,12 +6,12 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, requireMinRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 // POST /messages/broadcast — créer un broadcast
-router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN'), async (req, res) => {
+router.post('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { title, content, broadcast_type, price_xcon, scheduled_at } = req.body;
 
@@ -37,7 +37,7 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN'), async (req, re
 });
 
 // GET /messages/broadcast — lister mes broadcasts
-router.get('/', authMiddleware, requireRole('CREATOR'), async (req, res) => {
+router.get('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { data: broadcasts, error } = await supabase.from('broadcasts')
       .select('id, title, broadcast_type, status, recipient_count, sent_count, created_at')

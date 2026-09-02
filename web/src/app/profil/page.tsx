@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,7 +93,7 @@ export default function ProfilPage() {
           <div>
             <h1 className="font-display text-2xl font-medium text-cream">@{user.pseudo}</h1>
             <p className="text-sm text-sage">{user.name}</p>
-            <Badge variant={user.role === "CREATOR" ? "emerald" : "default"} className="mt-1">
+            <Badge variant={user.['influencer','admin','super_admin','root_admin'].includes(role) ? "emerald" : "default"} className="mt-1">
               {user.role}
             </Badge>
           </div>

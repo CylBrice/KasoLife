@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // KASOLIFE — Routes /posts v1.0
 // CRUD contenu créateur, likes, commentaires, achat PPV
 // Niveaux d'accès : FREE (public) | SUBSCRIBERS (abonnés) | PPV (paiement à l'unité)
@@ -7,7 +7,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireRole, requireNotWalletFrozen } = require('../middleware/auth');
+const { authMiddleware, requireMinRole, requireNotWalletFrozen } = require('../middleware/auth');
 const {
   PPV_PRICE_MIN, PPV_PRICE_MAX, PPV_COMMISSION_RATE,
 } = require('../config/constants');
@@ -335,7 +335,7 @@ router.get('/feed', async (req, res) => {
 });
 
 // ── GET /posts/me — mes posts (créateur, inclut non-publiés/signalés)
-router.get('/me', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.get('/me', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     const pageNum  = Math.max(1, parseInt(page) || 1);
@@ -419,7 +419,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // ── POST /posts — créer un post (créateur uniquement, avec support scheduled_at)
-router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.post('/', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const {
       caption, media_type, media_url, thumbnail_url, access_level, price_xcon,
@@ -484,14 +484,14 @@ router.post('/', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), 
 });
 
 // ── PUT /posts/:id — modifier un post (auteur uniquement)
-router.put('/:id', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.put('/:id', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, access_level, price_xcon, is_published } = req.body;
 
     const { data: post } = await supabase.from('posts').select('creator_id, access_level').eq('id', id).single();
     if (!post) return res.status(404).json({ error: 'Post introuvable' });
-    if (post.creator_id !== req.user.id && !['ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (post.creator_id !== req.user.id && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
     const updates = { updated_at: new Date().toISOString() };
@@ -562,12 +562,12 @@ router.put('/:id/reschedule', authMiddleware, async (req, res) => {
 });
 
 // ── DELETE /posts/:id — supprimer un post (auteur uniquement)
-router.delete('/:id', authMiddleware, requireRole('CREATOR', 'ADMIN', 'SUPERADMIN'), async (req, res) => {
+router.delete('/:id', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
     const { id } = req.params;
     const { data: post } = await supabase.from('posts').select('creator_id').eq('id', id).single();
     if (!post) return res.status(404).json({ error: 'Post introuvable' });
-    if (post.creator_id !== req.user.id && !['ADMIN', 'SUPERADMIN'].includes(req.user.role))
+    if (post.creator_id !== req.user.id && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
     await supabase.from('posts').delete().eq('id', id);
@@ -711,7 +711,7 @@ router.delete('/:postId/comments/:commentId', authMiddleware, async (req, res) =
 
     const { data: post } = await supabase.from('posts').select('creator_id').eq('id', postId).single();
     const canDelete = comment.user_id === req.user.id || post?.creator_id === req.user.id
-      || ['ADMIN', 'SUPERADMIN'].includes(req.user.role);
+      || ['admin','super_admin','root_admin'].includes(req.user.role);
     if (!canDelete) return res.status(403).json({ error: 'Accès refusé' });
 
     await supabase.from('post_comments').delete().eq('id', commentId);
