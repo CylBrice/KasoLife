@@ -6,6 +6,7 @@ import Image from "next/image";
 import { BadgeCheck, ShieldCheck, ShieldAlert, ShieldQuestion, LogOut, Plus, Star, Trash2 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,6 +182,7 @@ export default function ProfilPage() {
         </Button>
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

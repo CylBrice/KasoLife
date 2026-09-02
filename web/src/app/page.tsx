@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CategoryNav } from "@/components/creators/category-nav";
@@ -77,6 +78,7 @@ function HomeFeed() {
       </main>
 
       <BottomNav />
+      <Footer />
     </div>
   );
 }

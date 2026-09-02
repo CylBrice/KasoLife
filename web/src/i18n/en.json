@@ -69,6 +69,14 @@
     "noContent": "No content yet",
     "noContentSub": "Follow creators to see their posts appear here."
   },
+  "footer": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "help": "Help",
+    "support": "Support",
+    "tagline": "Support your favorite creators",
+    "rights": "All rights reserved"
+  },
   "auth": {
     "loginTitle": "Log in",
     "loginSubtitle": "Welcome back to KasoLife",

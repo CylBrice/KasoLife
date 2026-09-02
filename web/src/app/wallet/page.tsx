@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowDownToLine, ArrowUpFromLine, Wallet as WalletIcon } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,7 @@ export default function WalletPage() {
         </div>
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

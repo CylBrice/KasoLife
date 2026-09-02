@@ -69,6 +69,14 @@
     "noContent": "Aucun contenu pour le moment",
     "noContentSub": "Suivez des créateurs pour voir leurs publications apparaître ici."
   },
+  "footer": {
+    "terms": "CGU",
+    "privacy": "Confidentialité",
+    "help": "Aide",
+    "support": "Support",
+    "tagline": "Soutenez vos créateurs préférés",
+    "rights": "Tous droits réservés"
+  },
   "auth": {
     "loginTitle": "Connexion",
     "loginSubtitle": "Ravi de vous revoir sur KasoLife",

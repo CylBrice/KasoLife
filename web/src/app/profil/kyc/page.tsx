@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, ShieldQuestion, ShieldAlert } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -102,6 +103,7 @@ export default function KycPage() {
         </Card>
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

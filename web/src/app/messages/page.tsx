@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeDate, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -89,6 +90,7 @@ export default function MessagesPage() {
         )}
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

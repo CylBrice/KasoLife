@@ -8,6 +8,7 @@ import Image from "next/image";
 import { BadgeCheck, Users, FileText } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/categories";
 import { api } from "@/lib/api";
@@ -64,6 +65,7 @@ export default function CreatorProfileClient() {
           </button>
         </main>
         <BottomNav />
+      <Footer />
       </>
     );
   }
@@ -145,6 +147,7 @@ export default function CreatorProfileClient() {
         </div>
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

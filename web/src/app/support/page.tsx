@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
@@ -149,6 +150,7 @@ export default function SupportPage() {
         </div>
       </div>
       <BottomNav />
+      <Footer />
     </>
   );
 }

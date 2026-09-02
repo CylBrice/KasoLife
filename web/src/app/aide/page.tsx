@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 
 /* ── Icônes SVG inline (style KasoPlex) ── */
@@ -250,6 +251,7 @@ export default function AidePage() {
         </div>
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

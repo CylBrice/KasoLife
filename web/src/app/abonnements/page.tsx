@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatFCFA } from "@/lib/utils";
@@ -108,6 +109,7 @@ export default function AbonnementsPage() {
         )}
       </main>
       <BottomNav />
+      <Footer />
     </>
   );
 }

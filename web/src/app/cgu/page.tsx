@@ -68,7 +68,8 @@ export default function CguPage() {
         </Section>
 
         <Section n={6} title="Monnaie & Wallet">
-          <p>Les transactions sont effectuées en FCFA via Mobile Money (MTN, Orange). Le wallet KasoLife représente un solde disponible sur la plateforme. KasoLife SARL garantit la disponibilité des fonds à tout moment dans la limite des réserves disponibles.</p>
+          <p>L&apos;unité de compte utilisée sur la plateforme est le <strong className="text-cream">xcon</strong>, avec une parité fixe : <strong className="text-cream">1 xcon = 1 FCFA = 1 XAF</strong>. Le xcon ne constitue pas une monnaie électronique indépendante mais une simple unité d&apos;affichage du solde disponible sur le wallet KasoLife.</p>
+          <p>Les dépôts et retraits sont effectués en FCFA via Mobile Money (MTN, Orange). Le wallet KasoLife représente un solde disponible sur la plateforme. KasoLife SARL garantit la disponibilité des fonds à tout moment dans la limite des réserves disponibles.</p>
         </Section>
 
         <Section n={7} title="Commissions & Tarifs">
