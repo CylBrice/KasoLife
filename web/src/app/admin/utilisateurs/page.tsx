@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Search, Ban, RotateCcw, ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,14 +121,17 @@ export default function AdminUtilisateursPage() {
               {users.map((user) => (
                 <Card key={user.id}>
                   <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar src={user.avatar_url} pseudo={user.pseudo} size="sm" />
+                      <div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-cream">@{user.pseudo}</span>
                         <Badge variant={ROLE_VARIANT[user.role] || "default"}>{user.role}</Badge>
                         <Badge variant={KYC_VARIANT[user.kyc_status] || "default"}>{user.kyc_status}</Badge>
                         {!user.is_active && <Badge variant="coral">Suspendu</Badge>}
                       </div>
                       <p className="text-xs text-sage-muted">{user.country_iso} · {new Date(user.created_at).toLocaleDateString("fr-FR")}</p>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Link href={`/admin/utilisateurs/${user.id}`}>

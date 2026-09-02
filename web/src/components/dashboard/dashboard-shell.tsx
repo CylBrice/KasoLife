@@ -8,6 +8,7 @@ import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut } from 
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 export interface NavItem {
   href: string;
@@ -199,9 +200,7 @@ export function DashboardShell({
         <div className="border-t border-ink-line/50 p-3 space-y-1">
           {user && !collapsed && (
             <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/20 text-sm font-bold text-gold-bright">
-                {(user.pseudo || user.name || "?")[0].toUpperCase()}
-              </div>
+              <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-cream">@{user.pseudo}</p>
                 <p className="truncate text-[10px] text-sage-muted capitalize">{user.role.replace("_", " ")}</p>

@@ -14,6 +14,7 @@ const {
   computePerceptualHash, hammingDistance,
 } = require('../services/mediaProcessing');
 const { moderateImage, generateTags, generateCaption, getAIConfig, checkCategoryConsistency } = require('../services/aiModeration');
+const { uploadAvatarToR2, deleteAvatarFromR2 } = require('../services/cloudflare');
 
 const router = express.Router();
 
@@ -65,12 +66,33 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
     if (req.file.size > MAX_SIZES[type])
       return res.status(400).json({ error: `Fichier trop volumineux (max ${Math.round(MAX_SIZES[type] / (1024 * 1024))} Mo)` });
 
+    // ── AVATAR → Cloudflare R2 (même architecture que KasoPlex) ────────────────
+    if (type === 'avatar') {
+      const { url: avatarUrl, key: avatarKey } = await uploadAvatarToR2(req.file.buffer, req.user.id);
+
+      // Supprimer l'ancien avatar R2 si présent
+      const { data: oldUser } = await supabase.from('users').select('avatar_url').eq('id', req.user.id).single();
+      if (oldUser?.avatar_url) {
+        deleteAvatarFromR2(oldUser.avatar_url).catch(() => {}); // best-effort
+      }
+
+      // Persister la nouvelle URL
+      await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', req.user.id);
+
+      return res.status(201).json({
+        url: avatarUrl, key: avatarKey,
+        original_size: req.file.size,
+        storage: 'cloudflare_r2',
+      });
+    }
+
+    // ── Autres types → Supabase Storage ─────────────────────────────────────────
     const bucket = BUCKET_FOR[type];
 
     // ── Compression côté serveur — réduit le poids sans dégradation perceptible
     let processed;
     try {
-      if (['avatar', 'banner', 'thumbnail', 'post_image'].includes(type)) {
+      if (['banner', 'thumbnail', 'post_image'].includes(type)) {
         processed = await compressImage(req.file.buffer, type);
       } else if (type === 'post_video') {
         processed = await compressVideo(req.file.buffer);
@@ -237,10 +259,8 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
       }
     }
 
-    // Mettre à jour automatiquement le profil pour avatar/banner
-    if (type === 'avatar') {
-      await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', req.user.id);
-    } else if (type === 'banner') {
+    // Mettre à jour automatiquement le profil pour banner
+    if (type === 'banner') {
       await supabase.from('users').update({ banner_url: publicUrl }).eq('id', req.user.id);
     }
 

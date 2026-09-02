@@ -175,6 +175,7 @@ export interface AdminUser {
   kyc_status: string;
   created_at: string;
   last_active?: string;
+  avatar_url?: string;
 }
 
 export interface AdminStats {

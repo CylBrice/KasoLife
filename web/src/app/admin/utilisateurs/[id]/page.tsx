@@ -6,6 +6,7 @@ import {
   ArrowLeft, Ban, RotateCcw, Shield, ShieldOff, Wallet,
   FileText, Heart, User, AlertTriangle,
 } from "lucide-react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -136,9 +137,7 @@ export default function AdminUserDetailPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="flex flex-1 items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/20 text-xl font-bold text-gold-bright">
-            {(user.pseudo || "?")[0].toUpperCase()}
-          </div>
+          <UserAvatar src={user.avatar_url} pseudo={user.pseudo} name={user.name} size="lg" />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-display text-xl font-medium text-cream">@{user.pseudo}</h1>
