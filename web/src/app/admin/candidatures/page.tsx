@@ -61,6 +61,12 @@ export default function AdminCandidaturesPage() {
         <p className="mt-1 text-sm text-sage">Candidatures en attente de validation.</p>
       </div>
 
+      <SubTabs tabs={[
+        { key: "pending",  label: "⏳ En attente" },
+        { key: "approved", label: "✅ Approuvées" },
+        { key: "rejected", label: "❌ Rejetées" },
+      ]} active={tab} onChange={(k) => setTab(k as any)} />
+
       {error && <p className="text-sm text-brick">{error}</p>}
 
       {loading ? (

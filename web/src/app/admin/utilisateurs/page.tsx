@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, Ban, RotateCcw, ShieldCheck, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { Search, Ban, RotateCcw, ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -129,6 +130,9 @@ export default function AdminUtilisateursPage() {
                       <p className="text-xs text-sage-muted">{user.country_iso} · {new Date(user.created_at).toLocaleDateString("fr-FR")}</p>
                     </div>
                     <div className="flex gap-2">
+                      <Link href={`/admin/utilisateurs/${user.id}`}>
+                        <Button size="sm" variant="secondary"><ExternalLink className="h-3.5 w-3.5" /></Button>
+                      </Link>
                       {user.is_active
                         ? <Button size="sm" variant="danger" onClick={() => handleSuspend(user.id)}><Ban className="h-3.5 w-3.5" /> Suspendre</Button>
                         : <Button size="sm" onClick={() => handleReactivate(user.id)}><RotateCcw className="h-3.5 w-3.5" /> Réactiver</Button>

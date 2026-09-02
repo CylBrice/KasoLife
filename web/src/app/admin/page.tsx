@@ -60,12 +60,12 @@ export default function AdminDashboardPage() {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-                <StatCard icon={Users}      label="Utilisateurs"        value={fmtNum(stats.total_users)} />
-                <StatCard icon={UserCog}    label="Créateurs"           value={fmtNum(stats.total_creators)} />
-                <StatCard icon={FileText}   label="Publications"        value={fmtNum(stats.total_posts)} />
-                <StatCard icon={Heart}      label="Abonnements actifs"  value={fmtNum(stats.active_subscriptions)} />
-                <StatCard icon={Wallet}     label="Soldes utilisateurs" value={formatFCFA(stats.total_user_balances_xcon)} accent="emerald" />
-                <StatCard icon={TrendingUp} label="Revenus cumulés"     value={formatFCFA(stats.total_revenue_xcon)} accent="gold" />
+                <StatCard index={0} icon={Users}      label="Utilisateurs"        value={fmtNum(stats.total_users)} />
+                <StatCard index={1} icon={UserCog}    label="Créateurs"           value={fmtNum(stats.total_creators)} />
+                <StatCard index={2} icon={FileText}   label="Publications"        value={fmtNum(stats.total_posts)} />
+                <StatCard index={3} icon={Heart}      label="Abonnements actifs"  value={fmtNum(stats.active_subscriptions)} />
+                <StatCard index={4} icon={Wallet}     label="Soldes utilisateurs" value={formatFCFA(stats.total_user_balances_xcon)} accent="emerald" />
+                <StatCard index={5} icon={TrendingUp} label="Revenus cumulés"     value={formatFCFA(stats.total_revenue_xcon)} accent="gold" />
               </div>
 
               <Card>
@@ -243,13 +243,19 @@ export default function AdminDashboardPage() {
   );
 }
 
+const BORDER_COLORS = [
+  "border-l-blue-400", "border-l-purple-400", "border-l-pink-400",
+  "border-l-emerald-400", "border-l-amber-400", "border-l-teal-400",
+];
+
 function StatCard({
-  icon: Icon, label, value, accent,
+  icon: Icon, label, value, accent, index = 0,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   accent?: "gold" | "emerald";
+  index?: number;
 }) {
   const color = accent === "gold"
     ? "text-gold-bright"
@@ -257,7 +263,7 @@ function StatCard({
     ? "text-emerald-bright"
     : "text-cream";
   return (
-    <Card>
+    <Card className={`border-l-4 ${BORDER_COLORS[index % BORDER_COLORS.length]}`}>
       <CardContent className="p-4">
         <Icon className="h-4 w-4 text-sage-muted" />
         <p className={`mt-2 font-mono text-lg tabular ${color}`}>{value}</p>

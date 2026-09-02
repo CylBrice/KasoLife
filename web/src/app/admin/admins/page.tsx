@@ -42,7 +42,7 @@ export default function AdminsPage() {
     setError(null); setActingOn(id);
     try {
       if (action === "promote")    await api.put(`/admin/users/${id}/role`, { role: "admin" });
-      else if (action === "demote") await api.put(`/admin/admins/${id}/role`, { role: "USER" });
+      else if (action === "demote") await api.put(`/admin/users/${id}/role`, { role: "user" });
       else if (action === "suspend") {
         const r = prompt("Motif de suspension :"); if (!r) return;
         await api.post(`/admin/admins/${id}/suspend`, { reason: r });
@@ -52,13 +52,13 @@ export default function AdminsPage() {
     finally { setActingOn(null); }
   };
 
-  const superAdmins    = admins.filter(a => a.["super_admin","root_admin"].includes(role));
-  const regularAdmins  = admins.filter(a => a.role === "ADMIN");
+  const superAdmins    = admins.filter(a => ["super_admin","root_admin"].includes(a.role));
+  const regularAdmins  = admins.filter(a => a.role === "admin");
   const totalActions   = admins.reduce((s, a) => s + a.actions_30d, 0);
 
   const AdminCard = ({ admin }: { admin: AdminUser }) => {
     const ex = expandedId === admin.id;
-    const isSA = admin.["super_admin","root_admin"].includes(role);
+    const isSA = ["super_admin","root_admin"].includes(admin.role);
     return (
       <Card className={!admin.is_active ? "opacity-60" : ""}>
         <CardContent className="p-4">
@@ -182,7 +182,7 @@ export default function AdminsPage() {
 
 function PromoteForm({ onDone }: { onDone: () => void }) {
   const [userId, setUserId] = useState("");
-  const [role, setRole]     = useState<"ADMIN"|"USER">("ADMIN");
+  const [role, setRole]     = useState<"admin"|"user">("admin");
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState<string|null>(null);
   const [success, setSuccess] = useState<string|null>(null);
@@ -191,7 +191,7 @@ function PromoteForm({ onDone }: { onDone: () => void }) {
     if (!userId.trim()) return;
     setError(null); setSuccess(null); setLoading(true);
     try {
-      const { data } = await api.put(`/admin/admins/${userId.trim()}/role`, { role });
+      const { data } = await api.put(`/admin/users/${userId.trim()}/role`, { role });
       setSuccess(data.message); setUserId(""); onDone();
     } catch (err: any) { setError(err?.response?.data?.error || "Erreur."); }
     finally { setLoading(false); }
@@ -200,13 +200,13 @@ function PromoteForm({ onDone }: { onDone: () => void }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 p-4">
-        <input type="text" placeholder="UUID de l&apos;utilisateur" value={userId} onChange={(e) => setUserId(e.target.value)}
+        <input type="text" placeholder="UUID de l'utilisateur" value={userId} onChange={(e) => setUserId(e.target.value)}
           className="rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none" />
         <div className="flex gap-2">
-          {(["ADMIN","USER"] as const).map(r => (
+          {(["admin","user"] as const).map(r => (
             <PillToggle key={r} active={role === r} onClick={() => setRole(r)}
               className="px-4 py-2 text-sm" inactiveClassName="bg-ink-raised">
-              {r === "ADMIN" ? "→ Promouvoir Admin" : "→ Rétrograder USER"}
+              {r === "admin" ? "→ Promouvoir Admin" : "→ Rétrograder Utilisateur"}
             </PillToggle>
           ))}
         </div>

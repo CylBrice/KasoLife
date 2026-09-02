@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
-import { Crown, Moon, Sun, Search } from "lucide-react";
+import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 export interface NavItem {
   href: string;
@@ -43,6 +44,19 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const { user, logout } = useAuth();
+
+  /* Sidebar collapsible */
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem("kl_admin_collapsed") === "true";
+    setCollapsed(saved);
+  }, []);
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem("kl_admin_collapsed", String(next));
+  };
 
   /* Dark mode — persisté dans localStorage */
   const [dark, setDark] = useState(false);
@@ -93,8 +107,10 @@ export function DashboardShell({
     return (
       <Link
         href={href}
+        title={collapsed ? label.replace(/^[^\s]*\s/, "") : undefined}
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          collapsed && "justify-center px-2",
           active
             ? gold
               ? "bg-gold/10 text-gold border-l-2 border-gold"
@@ -105,7 +121,7 @@ export function DashboardShell({
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        {label}
+        {!collapsed && <span>{label}</span>}
       </Link>
     );
   };
@@ -114,34 +130,51 @@ export function DashboardShell({
     <div className="flex min-h-screen flex-col md:flex-row">
 
       {/* ── Sidebar desktop ── */}
-      <aside className="hidden w-60 shrink-0 border-r border-ink-line/50 bg-ink-surface md:flex md:flex-col">
-        <div className="flex items-center justify-between p-4 pb-3">
-          <Logo />
-          <button
-            onClick={toggleDark}
-            title={dark ? "Mode clair" : "Mode sombre"}
-            className="rounded-lg p-1.5 text-sage hover:text-cream transition-colors"
-          >
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+      <aside className={cn(
+        "hidden shrink-0 border-r border-ink-line/50 bg-ink-surface md:flex md:flex-col transition-all duration-200",
+        collapsed ? "w-16" : "w-60"
+      )}>
+        <div className={cn("flex items-center p-4 pb-3", collapsed ? "justify-center" : "justify-between")}>
+          {!collapsed && <Logo />}
+          <div className="flex items-center gap-1">
+            {!collapsed && (
+              <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
+                className="rounded-lg p-1.5 text-sage hover:text-cream transition-colors">
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+            )}
+            <button onClick={toggleCollapsed} title={collapsed ? "Déplier" : "Réduire"}
+              className="rounded-lg p-1.5 text-sage hover:text-cream transition-colors">
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Cmd+K */}
-        <div className="px-3 pb-2">
-          <button
-            onClick={openCmdk}
-            className="flex w-full items-center gap-2 rounded-lg border border-ink-line/50 bg-ink-raised px-3 py-2 text-xs text-sage hover:text-cream transition-colors"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="flex-1 text-left">Recherche rapide</span>
-            <kbd className="rounded bg-ink-line px-1.5 py-0.5 text-[10px] font-mono text-sage-muted">⌘K</kbd>
-          </button>
-        </div>
+        {!collapsed && (
+          <div className="px-3 pb-2">
+            <button onClick={openCmdk}
+              className="flex w-full items-center gap-2 rounded-lg border border-ink-line/50 bg-ink-raised px-3 py-2 text-xs text-sage hover:text-cream transition-colors">
+              <Search className="h-3.5 w-3.5" />
+              <span className="flex-1 text-left">Recherche rapide</span>
+              <kbd className="rounded bg-ink-line px-1.5 py-0.5 text-[10px] font-mono text-sage-muted">⌘K</kbd>
+            </button>
+          </div>
+        )}
+        {collapsed && (
+          <div className="px-2 pb-2">
+            <button onClick={openCmdk} title="Recherche rapide (⌘K)"
+              className="flex w-full items-center justify-center rounded-lg border border-ink-line/50 bg-ink-raised py-2 text-sage hover:text-cream transition-colors">
+              <Search className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
-          <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">
-            Général
-          </p>
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3">
+          {!collapsed && (
+            <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Général</p>
+          )}
+          {collapsed && <div className="my-2 h-px bg-ink-line/50" />}
           {commonItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
@@ -149,12 +182,12 @@ export function DashboardShell({
           {isSuperAdmin && superItems.length > 0 && (
             <>
               <div className="mx-1 my-3 h-px bg-gold/20" />
-              <div className="mb-1 flex items-center gap-1.5 px-3">
-                <Crown className="h-3 w-3 text-gold/60" />
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-gold/60">
-                  Super Admin
-                </span>
-              </div>
+              {!collapsed && (
+                <div className="mb-1 flex items-center gap-1.5 px-3">
+                  <Crown className="h-3 w-3 text-gold/60" />
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gold/60">Super Admin</span>
+                </div>
+              )}
               {superItems.map((item) => (
                 <NavLink key={item.href} {...item} gold />
               ))}
@@ -162,13 +195,38 @@ export function DashboardShell({
           )}
         </nav>
 
-        <div className="border-t border-ink-line/50 p-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-cream transition-colors"
-          >
-            ← Retour au site
+        {/* Footer utilisateur */}
+        <div className="border-t border-ink-line/50 p-3 space-y-1">
+          {user && !collapsed && (
+            <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/20 text-sm font-bold text-gold-bright">
+                {(user.pseudo || user.name || "?")[0].toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-cream">@{user.pseudo}</p>
+                <p className="truncate text-[10px] text-sage-muted capitalize">{user.role.replace("_", " ")}</p>
+              </div>
+            </div>
+          )}
+          <Link href="/" className={cn(
+            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-cream transition-colors",
+            collapsed && "justify-center px-2"
+          )}>
+            {collapsed ? "←" : "← Retour au site"}
           </Link>
+          {!collapsed && (
+            <button onClick={toggleDark} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-cream transition-colors">
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {dark ? "Mode clair" : "Mode sombre"}
+            </button>
+          )}
+          <button onClick={logout} title="Déconnexion" className={cn(
+            "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-brick transition-colors",
+            collapsed && "justify-center px-2"
+          )}>
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && "Déconnexion"}
+          </button>
         </div>
       </aside>
 
