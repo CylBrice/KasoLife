@@ -99,21 +99,45 @@ router.post('/initiate', authMiddleware, async (req, res) => {
 
 // ── POST /kyc/webhook — callback Didit
 router.post('/webhook', async (req, res) => {
+  // Répondre 200 immédiatement (Didit n'attend pas le traitement complet)
+  res.status(200).json({ received: true });
+
   try {
-    // Vérification signature
-    const signature = req.headers['x-didit-signature'];
-    const secret    = process.env.DIDIT_WEBHOOK_SECRET;
-    if (secret && signature) {
-      const expected = crypto.createHmac('sha256', secret)
-        .update(JSON.stringify(req.body)).digest('hex');
-      if (signature !== `sha256=${expected}`) {
-        console.warn('[KYC] Signature webhook invalide');
-        return res.status(401).json({ error: 'Signature invalide' });
-      }
+    // Vérification signature X-Signature-V2 (même algo que KasoPlex)
+    const signature = req.headers['x-signature-v2'];
+    const timestamp = req.headers['x-timestamp'];
+    const secret    = process.env.DIDIT_API_KEY || process.env.DIDIT_WEBHOOK_SECRET;
+
+    if (!secret || !signature || !timestamp) {
+      console.warn('[KYC] Webhook — headers signature manquants');
+      return;
+    }
+
+    // Anti-replay : fenêtre 5 min
+    if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) {
+      console.warn('[KYC] Webhook — timestamp expiré (anti-replay)');
+      return;
+    }
+
+    // Payload canonique : clés JSON triées récursivement (même logique KasoPlex)
+    const sortKeysDeep = (obj) => {
+      if (Array.isArray(obj)) return obj.map(sortKeysDeep);
+      if (obj !== null && typeof obj === 'object')
+        return Object.fromEntries(Object.keys(obj).sort().map(k => [k, sortKeysDeep(obj[k])]));
+      return obj;
+    };
+    const canonical = JSON.stringify(sortKeysDeep(req.body));
+    const expected  = crypto.createHmac('sha256', secret).update(canonical).digest('hex');
+
+    const sigBuf = Buffer.from(signature, 'hex');
+    const expBuf = Buffer.from(expected,  'hex');
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      console.warn('[KYC] Signature webhook invalide — possible tentative de falsification');
+      return;
     }
 
     const { session_id, status, vendor_data: userId } = req.body;
-    if (!userId || !session_id) return res.status(400).json({ error: 'Payload invalide' });
+    if (!userId || !session_id) return;
 
     const { data: user } = await supabase.from('users')
       .select('kyc_status, kyc_attempts, language, pseudo')
@@ -201,10 +225,8 @@ router.post('/webhook', async (req, res) => {
       }).eq('id', userId);
     }
 
-    res.json({ received: true });
   } catch (err) {
     console.error('[KYC] Webhook error:', err.message);
-    res.status(500).json({ error: err.message });
   }
 });
 

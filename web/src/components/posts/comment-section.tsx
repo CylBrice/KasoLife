@@ -204,7 +204,7 @@ export function CommentSection({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm">{comment.user.pseudo}</span>
-              {comment.user.['influencer','admin','super_admin','root_admin'].includes(role) && (
+              {['influencer','admin','super_admin','root_admin'].includes(comment.user.role) && (
                 <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Créateur</span>
               )}
               {comment.is_pinned && (

@@ -1,6 +1,6 @@
 // ============================================================
 // KASOLIFE — Service Notifications Push V4
-// Ajouts : pseudo dans messages · 5 événements maintenance
+// Expo Push uniquement (même architecture que KasoPlex)
 // ============================================================
 const supabase = require('../config/supabase');
 

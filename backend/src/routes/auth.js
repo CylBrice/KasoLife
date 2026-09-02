@@ -531,7 +531,7 @@ router.post('/reset-password', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// ── PUT /auth/push-token
+// ── PUT /auth/push-token (Expo — mobile)
 router.put('/push-token', authMiddleware, async (req, res) => {
   try {
     const { expo_push_token } = req.body;
@@ -540,6 +540,17 @@ router.put('/push-token', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Format de token invalide' });
     await supabase.from('users').update({ expo_push_token }).eq('id', req.user.id);
     res.json({ message: 'Token push enregistré' });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// ── PUT /auth/fcm-token (Firebase — web)
+router.put('/fcm-token', authMiddleware, async (req, res) => {
+  try {
+    const { fcm_token } = req.body;
+    if (!fcm_token || typeof fcm_token !== 'string' || fcm_token.length < 10)
+      return res.status(400).json({ error: 'Token FCM invalide' });
+    await supabase.from('users').update({ fcm_token }).eq('id', req.user.id);
+    res.json({ message: 'Token FCM enregistré' });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
