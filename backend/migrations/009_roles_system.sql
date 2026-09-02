@@ -41,25 +41,44 @@ ALTER TYPE user_role_new RENAME TO user_role;
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 -- 8. Seed du compte root_admin unique
--- IMPORTANT : à adapter avec les vraies valeurs avant exécution
--- Le mot de passe doit être hashé (bcrypt) avant insertion
+-- Mot de passe : KasoLife@Root2026! (bcrypt 12 rounds) — à changer après première connexion
 INSERT INTO users (
   id,
   email,
+  phone,
   pseudo,
+  name,
+  password_hash,
   role,
+  birth_date,
+  country_iso,
+  language,
   is_active,
   kyc_status,
+  kyc_attempts,
+  email_confirmed,
+  email_notifs,
+  twofa_enabled,
   created_at,
   updated_at
 )
 SELECT
-  gen_random_uuid(),
+  '5e1ba0cc-da93-4f02-8483-dd25f6901460',
   'root@kasolife.com',
+  '+237000000001',
   'root_admin',
+  'Root Admin',
+  '$2a$12$pK81d2wSiXtP2cIRmMt8i.LLacC1H1UO94eP2KutIKXBe3yUpID1y',
   'root_admin',
+  '1990-01-01',
+  'CM',
+  'fr',
   true,
   'VERIFIED',
+  0,
+  true,
+  true,
+  false,
   NOW(),
   NOW()
 WHERE NOT EXISTS (
@@ -71,14 +90,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_root_admin_unique
   ON users(role)
   WHERE role = 'root_admin';
 
--- 10. Mise à jour des logs d'audit (si colonne role existe)
--- Adapter selon ta structure réelle
-UPDATE audit_logs SET
-  details = REPLACE(details::text, '"USER"',       '"user"')::jsonb,
-  details = REPLACE(details::text, '"CREATOR"',    '"influencer"')::jsonb,
-  details = REPLACE(details::text, '"ADMIN"',      '"admin"')::jsonb,
-  details = REPLACE(details::text, '"SUPERADMIN"', '"super_admin"')::jsonb
-WHERE details IS NOT NULL;
+-- 10. Mise à jour des logs d'audit (uniquement si la table existe)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'audit_logs') THEN
+    UPDATE audit_logs SET
+      details = REPLACE(details::text, '"USER"',       '"user"')::jsonb,
+      details = REPLACE(details::text, '"CREATOR"',    '"influencer"')::jsonb,
+      details = REPLACE(details::text, '"ADMIN"',      '"admin"')::jsonb,
+      details = REPLACE(details::text, '"SUPERADMIN"', '"super_admin"')::jsonb
+    WHERE details IS NOT NULL;
+  END IF;
+END $$;
 
 -- ============================================================
 -- Vérification post-migration
