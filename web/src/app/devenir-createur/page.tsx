@@ -45,7 +45,7 @@ export default function DevenirCreateurPage() {
 
   if (loading || !user) return null;
 
-  if (user.['influencer','admin','super_admin','root_admin'].includes(role)) {
+  if (['influencer','admin','super_admin','root_admin'].includes(role)) {
     return (
       <PageShell>
         <Card><CardContent className="p-6 text-center">
