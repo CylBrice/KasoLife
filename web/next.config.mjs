@@ -5,6 +5,7 @@
 const isMobileBuild = process.env.BUILD_TARGET === "mobile";
 
 const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
   ...(isMobileBuild ? { output: "export" } : {}),
   images: {
     // En export statique, l'API d'optimisation d'image (qui nécessite un

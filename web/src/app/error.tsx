@@ -22,8 +22,7 @@ export default function GlobalErrorBoundary({
         Une erreur est survenue
       </h1>
       <p className="max-w-sm text-sm text-sage">
-        Quelque chose s'est mal passé de notre côté. Réessayez, et si le
-        problème persiste, contactez le support.
+        {'Quelque chose s\'est mal passé de notre côté. Réessayez, et si le problème persiste, contactez le support.'}
       </p>
       <Button onClick={reset} className="mt-2 rounded-full">
         Réessayer
