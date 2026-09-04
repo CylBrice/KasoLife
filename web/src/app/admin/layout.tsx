@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const t = useT();
   const { user, loading } = useAuth();
   const router = useRouter();
-  const isSuperAdmin = ["super_admin","root_admin"].includes(user?.role);
+  const isSuperAdmin = ["super_admin","root_admin"].includes(user?.role ?? '');
 
   /* ── Onglets communs ADMIN + SUPERADMIN ── */
   const NAV_COMMON: NavItem[] = [

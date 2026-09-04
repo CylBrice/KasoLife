@@ -108,7 +108,7 @@ export default function AdminMaintenancePage() {
         loading ? <p className="text-sm text-sage-muted">Chargement...</p> : (
           <div className="flex flex-col gap-3">
             {STATUSES
-              .filter((s) => !s.superOnly || ["super_admin","root_admin"].includes(user?.role))
+              .filter((s) => !s.superOnly || ["super_admin","root_admin"].includes(user?.role ?? ''))
               .map((s) => (
                 <Card key={s.value} className={cn(status === s.value && "border-gold/60")}>
                   <CardContent className="flex items-center justify-between gap-4 p-4">
