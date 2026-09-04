@@ -8,6 +8,7 @@ const express = require('express');
 const multer  = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
+const supabaseStorage = require('../config/supabase-storage');
 const { authMiddleware, requireMinRole } = require('../middleware/auth');
 const {
   compressImage, compressVideo, compressAudio, generateVideoThumbnail,
@@ -120,14 +121,14 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
       }
     }
 
-    const { error: uploadErr } = await supabase.storage.from(bucket).upload(filePath, processed.buffer, {
+    const { error: uploadErr } = await supabaseStorage.storage.from(bucket).upload(filePath, processed.buffer, {
       contentType: processed.mimetype,
       cacheControl: '31536000', // 1 an — fichiers immuables (nouveau nom à chaque upload)
       upsert: false,
     });
     if (uploadErr) throw uploadErr;
 
-    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    const { data: publicUrlData } = supabaseStorage.storage.from(bucket).getPublicUrl(filePath);
     const publicUrl = publicUrlData?.publicUrl;
 
     const result = {
@@ -193,7 +194,7 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
         const thumbModeration = await moderateImage(thumb.buffer, thumb.mimetype);
         if (thumbModeration.status === 'REJECTED') {
           // La vidéo est déjà stockée mais on bloque sa publication : on la supprime
-          await supabase.storage.from(bucket).remove([filePath]);
+          await supabaseStorage.storage.from(bucket).remove([filePath]);
           return res.status(422).json({
             error: 'Ce contenu ne respecte pas les règles de la plateforme et a été refusé.',
             moderation_reason: thumbModeration.reason,
@@ -247,11 +248,11 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
         }
 
         const thumbPath = `${req.user.id}/thumbnail/${uuidv4()}.${thumb.ext}`;
-        const { error: thumbErr } = await supabase.storage.from('thumbnails').upload(thumbPath, thumb.buffer, {
+        const { error: thumbErr } = await supabaseStorage.storage.from('thumbnails').upload(thumbPath, thumb.buffer, {
           contentType: thumb.mimetype, cacheControl: '31536000', upsert: false,
         });
         if (!thumbErr) {
-          const { data: thumbUrlData } = supabase.storage.from('thumbnails').getPublicUrl(thumbPath);
+          const { data: thumbUrlData } = supabaseStorage.storage.from('thumbnails').getPublicUrl(thumbPath);
           result.thumbnail_url = thumbUrlData?.publicUrl;
         }
       } catch (thumbErr) {
@@ -278,7 +279,7 @@ router.delete('/', authMiddleware, async (req, res) => {
     if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
-    const { error } = await supabase.storage.from(bucket).remove([filePath]);
+    const { error } = await supabaseStorage.storage.from(bucket).remove([filePath]);
     if (error) throw error;
 
     res.json({ message: 'Fichier supprimé' });
@@ -294,7 +295,7 @@ router.post('/generate-caption', authMiddleware, requireMinRole('influencer'), a
     if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
-    const { data, error } = await supabase.storage.from(bucket).download(filePath);
+    const { data, error } = await supabaseStorage.storage.from(bucket).download(filePath);
     if (error) throw error;
 
     const buffer = Buffer.from(await data.arrayBuffer());
