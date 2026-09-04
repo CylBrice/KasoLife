@@ -4,13 +4,13 @@
 // API identique : supabase.from(table).select().eq().single() etc.
 const { Pool } = require('pg');
 
-const isLocal = (process.env.DATABASE_URL || '').includes('localhost') ||
-                (process.env.DATABASE_URL || '').includes('127.0.0.1') ||
-                (process.env.DATABASE_URL || '').includes('kasolife-postgres');
+const dbUrl = process.env.DATABASE_URL || '';
+const needsSSL = dbUrl.includes('sslmode=require') || dbUrl.includes('sslmode=verify') ||
+                 dbUrl.includes('.supabase.co') || dbUrl.includes('.neon.tech');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  connectionString: dbUrl,
+  ssl: needsSSL ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
