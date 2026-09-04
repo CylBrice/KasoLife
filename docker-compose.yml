@@ -68,8 +68,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3003
-      NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5433/${POSTGRES_DB:-kasolife}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5433/${POSTGRES_DB:-kasolife}
+      NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       BACKEND_URL: ${BACKEND_URL:-http://backend:3003}
       FRONTEND_URL: ${FRONTEND_URL:-http://web:3002}
@@ -145,9 +145,9 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  kasolife-logger:
+  kasolife-deploy:
     image: alpine:latest
-    container_name: kasolife-logger
+    container_name: kasolife-deploy
     restart: unless-stopped
     command: ["tail", "-n", "100", "-f", "/deploy/deploy.log"]
     volumes:
