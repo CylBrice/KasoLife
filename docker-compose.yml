@@ -184,11 +184,34 @@ services:
     networks:
       - kasolife-network
 
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm-kasolife
+    restart: unless-stopped
+    ports:
+      - "2080:80"
+      - "2443:443"
+      - "2002:81"
+    volumes:
+      - npm_data:/data
+      - npm_certs:/etc/letsencrypt
+    networks:
+      - kasolife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
+  npm_data:
+    name: npm-kasolife_npm-kasolife-data
+  npm_certs:
+    name: npm-kasolife_npm-kasolife-certs
 
 networks:
   kasolife-network:
