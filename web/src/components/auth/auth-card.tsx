@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -10,21 +9,10 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { PillToggle } from "@/components/ui/pill-toggle";
 import { Input } from "@/components/ui/input";
+import { CountrySelector } from "@/components/ui/country-selector";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
-
-// Indicatif → pays. Le sélecteur de pays est déduit automatiquement du numéro
-// de téléphone saisi plutôt que demandé explicitement — un champ en moins.
-const DIAL_CODE_TO_COUNTRY: Record<string, string> = {
-  "237": "CM", "225": "CI", "221": "SN", "241": "GA", "226": "BF", "228": "TG", "229": "BJ",
-};
-function inferCountryFromPhone(phone: string): string {
-  const digits = phone.replace(/[^0-9]/g, "");
-  for (const [dial, code] of Object.entries(DIAL_CODE_TO_COUNTRY)) {
-    if (digits.startsWith(dial)) return code;
-  }
-  return "CM"; // marché principal par défaut
-}
+import { cleanPhone, getDialCode } from "@/utils/countries";
 
 type Tab = "login" | "signup";
 
@@ -44,7 +32,9 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
   const router = useRouter();
   const t = useT();
 
+  const [loginCountry, setLoginCountry] = useState("CM");
   const [loginForm, setLoginForm] = useState({ phone: "", password: "" });
+  const [signupCountry, setSignupCountry] = useState("CM");
   const [signupForm, setSignupForm] = useState({
     phone: "", pseudo: "", name: "", password: "", birth_date: "",
   });
@@ -55,12 +45,18 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
     router.replace(next === "login" ? "/connexion" : "/inscription", { scroll: false });
   };
 
+  const buildE164 = (countryCode: string, localPhone: string) => {
+    const dial = getDialCode(countryCode);
+    const digits = cleanPhone(localPhone);
+    return `${dial}${digits}`;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await login(loginForm.phone, loginForm.password);
+      await login(buildE164(loginCountry, loginForm.phone), loginForm.password);
       router.push("/");
     } catch (err: any) {
       setError(err?.response?.data?.error || t("auth.loginError"));
@@ -76,7 +72,8 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
     try {
       await register({
         ...signupForm,
-        country_iso: inferCountryFromPhone(signupForm.phone),
+        phone: buildE164(signupCountry, signupForm.phone),
+        country_iso: signupCountry,
         ref: referralCode,
       });
       router.push("/");
@@ -127,11 +124,20 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
 
           {tab === "login" ? (
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <Input
-                label={t("auth.phone")} type="tel" placeholder="+237690000000" required
-                value={loginForm.phone}
-                onChange={(e) => setLoginForm((f) => ({ ...f, phone: e.target.value }))}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-cream">{t("auth.phone")}</label>
+                <div className="flex gap-2">
+                  <CountrySelector value={loginCountry} onChange={setLoginCountry} />
+                  <input
+                    type="tel"
+                    placeholder="6XX XX XX XX"
+                    required
+                    value={loginForm.phone}
+                    onChange={(e) => setLoginForm((f) => ({ ...f, phone: e.target.value }))}
+                    className="h-11 flex-1 rounded-xl border border-ink-line bg-ink-raised px-3.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                  />
+                </div>
+              </div>
               <div className="relative">
                 <Input
                   label={t("auth.password")} type={showPwd ? "text" : "password"} required
@@ -159,10 +165,20 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
                 label={t("auth.pseudo")} required placeholder={t("auth.pseudoHint")}
                 value={signupForm.pseudo} onChange={(e) => update("pseudo", e.target.value)}
               />
-              <Input
-                label={t("auth.phone")} type="tel" placeholder="+237690000000" required
-                value={signupForm.phone} onChange={(e) => update("phone", e.target.value)}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-cream">{t("auth.phone")}</label>
+                <div className="flex gap-2">
+                  <CountrySelector value={signupCountry} onChange={setSignupCountry} />
+                  <input
+                    type="tel"
+                    placeholder="6XX XX XX XX"
+                    required
+                    value={signupForm.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    className="h-11 flex-1 rounded-xl border border-ink-line bg-ink-raised px-3.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                  />
+                </div>
+              </div>
               <div className="relative">
                 <Input
                   label={t("auth.password")} type={showPwd ? "text" : "password"} required minLength={8}

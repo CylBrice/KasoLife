@@ -2,26 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Heart, MessageCircle, Wallet, User } from "lucide-react";
+import { Compass, Heart, MessageCircle, Wallet, User, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/locale-context";
+import { useAuth } from "@/contexts/auth-context";
 
-const ITEMS = [
-  { href: "/", key: "nav.discover", icon: Compass },
+const BASE_ITEMS = [
+  { href: "/",            key: "nav.discover",      icon: Compass },
   { href: "/abonnements", key: "nav.subscriptions", icon: Heart },
-  { href: "/messages", key: "nav.messages", icon: MessageCircle },
-  { href: "/wallet", key: "nav.wallet", icon: Wallet },
-  { href: "/profil", key: "nav.profile", icon: User },
+  { href: "/messages",    key: "nav.messages",      icon: MessageCircle },
+  { href: "/wallet",      key: "nav.wallet",        icon: Wallet },
+  { href: "/profil",      key: "nav.profile",       icon: User },
 ] as const;
+
+const ADMIN_ROLES = ["admin", "super_admin", "root_admin"];
 
 export function BottomNav() {
   const pathname = usePathname();
   const t = useT();
+  const { user } = useAuth();
+
+  const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-line bg-ink/95 backdrop-blur-md md:hidden">
       <div className="flex h-16 items-center justify-around">
-        {ITEMS.map(({ href, key, icon: Icon }) => {
+        {BASE_ITEMS.map(({ href, key, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
@@ -37,6 +43,19 @@ export function BottomNav() {
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1 text-xs",
+              pathname.startsWith("/admin") ? "text-gold" : "text-sage-muted"
+            )}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            Admin
+          </Link>
+        )}
       </div>
     </nav>
   );

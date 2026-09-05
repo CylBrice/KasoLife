@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -10,6 +10,8 @@ import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CategoryNav } from "@/components/creators/category-nav";
 import { DiscoverFeed } from "@/components/posts/discover-feed";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
 import type { Category } from "@/types";
 
@@ -25,6 +27,8 @@ export default function HomePage() {
 
 function HomeFeed() {
   const t = useT();
+  const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") || undefined;
   const [categories, setCategories] = useState<Category[] | null>(null);
@@ -56,6 +60,22 @@ function HomeFeed() {
           >
             <SlidersHorizontal className="h-4 w-4" />
           </button>
+          {user ? (
+            <button
+              onClick={() => router.push("/profil")}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 backdrop-blur-sm"
+              aria-label="Mon profil"
+            >
+              <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="xs" />
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push("/connexion")}
+              className="rounded-full bg-gold/90 px-3 py-1.5 text-xs font-semibold text-ink backdrop-blur-sm hover:bg-gold transition-colors"
+            >
+              {t("nav.login")}
+            </button>
+          )}
         </div>
       </header>
 
