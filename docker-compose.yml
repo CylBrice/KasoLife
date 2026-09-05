@@ -158,6 +158,12 @@ services:
     environment:
       KEYGEN_PORT: 3102
       APP_ID: kasolife
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3102/session-key"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     # Pas de "ports:" — uniquement accessible via le réseau Docker interne
     networks:
       - kasolife-network
