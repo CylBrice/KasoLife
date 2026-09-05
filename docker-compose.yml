@@ -209,8 +209,10 @@ volumes:
   redis_data:
     driver: local
   npm_data:
+    external: true
     name: npm-kasolife_npm-kasolife-data
   npm_certs:
+    external: true
     name: npm-kasolife_npm-kasolife-certs
 
 networks:
