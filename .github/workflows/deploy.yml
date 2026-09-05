@@ -1,9 +1,8 @@
-name: Deploy to VPS
+name: Deploy KasoLife to VPS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
@@ -12,8 +11,12 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
+          host: 62.171.155.184
+          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: bash /opt/kasolife/deploy.sh
-          command_timeout: 15m
+          script: |
+            cd /opt/kasolife
+            git pull origin main
+            docker compose pull
+            docker compose up -d --build
+            docker image prune -f
