@@ -65,6 +65,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      klando-keygen-kasolife:
+        condition: service_started
     environment:
       NODE_ENV: production
       PORT: 3003
@@ -84,6 +86,7 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      KLANDO_KEYGEN_URL: http://klando-keygen-kasolife:3102
     ports:
       - "3003:3003"
     healthcheck:
@@ -144,6 +147,26 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
+
+  klando-keygen-kasolife:
+    image: node:20-alpine
+    container_name: klando-keygen-kasolife
+    working_dir: /app
+    volumes:
+      - /opt/klando/klando_keygen.js:/app/klando_keygen.js:ro
+    command: ["node", "/app/klando_keygen.js"]
+    environment:
+      KEYGEN_PORT: 3102
+      APP_ID: kasolife
+    # Pas de "ports:" — uniquement accessible via le réseau Docker interne
+    networks:
+      - kasolife-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
 
   kasolife-deploy:
     image: alpine:latest
