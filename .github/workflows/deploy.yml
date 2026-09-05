@@ -15,8 +15,18 @@ jobs:
           username: root
           key: ${{ secrets.VPS_SSH_KEY_CONTABO }}
           script: |
+            LOG=/opt/kasolife/logs/deploy.log
+            echo "" >> $LOG
+            echo "================================================" >> $LOG
+            echo "Deploy KasoLife — $(date '+%Y-%m-%d %H:%M:%S %Z')" >> $LOG
+            echo "================================================" >> $LOG
             cd /opt/kasolife
-            git pull origin main
-            docker compose pull
-            docker compose up -d --build
-            docker image prune -f
+            echo "[1/4] git pull..." >> $LOG
+            git pull origin main >> $LOG 2>&1
+            echo "[2/4] docker compose pull..." >> $LOG
+            docker compose pull >> $LOG 2>&1
+            echo "[3/4] docker compose up --build..." >> $LOG
+            docker compose up -d --build >> $LOG 2>&1
+            echo "[4/4] docker image prune..." >> $LOG
+            docker image prune -f >> $LOG 2>&1
+            echo "✓ Deploy terminé — $(date '+%Y-%m-%d %H:%M:%S %Z')" >> $LOG
