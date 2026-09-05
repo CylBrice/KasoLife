@@ -73,9 +73,9 @@ services:
       NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      BACKEND_URL: ${BACKEND_URL:-http://backend:3003}
-      FRONTEND_URL: ${FRONTEND_URL:-http://web:3002}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3002,http://web:3002,http://backend:3003}
+      BACKEND_URL: ${BACKEND_URL:-https://api.kasolife.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://kasolife.com,https://www.kasolife.com,https://api.kasolife.com}
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       SUPABASE_URL: ${SUPABASE_URL:-https://placeholder.supabase.co}
