@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get('kasolife_token')?.value;
 
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3003';
 
   const res = await fetch(`${backendUrl}/stories/feed`, {
     headers: {

@@ -14,7 +14,7 @@ const swaggerSpec = {
   },
   servers: [
     { url: process.env.BACKEND_URL || 'https://api.kasolife.com', description: 'Production' },
-    { url: 'http://localhost:3000', description: 'Développement local' },
+    { url: 'http://localhost:3003', description: 'Développement local' },
   ],
   components: {
     securitySchemes: {

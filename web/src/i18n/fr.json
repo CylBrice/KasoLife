@@ -71,9 +71,13 @@
   },
   "footer": {
     "terms": "CGU",
+    "cgf": "Conditions Financières",
     "privacy": "Confidentialité",
     "help": "Aide",
     "support": "Support",
+    "share": "Partager KasoLife",
+    "shareCopied": "Lien copié !",
+    "install": "Installer l'app",
     "tagline": "Soutenez vos créateurs préférés",
     "rights": "Tous droits réservés"
   },

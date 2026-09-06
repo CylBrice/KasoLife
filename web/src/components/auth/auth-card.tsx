@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import { Footer } from "@/components/layout/footer";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -88,14 +89,9 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
     setSignupForm((f) => ({ ...f, [key]: value }));
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen flex-col">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        {/* Langue + thème */}
-        <div className="mb-4 flex items-center justify-end gap-2">
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-
         {/* En-tête : logo centré + tagline */}
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <Logo />
@@ -106,6 +102,12 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
 
         {/* Carte */}
         <div className="rounded-2xl border border-ink-line bg-ink-surface p-6 shadow-lg shadow-black/20">
+          {/* Langue + thème — intégrés en haut de la carte */}
+          <div className="mb-4 flex items-center justify-end gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
+
           {/* Onglets : bascule instantanée, pas de rechargement */}
           <div className="mb-6 flex rounded-xl bg-ink p-1">
             <PillToggle active={tab === "login"} onClick={() => switchTab("login")} className="flex-1 py-2.5 text-sm font-semibold">
@@ -223,6 +225,8 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
           </button>
         </p>
       </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

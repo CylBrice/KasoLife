@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={`flex items-center gap-1.5 ${className ?? ""}`}>
+    <Link href="/" className={`flex items-center gap-1.5 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(15,148,136,0.55)] hover:brightness-110 ${className ?? ""}`}>
       <span className="flex items-baseline">
         <span className="font-brand text-2xl font-extrabold tracking-tight text-emerald dark:text-[#C24A63]">
           Kaso

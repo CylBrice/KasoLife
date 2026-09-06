@@ -85,14 +85,14 @@ const broadcastsRouter    = require('./routes/broadcasts');
 const analyticsRouter     = require('./routes/analytics');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3003;
 
 // ── Sécurité ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(hpp());
 app.use(compression());
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',').filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3004').split(',').filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);

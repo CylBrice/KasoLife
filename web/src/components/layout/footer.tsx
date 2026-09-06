@@ -1,18 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { FileText, ShieldCheck, HelpCircle, LifeBuoy } from "lucide-react";
+import { FileText, ShieldCheck, HelpCircle, LifeBuoy, Share2, Download, CreditCard } from "lucide-react";
 import { Logo } from "./logo";
 import { useT } from "@/i18n/locale-context";
+import { useAuth } from "@/contexts/auth-context";
 
-/**
- * Pied de page desktop (masqué en mobile — la BottomNav couvre ce rôle
- * sur petit écran). Inspiré de la structure KasoPlex : logo, liens légaux,
- * rappel de la parité monétaire, copyright.
- */
 export function Footer() {
   const t = useT();
   const year = new Date().getFullYear();
+  const { user } = useAuth();
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://kasolife.com";
+    const url = user?.referral_code ? `${origin}/?ref=${user.referral_code}` : origin;
+    if (navigator.share) {
+      navigator.share({ title: "KasoLife", text: t("footer.share"), url });
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <footer className="hidden md:block border-t border-ink-line bg-ink-surface/60 mt-8">
@@ -23,6 +34,9 @@ export function Footer() {
             <Link href="/cgu" className="flex items-center gap-1 transition-colors hover:text-cream">
               <FileText size={13} /> {t("footer.terms")}
             </Link>
+            <Link href="/cgf" className="flex items-center gap-1 transition-colors hover:text-cream">
+              <CreditCard size={13} /> {t("footer.cgf")}
+            </Link>
             <Link href="/confidentialite" className="flex items-center gap-1 transition-colors hover:text-cream">
               <ShieldCheck size={13} /> {t("footer.privacy")}
             </Link>
@@ -31,6 +45,17 @@ export function Footer() {
             </Link>
             <Link href="/support" className="flex items-center gap-1 transition-colors hover:text-cream">
               <LifeBuoy size={13} /> {t("footer.support")}
+            </Link>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex items-center gap-1 transition-colors hover:text-cream"
+            >
+              <Share2 size={13} />
+              {copied ? t("footer.shareCopied") : t("footer.share")}
+            </button>
+            <Link href="/installer" className="flex items-center gap-1 transition-colors hover:text-cream">
+              <Download size={13} /> {t("footer.install")}
             </Link>
           </nav>
         </div>
