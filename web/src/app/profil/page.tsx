@@ -13,8 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useT, useLocale } from "@/i18n/locale-context";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { useT } from "@/i18n/locale-context";
 
 interface MobileMoney {
   id: string;
@@ -26,7 +25,6 @@ interface MobileMoney {
 
 export default function ProfilPage() {
   const t = useT();
-  const { locale } = useLocale();
   const { user, loading, logout, refresh } = useAuth();
   const router = useRouter();
   const [bio, setBio] = useState("");
@@ -168,14 +166,6 @@ export default function ProfilPage() {
             onAdded={(mm) => { setMobileMoneys((prev) => [...prev, mm]); setShowAddMm(false); }}
           />
         )}
-
-        {/* Langue */}
-        <Card className="mt-4">
-          <CardContent className="flex items-center justify-between p-4">
-            <p className="text-sm font-medium text-cream">{t("common.language")}</p>
-            <LanguageSwitcher />
-          </CardContent>
-        </Card>
 
         <Button variant="ghost" className="mt-6 w-full" onClick={() => { logout(); router.push("/"); }}>
           <LogOut className="h-4 w-4" /> {t("profile.logout")}
