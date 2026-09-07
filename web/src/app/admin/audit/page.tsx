@@ -23,9 +23,9 @@ const ACTION_VARIANT: Record<string, any> = {
 };
 
 const TABS = [
-  { key: "all",      label: "📋 Toutes les actions" },
-  { key: "by-admin", label: "👮 Par admin" },
-  { key: "by-type",  label: "🏷️ Par type" },
+  { key: "all",      label: "Toutes les actions" },
+  { key: "by-admin", label: "Par admin" },
+  { key: "by-type",  label: "Par type" },
 ];
 
 export default function AuditPage() {

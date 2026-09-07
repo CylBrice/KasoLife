@@ -38,9 +38,9 @@ export default function AdminDashboardPage() {
   }, [tab, aiCosts]);
 
   const TABS = [
-    { key: "overview",  label: "📊 Vue d'ensemble" },
-    { key: "stats",     label: "📈 Statistiques" },
-    { key: "ai-costs",  label: "💡 Coûts IA" },
+    { key: "overview",  label: "Vue d'ensemble" },
+    { key: "stats",     label: "Statistiques" },
+    { key: "ai-costs",  label: "Coûts IA" },
   ];
 
   return (

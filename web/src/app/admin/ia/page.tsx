@@ -65,8 +65,8 @@ export default function AdminIAPage() {
         <p className="mt-1 text-sm text-sage">Activez/désactivez les automatisations IA.</p>
       </div>
       <SubTabs tabs={[
-        { key: "toggles", label: "🔧 Fonctionnalités" },
-        { key: "usage",   label: "💡 Coûts & usage" },
+        { key: "toggles", label: "Fonctionnalités" },
+        { key: "usage",   label: "Coûts & usage" },
       ]} active={tab} onChange={(k) => setTab(k as any)} />
 
       {error && <p className="text-sm text-brick">{error}</p>}

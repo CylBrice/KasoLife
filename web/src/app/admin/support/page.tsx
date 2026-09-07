@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Mail, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Mail, Plus, Trash2, RefreshCw, Bot, Loader2, Download, Copy, FileText, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -115,9 +115,9 @@ export default function AdminSupportPage() {
   };
 
   const TABS = [
-    { key: "tickets", label: "🎫 Tickets" },
-    { key: "emails",  label: "📧 Emails" },
-    { key: "rapport", label: "🤖 Rapport IA" },
+    { key: "tickets", label: "Tickets" },
+    { key: "emails",  label: "Emails" },
+    { key: "rapport", label: "Rapport IA" },
   ];
 
   return (
@@ -235,10 +235,12 @@ export default function AdminSupportPage() {
         <div className="flex flex-col gap-4">
           <Card>
             <CardContent className="p-5">
-              <p className="mb-1 text-sm font-medium text-cream">🤖 Rapport IA — 7 derniers jours</p>
+              <p className="mb-1 flex items-center gap-1.5 text-sm font-medium text-cream"><Bot className="h-4 w-4 text-sage-muted" /> Rapport IA — 7 derniers jours</p>
               <p className="mb-4 text-xs text-sage">Analyse les messages utilisateurs et génère un rapport d&apos;anomalies et recommandations.</p>
               <Button onClick={handleGenerateReport} disabled={reportLoading}>
-                {reportLoading ? "⏳ Génération en cours..." : "🤖 Générer le rapport IA"}
+                {reportLoading
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Génération en cours...</>
+                  : <><Bot className="h-4 w-4" /> Générer le rapport IA</>}
               </Button>
             </CardContent>
           </Card>
@@ -248,10 +250,10 @@ export default function AdminSupportPage() {
               <CardContent className="p-5">
                 <div className="mb-3 flex gap-2">
                   <Button size="sm" variant="secondary" onClick={handleDownloadReport}>
-                    ⬇️ Télécharger
+                    <Download className="h-3.5 w-3.5" /> Télécharger
                   </Button>
                   <Button size="sm" variant="secondary" onClick={() => navigator.clipboard.writeText(reportText)}>
-                    📋 Copier
+                    <Copy className="h-3.5 w-3.5" /> Copier
                   </Button>
                 </div>
                 <pre className="max-h-96 overflow-y-auto rounded-lg bg-ink p-4 text-xs text-sage whitespace-pre-wrap">
@@ -268,14 +270,14 @@ export default function AdminSupportPage() {
                 <Card key={r.id}>
                   <CardContent className="flex items-center justify-between p-4">
                     <div>
-                      <p className="text-sm text-cream">📄 {new Date(r.created_at).toLocaleDateString("fr-FR")}</p>
+                      <p className="flex items-center gap-1.5 text-sm text-cream"><FileText className="h-4 w-4 text-sage-muted" />{new Date(r.created_at).toLocaleDateString("fr-FR")}</p>
                       {r.messages_count && <p className="text-xs text-sage-muted">{r.messages_count} messages analysés</p>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={async () => {
                         const { data } = await api.get(`/support/admin/ai-reports/${r.id}`);
                         setReportText(data.report_text || "");
-                      }}>👁️ Voir</Button>
+                      }}><Eye className="h-3.5 w-3.5" /> Voir</Button>
                       <Button size="sm" variant="danger" onClick={() => handleDeleteReport(r.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

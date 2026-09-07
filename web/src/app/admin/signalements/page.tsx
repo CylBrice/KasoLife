@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, Flag, Ban, X } from "lucide-react";
+import { Trash2, Flag, Ban, X, Bot } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,11 +63,11 @@ export default function AdminSignalementsPage() {
   };
 
   const TABS = [
-    { key: "pending",  label: "⏳ En attente",  badge: counts.pending },
-    { key: "all",      label: "📋 Tous" },
-    { key: "post",     label: "📸 Publications" },
-    { key: "message",  label: "💬 Messages" },
-    { key: "resolved", label: "✅ Traités", badge: counts.resolved },
+    { key: "pending",  label: "En attente",  badge: counts.pending },
+    { key: "all",      label: "Tous" },
+    { key: "post",     label: "Publications" },
+    { key: "message",  label: "Messages" },
+    { key: "resolved", label: "Traités", badge: counts.resolved },
   ];
 
   // Filtre côté client pour "all" (déjà PENDING)
@@ -107,8 +107,9 @@ export default function AdminSignalementsPage() {
                   <span className="text-xs text-sage-muted">{formatRelativeDate(report.created_at)}</span>
                 </div>
                 {(report as any).ai_summary && (
-                  <p className="mt-2 rounded-lg bg-ink-raised px-3 py-2 text-xs text-sage italic">
-                    🤖 {(report as any).ai_summary}
+                  <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-ink-raised px-3 py-2 text-xs text-sage italic">
+                    <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage-muted" />
+                    {(report as any).ai_summary}
                   </p>
                 )}
                 <p className="mt-2 text-sm text-cream">{report.reason}</p>

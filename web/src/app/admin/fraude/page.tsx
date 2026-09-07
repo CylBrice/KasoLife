@@ -98,8 +98,8 @@ export default function AdminFraudePage() {
         <p className="mt-1 text-sm text-sage">Anomalies détectées automatiquement.</p>
       </div>
       <SubTabs tabs={[
-        { key: "pending",  label: "⏳ En attente", badge: flags.filter(f => f.status === "PENDING").length },
-        { key: "reviewed", label: "✅ Traités" },
+        { key: "pending",  label: "En attente", badge: flags.filter(f => f.status === "PENDING").length },
+        { key: "reviewed", label: "Traités" },
       ]} active={tab} onChange={(k) => setTab(k as any)} />
 
       {error && <p className="text-sm text-brick">{error}</p>}

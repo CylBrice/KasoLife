@@ -85,9 +85,9 @@ export default function AdminUtilisateursPage() {
   };
 
   const TABS = [
-    { key: "list",      label: "👥 Utilisateurs" },
-    { key: "kyc",       label: "🪪 KYC en attente", badge: kycUsers.length },
-    { key: "suspended", label: "🚫 Suspendus",       badge: suspended.length },
+    { key: "list",      label: "Utilisateurs" },
+    { key: "kyc",       label: "KYC en attente", badge: kycUsers.length },
+    { key: "suspended", label: "Suspendus",       badge: suspended.length },
   ];
 
   return (

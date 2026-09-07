@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Shield, ShieldAlert, ShieldOff, ChevronDown, Activity } from "lucide-react";
+import { Shield, ShieldAlert, ShieldOff, ChevronDown, Activity, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,9 @@ interface AdminUser {
 }
 
 const TABS = [
-  { key: "list",     label: "👮 Liste des admins" },
-  { key: "activity", label: "📈 Activité" },
-  { key: "promote",  label: "⬆️ Promouvoir" },
+  { key: "list",     label: "Liste des admins" },
+  { key: "activity", label: "Activité" },
+  { key: "promote",  label: "Promouvoir" },
 ];
 
 export default function AdminsPage() {
@@ -88,7 +88,7 @@ export default function AdminsPage() {
           {ex && !isSA && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-ink-line pt-4">
               <Button size="sm" variant="ghost" onClick={() => handleAction(admin.id, "demote")} disabled={actingOn !== null}>
-                <ShieldOff className="h-3.5 w-3.5" />Rétrograder → USER
+                <ShieldOff className="h-3.5 w-3.5" />Rétrograder<ArrowRight className="h-3 w-3 mx-0.5" />USER
               </Button>
               {admin.is_active
                 ? <Button size="sm" variant="danger" onClick={() => handleAction(admin.id, "suspend")} disabled={actingOn !== null}>Suspendre</Button>
@@ -206,7 +206,7 @@ function PromoteForm({ onDone }: { onDone: () => void }) {
           {(["admin","user"] as const).map(r => (
             <PillToggle key={r} active={role === r} onClick={() => setRole(r)}
               className="px-4 py-2 text-sm" inactiveClassName="bg-ink-raised">
-              {r === "admin" ? "→ Promouvoir Admin" : "→ Rétrograder Utilisateur"}
+              <>{r === "admin" ? <><ArrowRight className="h-3.5 w-3.5" /> Promouvoir Admin</> : <><ArrowRight className="h-3.5 w-3.5" /> Rétrograder Utilisateur</>}</>
             </PillToggle>
           ))}
         </div>

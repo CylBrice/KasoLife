@@ -62,9 +62,9 @@ export default function AdminCandidaturesPage() {
       </div>
 
       <SubTabs tabs={[
-        { key: "pending",  label: "⏳ En attente" },
-        { key: "approved", label: "✅ Approuvées" },
-        { key: "rejected", label: "❌ Rejetées" },
+        { key: "pending",  label: "En attente" },
+        { key: "approved", label: "Approuvées" },
+        { key: "rejected", label: "Rejetées" },
       ]} active={tab} onChange={(k) => setTab(k as any)} />
 
       {error && <p className="text-sm text-brick">{error}</p>}

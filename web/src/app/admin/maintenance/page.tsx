@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Clock, FileText, RefreshCw, Download } from "lucide-react";
+import { AlertTriangle, Clock, FileText, RefreshCw, Download, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,10 @@ import { useAuth } from "@/contexts/auth-context";
 type Tab = "status" | "history" | "logs";
 
 const STATUSES = [
-  { value: "ACTIF",             label: "🟢 Actif",              description: "Plateforme entièrement fonctionnelle." },
-  { value: "READ_ONLY",         label: "👁️ Lecture seule",       description: "Consultation possible, transactions désactivées." },
-  { value: "MAINTENANCE",       label: "🔧 Maintenance",         description: "Accès restreint, message de maintenance affiché." },
-  { value: "FORCE_MAINTENANCE", label: "🚨 Maintenance totale",  description: "Arrêt complet (SUPERADMIN uniquement).", superOnly: true },
+  { value: "ACTIF",             label: "Actif",              description: "Plateforme entièrement fonctionnelle." },
+  { value: "READ_ONLY",         label: "Lecture seule",       description: "Consultation possible, transactions désactivées." },
+  { value: "MAINTENANCE",       label: "Maintenance",         description: "Accès restreint, message de maintenance affiché." },
+  { value: "FORCE_MAINTENANCE", label: "Maintenance totale",  description: "Arrêt complet (SUPERADMIN uniquement).", superOnly: true },
 ];
 
 export default function AdminMaintenancePage() {
@@ -84,9 +84,9 @@ export default function AdminMaintenancePage() {
   };
 
   const TABS = [
-    { key: "status",  label: "⚙️ Statut" },
-    { key: "history", label: "📋 Historique" },
-    { key: "logs",    label: "📜 Logs système" },
+    { key: "status",  label: "Statut" },
+    { key: "history", label: "Historique" },
+    { key: "logs",    label: "Logs système" },
   ];
 
   return (
@@ -198,7 +198,7 @@ export default function AdminMaintenancePage() {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={() => loadLogPreview(f.filename)}>
-                        👁️ Voir
+                        <Eye className="h-3.5 w-3.5" /> Voir
                       </Button>
                       <Button size="sm" variant="secondary" onClick={() => downloadLog(f.filename)}>
                         <Download className="h-3.5 w-3.5" />
@@ -215,7 +215,7 @@ export default function AdminMaintenancePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="font-mono text-sm font-medium text-cream">📄 {logFilename}</p>
+                  <p className="flex items-center gap-1.5 font-mono text-sm font-medium text-cream"><FileText className="h-4 w-4 text-sage-muted" />{logFilename}</p>
                   <span className="text-xs text-sage-muted">
                     {logPreview.preview_lines} / {logPreview.total_lines} lignes
                   </span>

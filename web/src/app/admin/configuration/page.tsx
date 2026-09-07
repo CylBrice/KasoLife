@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, RotateCcw, AlertTriangle } from "lucide-react";
+import { Save, RotateCcw, AlertTriangle, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SubTabs } from "@/components/admin/sub-tabs";
@@ -19,10 +19,10 @@ const CATEGORIES: Record<Tab, string[]> = {
 };
 
 const TABS = [
-  { key: "commissions", label: "💰 Commissions" },
-  { key: "ia",          label: "🤖 IA" },
-  { key: "maintenance", label: "🔧 Maintenance" },
-  { key: "advanced",    label: "⚙️ Avancé" },
+  { key: "commissions", label: "Commissions" },
+  { key: "ia",          label: "IA" },
+  { key: "maintenance", label: "Maintenance" },
+  { key: "advanced",    label: "Avancé" },
 ];
 
 const isBool  = (k: string) => k.startsWith("AI_") || k === "MAINTENANCE_STATUS";
@@ -73,7 +73,7 @@ function ConfigItem({ entry, onSave }: { entry: ConfigEntry; onSave: (key: strin
                 </button>
               </>
             )}
-            {saved && <span className="text-xs text-emerald-bright">✓</span>}
+            {saved && <Check className="h-4 w-4 text-emerald-bright" />}
           </div>
         </div>
       </CardContent>

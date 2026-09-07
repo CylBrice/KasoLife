@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TrendingUp, ArrowUpRight, BarChart3, Vault, Radio, RefreshCw, Plus, Minus } from "lucide-react";
+import { TrendingUp, ArrowUpRight, BarChart3, Vault, Radio, RefreshCw, Plus, Minus, CheckCircle, AlertTriangle, Circle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubTabs } from "@/components/admin/sub-tabs";
@@ -93,11 +93,11 @@ export default function FinancesPage() {
   };
 
   const TABS = [
-    { key: "overview", label: "📊 Vue d'ensemble" },
-    { key: "detail",   label: "📋 Détail sources" },
-    { key: "period",   label: "📅 Par période" },
-    { key: "coffre",   label: "🏦 Coffre" },
-    { key: "canaux",   label: "📡 Canaux" },
+    { key: "overview", label: "Vue d'ensemble" },
+    { key: "detail",   label: "Détail sources" },
+    { key: "period",   label: "Par période" },
+    { key: "coffre",   label: "Coffre" },
+    { key: "canaux",   label: "Canaux" },
   ];
 
   return (
@@ -225,10 +225,10 @@ export default function FinancesPage() {
                     <p className="font-display text-4xl font-medium text-gold-bright">
                       {formatFCFA(vaultBalance?.balance_xcon ?? 0)}
                     </p>
-                    <p className={`mt-2 text-xs font-medium ${(vaultBalance?.balance_xcon ?? 0) >= 150000 ? "text-emerald-bright" : "text-brick"}`}>
+                    <p className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${(vaultBalance?.balance_xcon ?? 0) >= 150000 ? "text-emerald-bright" : "text-brick"}`}>
                       {(vaultBalance?.balance_xcon ?? 0) >= 150000
-                        ? "✅ Réserve minimum OK (150 000 FCFA)"
-                        : "⚠️ Réserve minimum insuffisante !"}
+                        ? <><CheckCircle className="h-3.5 w-3.5" /> Réserve minimum OK (150 000 FCFA)</>
+                        : <><AlertTriangle className="h-3.5 w-3.5" /> Réserve minimum insuffisante !</>}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -301,8 +301,8 @@ export default function FinancesPage() {
           {vaultModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setVaultModal(null)}>
               <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-surface p-6" onClick={(e) => e.stopPropagation()}>
-                <h3 className="mb-4 font-display text-lg font-medium text-cream">
-                  {vaultModal === "deposit" ? "➕ Recharger le Coffre" : "➖ Retirer du Coffre"}
+                <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-medium text-cream">
+                  {vaultModal === "deposit" ? <><Plus className="h-4 w-4" /> Recharger le Coffre</> : <><Minus className="h-4 w-4" /> Retirer du Coffre</>}
                 </h3>
                 <div className="flex flex-col gap-3">
                   <div>
@@ -362,7 +362,7 @@ export default function FinancesPage() {
                 {(canauxData?.podium || GATEWAY_NAMES.map((n) => ({ name: n, taux: 0 }))).map((p: any, i: number) => (
                   <Card key={i} className={i === 0 ? "border-gold/40" : ""}>
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl">{["🥇", "🥈", "🥉"][i]}</p>
+                      <p className="text-sm font-bold text-gold-bright">{["1er", "2ème", "3ème"][i]}</p>
                       <p className="mt-1 text-sm font-medium text-cream capitalize">{p.name}</p>
                       <p className="mt-1 font-mono text-xl text-emerald-bright">{p.taux}%</p>
                       <p className="text-[10px] text-sage-muted">Taux réussite</p>
@@ -381,7 +381,7 @@ export default function FinancesPage() {
                       <div className="mb-3 flex items-center justify-between">
                         <p className="font-medium text-cream capitalize">{name}</p>
                         <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.disponible ? "bg-emerald/15 text-emerald-bright" : "bg-coral/15 text-coral"}`}>
-                          {s.disponible ? "🟢 Actif" : "🔴 Indisponible"}
+                          <span className="flex items-center gap-1"><Circle className={`h-2 w-2 fill-current ${s.disponible ? "text-emerald-400" : "text-coral"}`} />{s.disponible ? "Actif" : "Indisponible"}</span>
                         </span>
                       </div>
                       <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-ink-line">
