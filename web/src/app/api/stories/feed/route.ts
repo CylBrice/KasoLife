@@ -8,15 +8,17 @@ export async function GET(req: NextRequest) {
 
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:3003';
 
-  const res = await fetch(`${backendUrl}/stories/feed`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    next: { revalidate: 60 },
-  });
-
-  if (!res.ok) return NextResponse.json([], { status: 200 });
-
-  const data = await res.json();
-  return NextResponse.json(data);
+  try {
+    const res = await fetch(`${backendUrl}/stories/feed`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return NextResponse.json([], { status: 200 });
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json([], { status: 200 });
+  }
 }

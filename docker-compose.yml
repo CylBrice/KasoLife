@@ -68,29 +68,29 @@ services:
       klando-keygen-kasolife:
         condition: service_started
     environment:
-      NODE_ENV: production
-      PORT: 3003
-      NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      BACKEND_URL: ${BACKEND_URL:-https://api.kasolife.com}
-      FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://kasolife.com,https://www.kasolife.com,https://api.kasolife.com}
-      JWT_SECRET: ${JWT_SECRET}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      SUPABASE_URL: ${SUPABASE_URL:-https://placeholder.supabase.co}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://kasolife.com,https://www.kasolife.com}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
-      SENTRY_DSN: ${SENTRY_DSN:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      BACKEND_URL: ${BACKEND_URL:-https://api.kasolife.com}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
+      JWT_SECRET: ${JWT_SECRET}
       KLANDO_KEYGEN_URL: http://klando-keygen-kasolife:3102
+      NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
+      NODE_ENV: production
+      PORT: 3003
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder}
+      SUPABASE_URL: ${SUPABASE_URL:-https://placeholder.supabase.co}
     ports:
       - "3003:3003"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3003/health"]
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3003/health"]
       interval: 30s
       timeout: 10s
       start_period: 40s
@@ -131,7 +131,7 @@ services:
     ports:
       - "3002:3002"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3002/"]
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3002/"]
       interval: 30s
       timeout: 10s
       start_period: 60s
