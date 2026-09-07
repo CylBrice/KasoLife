@@ -8,6 +8,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Credentials de test locaux — ne jamais commiter
+TEST_CREDENTIALS.md
+
 # IDE
 .vscode/
 .idea/
@@ -41,3 +44,7 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Supabase CLI artifacts (pas de BD Supabase dans ce projet)
+supabase/
+backend/supabase/

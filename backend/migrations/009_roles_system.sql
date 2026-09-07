@@ -65,7 +65,7 @@ INSERT INTO users (
 SELECT
   '5e1ba0cc-da93-4f02-8483-dd25f6901460',
   'root@kasolife.com',
-  '+237000000001',
+  '+2371938452757',
   'root_admin',
   'Root Admin',
   '$2a$12$pK81d2wSiXtP2cIRmMt8i.LLacC1H1UO94eP2KutIKXBe3yUpID1y',
