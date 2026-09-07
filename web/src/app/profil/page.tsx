@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { BadgeCheck, ShieldCheck, ShieldAlert, ShieldQuestion, LogOut, Plus, Star, Trash2 } from "lucide-react";
+import { BadgeCheck, ShieldCheck, ShieldAlert, ShieldQuestion, Plus, Star, Trash2 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
@@ -25,7 +25,7 @@ interface MobileMoney {
 
 export default function ProfilPage() {
   const t = useT();
-  const { user, loading, logout, refresh } = useAuth();
+  const { user, loading, refresh } = useAuth();
   const router = useRouter();
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
@@ -167,9 +167,6 @@ export default function ProfilPage() {
           />
         )}
 
-        <Button variant="ghost" className="mt-6 w-full" onClick={() => { logout(); router.push("/"); }}>
-          <LogOut className="h-4 w-4" /> {t("profile.logout")}
-        </Button>
       </main>
       <BottomNav />
       <Footer />
