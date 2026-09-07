@@ -87,6 +87,9 @@ const analyticsRouter     = require('./routes/analytics');
 const app  = express();
 const PORT = process.env.PORT || 3003;
 
+// Derrière nginx reverse proxy — nécessaire pour express-rate-limit et les IPs réelles
+app.set('trust proxy', 1);
+
 // ── Sécurité ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(hpp());
