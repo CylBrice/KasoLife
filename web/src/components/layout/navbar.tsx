@@ -24,7 +24,7 @@ export function Navbar() {
   const t = useT();
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, loading } = useAuth();
+  const { user, wallet, logout, loading } = useAuth();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -87,6 +87,17 @@ export function Navbar() {
 
           {user ? (
             <>
+              {wallet != null && (
+                <Link
+                  href="/wallet"
+                  className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-mono font-semibold tabular-nums text-gold hover:border-gold/60 hover:bg-gold/15 transition-colors"
+                >
+                  <Wallet className="h-3.5 w-3.5 shrink-0" />
+                  <span>{wallet.balance_xcon.toLocaleString("fr-FR")}</span>
+                  <span className="text-gold/60">XC</span>
+                </Link>
+              )}
+
               <button
                 ref={avatarRef}
                 onClick={openMenu}
