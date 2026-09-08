@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces, Space_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -52,6 +52,14 @@ export const metadata: Metadata = {
   title: "KasoLife — Soutenez vos créateurs préférés",
   description:
     "KasoLife est la plateforme qui connecte les créateurs francophones d'Afrique subsaharienne — fitness, musique, cuisine, art, mode, gaming et plus — à leur communauté.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KasoLife",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: [
       { url: "/favicon-16x16.png",   sizes: "16x16",   type: "image/png" },
@@ -63,8 +71,18 @@ export const metadata: Metadata = {
     ],
     apple: [
       { url: "/icons/icon-apple-touch.png", sizes: "180x180", type: "image/png" },
+      { url: "/icons/icon-apple-touch.png", sizes: "120x120", type: "image/png" },
+      { url: "/icons/icon-apple-touch.png", sizes: "167x167", type: "image/png" },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0B2545",
 };
 
 export default function RootLayout({
