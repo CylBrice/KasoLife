@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  BadgeCheck, Wallet, Heart, ChevronRight,
+  BadgeCheck, Wallet, Coins, Layers, ChevronRight,
   UserCircle, Shield, CreditCard, BarChart3, Settings,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
@@ -122,7 +122,7 @@ export default function ProfilPage() {
             </div>
             {!isCreator && (
               <Link href="/devenir-createur" className="shrink-0">
-                <Button size="sm" variant="outline">{isEn ? "Become creator" : "Devenir créateur"}</Button>
+                <Button size="sm">{isEn ? "Become creator" : "Devenir créateur"}</Button>
               </Link>
             )}
           </div>
@@ -131,7 +131,7 @@ export default function ProfilPage() {
           <div className="mt-4 grid grid-cols-2 gap-3">
             <Link href="/wallet" className="group">
               <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
-                <Wallet className="h-5 w-5 shrink-0 text-gold" />
+                <Coins className="h-5 w-5 shrink-0 text-gold" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-base font-medium tabular text-cream">
                     {formatFCFA(wallet?.balance_xcon ?? 0)}
@@ -143,7 +143,7 @@ export default function ProfilPage() {
             </Link>
             <Link href="/abonnements" className="group">
               <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
-                <Heart className="h-5 w-5 shrink-0 text-coral" />
+                <Layers className="h-5 w-5 shrink-0 text-coral" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-base font-medium tabular text-cream">{activeSubsCount}</p>
                   <p className="text-xs text-sage-muted">

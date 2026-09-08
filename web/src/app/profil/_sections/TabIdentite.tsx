@@ -271,7 +271,7 @@ export function TabIdentite() {
         </div>
         {u.kyc_status !== "SUPPORT" && (
           <Link href="/profil/kyc">
-            <Button size="sm" variant="outline" className="mb-5 w-full">
+            <Button size="sm" className="mb-5 w-full">
               {u.kyc_status === "VERIFIED"
                 ? (isEn ? "Update my identity" : "Mettre à jour mon identité")
                 : (isEn ? "Verify my identity" : "Vérifier mon identité")}

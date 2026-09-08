@@ -44,6 +44,16 @@ type Period = "7d" | "30d" | "90d";
 const CREATOR_ROLES = ["influencer", "admin", "super_admin", "root_admin"];
 
 /* ── Badges ─────────────────────────────────────────────────────────────── */
+const BADGE_COLORS = [
+  "#14B8A6", "#5B95DD", "#F59E0B", "#EC4899", "#8B5CF6",
+  "#10B981", "#EF4444", "#F97316", "#06B6D4", "#84CC16",
+  "#A855F7", "#E11D48", "#0EA5E9", "#22C55E", "#EAB308",
+];
+const getBadgeColor = (id: string) => {
+  const sum = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return BADGE_COLORS[sum % BADGE_COLORS.length];
+};
+
 type BadgeCategory = "community" | "content" | "engagement" | "revenue" | "profile" | "loyalty" | "support";
 
 interface BadgeDef {
@@ -407,7 +417,7 @@ function BadgesSection({
     <div className="card-surface p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-2 font-display text-base font-medium text-cream">
-          <Trophy className="h-5 w-5 text-gold" />
+          <Award className="h-5 w-5 text-gold" />
           {isEn ? "Badges & Achievements" : "Badges & Succès"}
         </h2>
         <span className="rounded-full bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold">
@@ -439,35 +449,24 @@ function BadgesSection({
                 </p>
                 <p className="text-xs text-sage-muted">{catEarned}/{catBadges.length}</p>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+              <div className="flex flex-wrap gap-2">
                 {catBadges.map((badge) => {
                   const unlocked = badge.check(stats, subsCount, user);
                   const Icon = badge.icon;
+                  const color = getBadgeColor(badge.id);
                   return (
                     <div
                       key={badge.id}
                       title={`${isEn ? badge.labelEn : badge.labelFr} — ${isEn ? badge.descEn : badge.descFr}`}
-                      className={`group relative flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center transition-all ${
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
                         unlocked
-                          ? `${badge.tileBg} shadow-sm`
-                          : "border-ink-line bg-ink-raised opacity-35 grayscale"
+                          ? "text-white shadow-sm"
+                          : "border-ink-line bg-ink-raised text-sage-muted opacity-50"
                       }`}
+                      style={unlocked ? { backgroundColor: color, borderColor: color } : undefined}
                     >
-                      {/* Icône */}
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${unlocked ? badge.tileBg : "bg-ink"}`}>
-                        {unlocked
-                          ? <Icon className={`h-3.5 w-3.5 ${badge.iconColor}`} />
-                          : <Lock className="h-3 w-3 text-sage-muted" />
-                        }
-                      </div>
-                      {/* Label */}
-                      <p className={`text-[9px] font-semibold leading-tight ${unlocked ? "text-cream" : "text-sage-muted"}`}>
-                        {isEn ? badge.labelEn : badge.labelFr}
-                      </p>
-                      {/* Point débloqué */}
-                      {unlocked && (
-                        <span className="absolute right-1 top-1 h-1 w-1 rounded-full bg-gold" />
-                      )}
+                      <Icon size={12} />
+                      {isEn ? badge.labelEn : badge.labelFr}
                     </div>
                   );
                 })}
