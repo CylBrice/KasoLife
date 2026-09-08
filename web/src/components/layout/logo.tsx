@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Logo({ className }: { className?: string }) {
   return (
     <Link href="/" className={`flex items-end gap-0.5 transition-all duration-300 hover:drop-shadow-[0_0_10px_rgba(15,148,136,0.50)] hover:brightness-110 ${className ?? ""}`}>
-      <svg width="65" height="53" viewBox="173 219 692 564" className="shrink-0">
+      <svg viewBox="173 219 692 564" className="shrink-0 w-10 h-[33px] md:w-[65px] md:h-[53px]">
         <defs>
           <linearGradient id="logo-pag-grad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" className="[stop-color:#C24A63] dark:[stop-color:#14B8A6]" />
@@ -41,10 +41,10 @@ export function Logo({ className }: { className?: string }) {
         <rect width="1024" height="1024" fill="url(#logo-pag-grad)" mask="url(#logo-pag-mask)" />
       </svg>
       <span className="flex items-baseline">
-        <span className="font-brand text-2xl font-extrabold tracking-tight text-emerald dark:text-[#C24A63]">
+        <span className="font-brand text-xl md:text-2xl font-extrabold tracking-tight text-emerald dark:text-[#C24A63]">
           Kaso
         </span>
-        <span className="font-brand text-2xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">
+        <span className="font-brand text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-gold to-coral bg-clip-text text-transparent">
           Life
         </span>
       </span>
