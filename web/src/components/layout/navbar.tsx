@@ -12,7 +12,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
 import {
-  User, Wallet, MessageSquare, Layers, LayoutDashboard,
+  User, Wallet, Coins, MessageSquare, Layers, LayoutDashboard,
   Video, LogOut, Settings, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -82,21 +82,22 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user && wallet != null && (
+            <Link
+              href="/wallet"
+              className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-mono font-semibold tabular-nums text-gold hover:border-gold/60 hover:bg-gold/15 transition-colors"
+            >
+              <Coins className="h-3.5 w-3.5 shrink-0" />
+              <span>{wallet.balance_xcon.toLocaleString("fr-FR")}</span>
+              <span className="text-gold/60">XC</span>
+            </Link>
+          )}
+
           <LanguageSwitcher />
           <ThemeToggle />
 
           {user ? (
             <>
-              {wallet != null && (
-                <Link
-                  href="/wallet"
-                  className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-mono font-semibold tabular-nums text-gold hover:border-gold/60 hover:bg-gold/15 transition-colors"
-                >
-                  <Wallet className="h-3.5 w-3.5 shrink-0" />
-                  <span>{wallet.balance_xcon.toLocaleString("fr-FR")}</span>
-                  <span className="text-gold/60">XC</span>
-                </Link>
-              )}
 
               <button
                 ref={avatarRef}
