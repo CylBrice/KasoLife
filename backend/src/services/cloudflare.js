@@ -12,7 +12,7 @@
 // ============================================================
 'use strict';
 
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 
@@ -116,4 +116,62 @@ const extractR2Key = (url) => {
   return url.slice(base.length + 1);
 };
 
-module.exports = { uploadAvatarToR2, deleteAvatarFromR2, extractR2Key };
+// ── Mapping MIME → extension ─────────────────────────────────────────────────
+const EXT_FROM_MIME = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+  'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
+  'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/ogg': 'ogg',
+};
+
+const FOLDER_FOR = {
+  banner:     (uid) => `banners/${uid}`,
+  thumbnail:  (uid) => `thumbnails/${uid}`,
+  post_image: (uid) => `posts/${uid}`,
+  post_video: (uid) => `posts/${uid}`,
+  post_audio: (uid) => `posts/${uid}`,
+};
+
+// ── Upload générique vers R2 (banners, posts, thumbnails) ────────────────────
+const uploadMediaToR2 = async (buffer, userId, type, mimetype) => {
+  const missing = ['CLOUDFLARE_R2_ENDPOINT','CLOUDFLARE_R2_ACCESS_KEY_ID','CLOUDFLARE_R2_SECRET_ACCESS_KEY','CLOUDFLARE_R2_PUBLIC_URL']
+    .filter(v => !process.env[v]);
+  if (missing.length) throw new Error(`Variables R2 manquantes : ${missing.join(', ')}`);
+
+  const ext    = EXT_FROM_MIME[mimetype] || 'bin';
+  const folder = (FOLDER_FOR[type] || ((uid) => `media/${uid}`))(userId);
+  const key    = `${folder}/${uuidv4()}.${ext}`;
+
+  await getR2Client().send(new PutObjectCommand({
+    Bucket:       DEFAULT_BUCKET(),
+    Key:          key,
+    Body:         buffer,
+    ContentType:  mimetype,
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
+
+  return { url: `${PUB_URL()}/${key}`, key };
+};
+
+// ── Suppression générique par URL publique ───────────────────────────────────
+const deleteMediaFromR2 = async (url) => {
+  if (!url) return;
+  const base = PUB_URL();
+  if (!base || !url.startsWith(base)) return;
+  const key = url.slice(base.length + 1);
+  try {
+    await getR2Client().send(new DeleteObjectCommand({ Bucket: DEFAULT_BUCKET(), Key: key }));
+  } catch (err) {
+    console.error('[R2] Suppression média échouée :', err.message);
+  }
+};
+
+// ── Download d'un objet R2 par clé ──────────────────────────────────────────
+const downloadMediaFromR2 = async (key) => {
+  const r2  = getR2Client();
+  const res = await r2.send(new GetObjectCommand({ Bucket: DEFAULT_BUCKET(), Key: key }));
+  const chunks = [];
+  for await (const chunk of res.Body) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  return Buffer.concat(chunks);
+};
+
+module.exports = { uploadAvatarToR2, deleteAvatarFromR2, extractR2Key, uploadMediaToR2, deleteMediaFromR2, downloadMediaFromR2 };

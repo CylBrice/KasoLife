@@ -1,3 +1,23 @@
+# 🚨 RÈGLE 0A - BORDER-RADIUS DES BOUTONS : `rounded-xl` UNIQUEMENT
+
+⛔ **TOUS les boutons du site utilisent `rounded-xl` — sans exception**
+- ❌ **JAMAIS** `rounded-lg` ou `rounded-2xl` sur un `<button>` ou composant `<Button>`
+- ✅ Référence : `rounded-xl border border-brick/40 bg-brick/10 px-3 py-1.5`
+- Cette règle s'applique à toutes les pages, tous les composants, tous les layouts
+- Les autres éléments (cards, inputs, badges, blocs) conservent leur propre arrondi
+
+---
+
+# 🚨 RÈGLE 0B - ICÔNES UI : SVG / LUCIDE REACT UNIQUEMENT
+
+⛔ **INTERDICTION ABSOLUE d'utiliser des emojis comme icônes d'interface**
+- ❌ **JAMAIS** `emoji` comme icône visuelle dans un composant React (badges, boutons, tiles, états…)
+- ✅ Utiliser **Lucide React** : `import { Crown, Trophy, Heart } from "lucide-react"`
+- ✅ Utiliser du **SVG inline** pour les formes custom non disponibles dans Lucide
+- Les emojis restent autorisés uniquement dans du **contenu textuel** (messages, descriptions, toasts)
+
+---
+
 # 🚨 RÈGLE 1 - WORKFLOW GIT STRICT
 
 ⛔ **AUCUNE modification ne doit être pushée sans validation locale**

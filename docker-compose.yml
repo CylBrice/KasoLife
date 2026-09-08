@@ -85,13 +85,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
       JWT_SECRET: ${JWT_SECRET}
       KLANDO_KEYGEN_URL: http://klando-keygen-kasolife:3102
-      NEON_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
-      NODE_ENV: production
+NODE_ENV: production
       PORT: 3003
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       SENTRY_DSN: ${SENTRY_DSN:-}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder}
-      SUPABASE_URL: ${SUPABASE_URL:-https://placeholder.supabase.co}
     ports:
       - "3003:3003"
     healthcheck:

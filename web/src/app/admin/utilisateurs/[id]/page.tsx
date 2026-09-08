@@ -133,7 +133,7 @@ export default function AdminUserDetailPage() {
     <div className="flex flex-col gap-6">
       {/* En-tête */}
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="rounded-lg p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+        <button onClick={() => router.back()} className="rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="flex flex-1 items-center gap-3">

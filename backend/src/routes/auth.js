@@ -369,7 +369,7 @@ router.post('/logout-all', authMiddleware, async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user } = await supabase.from('users')
-      .select('id, phone, pseudo, name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status')
+      .select('id, phone, pseudo, name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status, birth_date, gender, twofa_enabled, twofa_method')
       .eq('id', req.user.id).single();
     const { data: wallet } = await supabase.from('wallets')
       .select('balance_xcon, pending_balance_xcon, total_deposited, total_withdrawn, total_earned')
@@ -394,6 +394,10 @@ router.get('/me', authMiddleware, async (req, res) => {
       ...userWithoutPhone,
       phone_masked: phoneMasked,
       name: namePlain,
+      birth_date: user?.birth_date || null,
+      gender: user?.gender || null,
+      twofa_enabled: user?.twofa_enabled || false,
+      twofa_method: user?.twofa_method || null,
       wallet: {
         balance_xcon:         wallet?.balance_xcon         ?? 0,
         pending_balance_xcon: wallet?.pending_balance_xcon ?? 0,
@@ -677,6 +681,66 @@ router.post('/2fa/verify', async (req, res) => {
 
     await supabase.from('otp_tokens').update({ used: true }).eq('id', tok.id);
     res.json({ valid: true });
+  } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
+});
+
+// ── POST /auth/2fa/disable — Désactiver la double authentification
+router.post('/2fa/disable', authMiddleware, async (req, res) => {
+  try {
+    await supabase.from('users').update({ twofa_enabled: false, twofa_method: null }).eq('id', req.user.id);
+    res.json({ message: 'Double authentification désactivée' });
+  } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
+});
+
+// ── PUT /auth/birth-date — Mettre à jour la date de naissance
+router.put('/birth-date', authMiddleware, async (req, res) => {
+  try {
+    const { birth_date } = req.body;
+    if (!birth_date) return res.status(400).json({ error: 'Date de naissance requise' });
+    const parsed = new Date(birth_date);
+    if (isNaN(parsed.getTime())) return res.status(400).json({ error: 'Date invalide' });
+    const ageMs = Date.now() - parsed.getTime();
+    if (ageMs < 18 * 365.25 * 86400000) return res.status(400).json({ error: 'Vous devez avoir au moins 18 ans' });
+    await supabase.from('users').update({ birth_date }).eq('id', req.user.id);
+    res.json({ message: 'Date de naissance mise à jour' });
+  } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
+});
+
+// ── PUT /auth/gender — Mettre à jour le genre
+router.put('/gender', authMiddleware, async (req, res) => {
+  try {
+    const { gender } = req.body;
+    if (!['M', 'F'].includes(gender)) return res.status(400).json({ error: 'Genre invalide — M ou F' });
+    await supabase.from('users').update({ gender }).eq('id', req.user.id);
+    res.json({ message: 'Genre mis à jour' });
+  } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
+});
+
+// ── DELETE /auth/account — Suppression définitive du compte (App Store 5.1.1)
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Révoquer toutes les sessions
+    await supabase.from('refresh_tokens').update({ revoked: true }).eq('user_id', userId);
+    // Supprimer les données liées
+    await supabase.from('user_mobile_money').delete().eq('user_id', userId);
+    await supabase.from('email_verification_tokens').delete().eq('user_id', userId);
+    await supabase.from('otp_tokens').delete().eq('user_id', userId);
+    // Anonymiser puis désactiver le compte (soft delete pour conformité RGPD)
+    const anonId = `deleted_${userId.substring(0, 8)}`;
+    await supabase.from('users').update({
+      pseudo: anonId,
+      name: null,
+      email: null,
+      bio: null,
+      avatar_url: null,
+      banner_url: null,
+      birth_date: null,
+      gender: null,
+      is_active: false,
+      deleted_at: new Date().toISOString(),
+    }).eq('id', userId);
+    res.json({ message: 'Compte supprimé définitivement' });
   } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
 });
 

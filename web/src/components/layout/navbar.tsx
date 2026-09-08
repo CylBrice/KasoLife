@@ -106,7 +106,7 @@ export function Navbar() {
                   {/* En-tête */}
                   <div className="border-b border-ink-line px-4 py-3">
                     <p className="truncate text-sm font-semibold text-cream">@{user.pseudo}</p>
-                    <p className="text-xs capitalize text-sage-muted">{user.role.replace("_", " ")}</p>
+                    <p className="text-xs capitalize text-sage-muted">{user.role?.replace("_", " ")}</p>
                   </div>
 
                   {/* Navigation */}

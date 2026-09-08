@@ -30,7 +30,7 @@ export function PillToggle({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "rounded-lg font-medium transition-colors",
+        "rounded-xl font-medium transition-colors",
         active
           ? "bg-gold text-white dark:text-[#0B2545]"
           : cn("text-sage hover:text-cream", inactiveClassName),

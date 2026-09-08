@@ -140,12 +140,12 @@ export function DashboardShell({
           <div className="flex items-center gap-1">
             {!collapsed && (
               <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                className="rounded-lg p-1.5 text-sage hover:text-cream transition-colors">
+                className="rounded-xl p-1.5 text-sage hover:text-cream transition-colors">
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
             )}
             <button onClick={toggleCollapsed} title={collapsed ? "Déplier" : "Réduire"}
-              className="rounded-lg p-1.5 text-sage hover:text-cream transition-colors">
+              className="rounded-xl p-1.5 text-sage hover:text-cream transition-colors">
               {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
           </div>
@@ -155,7 +155,7 @@ export function DashboardShell({
         {!collapsed && (
           <div className="px-3 pb-2">
             <button onClick={openCmdk}
-              className="flex w-full items-center gap-2 rounded-lg border border-ink-line/50 bg-ink-raised px-3 py-2 text-xs text-sage hover:text-cream transition-colors">
+              className="flex w-full items-center gap-2 rounded-xl border border-ink-line/50 bg-ink-raised px-3 py-2 text-xs text-sage hover:text-cream transition-colors">
               <Search className="h-3.5 w-3.5" />
               <span className="flex-1 text-left">Recherche rapide</span>
               <kbd className="rounded bg-ink-line px-1.5 py-0.5 text-[10px] font-mono text-sage-muted">⌘K</kbd>
@@ -165,7 +165,7 @@ export function DashboardShell({
         {collapsed && (
           <div className="px-2 pb-2">
             <button onClick={openCmdk} title="Recherche rapide (⌘K)"
-              className="flex w-full items-center justify-center rounded-lg border border-ink-line/50 bg-ink-raised py-2 text-sage hover:text-cream transition-colors">
+              className="flex w-full items-center justify-center rounded-xl border border-ink-line/50 bg-ink-raised py-2 text-sage hover:text-cream transition-colors">
               <Search className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -214,13 +214,13 @@ export function DashboardShell({
             {collapsed ? "←" : "← Retour au site"}
           </Link>
           {!collapsed && (
-            <button onClick={toggleDark} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-cream transition-colors">
+            <button onClick={toggleDark} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-sage hover:text-cream transition-colors">
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               {dark ? "Mode clair" : "Mode sombre"}
             </button>
           )}
           <button onClick={logout} title="Déconnexion" className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-brick transition-colors",
+            "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-sage hover:text-brick transition-colors",
             collapsed && "justify-center px-2"
           )}>
             <LogOut className="h-4 w-4 shrink-0" />
@@ -233,10 +233,10 @@ export function DashboardShell({
       <header className="flex items-center justify-between border-b border-ink-line/50 bg-ink-surface px-4 py-3 md:hidden">
         <Logo />
         <div className="flex items-center gap-2">
-          <button onClick={openCmdk} className="rounded-lg border border-ink-line p-2 text-sage">
+          <button onClick={openCmdk} className="rounded-xl border border-ink-line p-2 text-sage">
             <Search className="h-4 w-4" />
           </button>
-          <button onClick={toggleDark} className="rounded-lg border border-ink-line p-2 text-sage">
+          <button onClick={toggleDark} className="rounded-xl border border-ink-line p-2 text-sage">
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           {isSuperAdmin && (
@@ -300,7 +300,7 @@ export function DashboardShell({
                 <button
                   key={item.href}
                   onClick={() => { router.push(item.href); closeCmdk(); }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left"
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-gold/60 shrink-0" />
                   {item.label}

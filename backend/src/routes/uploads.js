@@ -1,31 +1,29 @@
-﻿// ============================================================
-// KASOLIFE — Routes /uploads v1.0
-// Upload de médias (avatars, bannières, contenu posts) vers Supabase Storage
-// Buckets attendus : 'avatars' (public), 'banners' (public), 'posts' (public/privé selon config bucket)
+// ============================================================
+// KASOLIFE — Routes /uploads v2.0
+// Upload de médias vers Cloudflare R2 (avatars, bannières, posts)
 // ============================================================
 'use strict';
 const express = require('express');
 const multer  = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const supabaseStorage = require('../config/supabase-storage');
 const { authMiddleware, requireMinRole } = require('../middleware/auth');
 const {
   compressImage, compressVideo, compressAudio, generateVideoThumbnail,
   computePerceptualHash, hammingDistance,
 } = require('../services/mediaProcessing');
 const { moderateImage, generateTags, generateCaption, getAIConfig, checkCategoryConsistency } = require('../services/aiModeration');
-const { uploadAvatarToR2, deleteAvatarFromR2 } = require('../services/cloudflare');
+const { uploadAvatarToR2, deleteAvatarFromR2, uploadMediaToR2, deleteMediaFromR2, downloadMediaFromR2 } = require('../services/cloudflare');
 
 const router = express.Router();
 
 const MAX_SIZES = {
-  avatar:    5  * 1024 * 1024,  // 5 Mo
-  banner:    8  * 1024 * 1024,  // 8 Mo
-  post_image: 15 * 1024 * 1024, // 15 Mo
-  post_video: 200 * 1024 * 1024, // 200 Mo
-  post_audio: 50 * 1024 * 1024,  // 50 Mo
-  thumbnail: 5  * 1024 * 1024,  // 5 Mo
+  avatar:     5  * 1024 * 1024,
+  banner:     8  * 1024 * 1024,
+  post_image: 15 * 1024 * 1024,
+  post_video: 200 * 1024 * 1024,
+  post_audio: 50 * 1024 * 1024,
+  thumbnail:  5  * 1024 * 1024,
 };
 
 const ALLOWED_MIME = {
@@ -37,18 +35,13 @@ const ALLOWED_MIME = {
   post_audio: ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'],
 };
 
-const BUCKET_FOR = {
-  avatar: 'avatars', banner: 'banners', thumbnail: 'thumbnails',
-  post_image: 'posts', post_video: 'posts', post_audio: 'posts',
-};
-
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
-
 const EXT_FROM_MIME = {
   'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
   'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
   'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/ogg': 'ogg',
 };
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
 // ── POST /uploads/:type — upload générique
 // type: avatar | banner | thumbnail | post_image | post_video | post_audio
@@ -57,7 +50,6 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
     const { type } = req.params;
     if (!ALLOWED_MIME[type]) return res.status(400).json({ error: 'Type de média invalide' });
 
-    // Seuls les créateurs peuvent uploader du contenu de post
     if (type.startsWith('post_') && req.user.role === 'user')
       return res.status(403).json({ error: 'Réservé aux créateurs' });
 
@@ -67,17 +59,13 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
     if (req.file.size > MAX_SIZES[type])
       return res.status(400).json({ error: `Fichier trop volumineux (max ${Math.round(MAX_SIZES[type] / (1024 * 1024))} Mo)` });
 
-    // ── AVATAR → Cloudflare R2 (même architecture que KasoPlex) ────────────────
+    // ── AVATAR → R2 avec variantes (400, 240, 96px) ──────────────────────────
     if (type === 'avatar') {
       const { url: avatarUrl, key: avatarKey } = await uploadAvatarToR2(req.file.buffer, req.user.id);
 
-      // Supprimer l'ancien avatar R2 si présent
       const { data: oldUser } = await supabase.from('users').select('avatar_url').eq('id', req.user.id).single();
-      if (oldUser?.avatar_url) {
-        deleteAvatarFromR2(oldUser.avatar_url).catch(() => {}); // best-effort
-      }
+      if (oldUser?.avatar_url) deleteAvatarFromR2(oldUser.avatar_url).catch(() => {});
 
-      // Persister la nouvelle URL
       await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', req.user.id);
 
       return res.status(201).json({
@@ -87,10 +75,7 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
       });
     }
 
-    // ── Autres types → Supabase Storage ─────────────────────────────────────────
-    const bucket = BUCKET_FOR[type];
-
-    // ── Compression côté serveur — réduit le poids sans dégradation perceptible
+    // ── Compression ──────────────────────────────────────────────────────────
     let processed;
     try {
       if (['banner', 'thumbnail', 'post_image'].includes(type)) {
@@ -102,14 +87,11 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
       } else {
         processed = { buffer: req.file.buffer, mimetype: req.file.mimetype, ext: EXT_FROM_MIME[req.file.mimetype] || 'bin' };
       }
-    } catch (compErr) {
-      console.error('[Uploads] Compression échouée, envoi du fichier original :', compErr.message);
+    } catch {
       processed = { buffer: req.file.buffer, mimetype: req.file.mimetype, ext: EXT_FROM_MIME[req.file.mimetype] || 'bin' };
     }
 
-    const filePath = `${req.user.id}/${type}/${uuidv4()}.${processed.ext}`;
-
-    // ── Modération IA (si activée par un admin) — bloque le stockage si REJECTED
+    // ── Modération IA pour les images de post ────────────────────────────────
     let moderation = { status: 'NOT_SCANNED', reason: null };
     if (type === 'post_image') {
       moderation = await moderateImage(processed.buffer, processed.mimetype);
@@ -121,34 +103,28 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
       }
     }
 
-    const { error: uploadErr } = await supabaseStorage.storage.from(bucket).upload(filePath, processed.buffer, {
-      contentType: processed.mimetype,
-      cacheControl: '31536000', // 1 an — fichiers immuables (nouveau nom à chaque upload)
-      upsert: false,
-    });
-    if (uploadErr) throw uploadErr;
-
-    const { data: publicUrlData } = supabaseStorage.storage.from(bucket).getPublicUrl(filePath);
-    const publicUrl = publicUrlData?.publicUrl;
+    // ── Upload vers R2 ───────────────────────────────────────────────────────
+    const { url: publicUrl, key: filePath } = await uploadMediaToR2(
+      processed.buffer, req.user.id, type, processed.mimetype
+    );
 
     const result = {
-      url: publicUrl, path: filePath, bucket,
+      url: publicUrl, path: filePath,
       original_size: req.file.size, compressed_size: processed.buffer.length,
       moderation_status: moderation.status,
+      storage: 'cloudflare_r2',
     };
 
-    // ── Tags IA + hash perceptuel + détection de doublons + cohérence catégorie
-    // (best-effort, n'empêchent jamais l'upload en cas d'échec)
+    // ── Tags IA + hash perceptuel + détection doublons + cohérence catégorie
     if (type === 'post_image') {
       const categoryName = (req.body?.category_name || '').slice(0, 50);
-      const caption = (req.body?.caption || '').slice(0, 300);
+      const caption      = (req.body?.caption || '').slice(0, 300);
 
       result.ai_tags = await generateTags({
         caption, imageBuffer: processed.buffer, mimeType: processed.mimetype,
         categoryName: categoryName || 'Général',
       });
 
-      // Empreinte perceptuelle — pour détecter les republications de contenu
       try {
         const hash = await computePerceptualHash(processed.buffer);
         result.content_hash = hash;
@@ -158,7 +134,7 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
           const { data: existingPosts } = await supabase.from('posts')
             .select('id, content_hash, creator_id')
             .not('content_hash', 'is', null)
-            .neq('creator_id', req.user.id) // republication par un AUTRE créateur = suspect
+            .neq('creator_id', req.user.id)
             .limit(2000);
           for (const existing of existingPosts || []) {
             if (hammingDistance(hash, existing.content_hash) <= 5) {
@@ -168,33 +144,29 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
           }
         }
       } catch (hashErr) {
-        console.error('[Uploads] Calcul hash perceptuel échoué :', hashErr.message);
+        console.error('[Uploads] Hash perceptuel échoué :', hashErr.message);
       }
 
-      // Cohérence catégorie/contenu
       try {
         const consistency = await checkCategoryConsistency({
           imageBuffer: processed.buffer, mimeType: processed.mimetype,
-          caption, categoryName: categoryName || 'Général',
+          caption, categoryName: (req.body?.category_name || 'Général').slice(0, 50),
         });
         if (!consistency.consistent) {
-          result.category_mismatch = true;
+          result.category_mismatch        = true;
           result.category_mismatch_reason = consistency.reason;
         }
-      } catch (consErr) {
-        console.error('[Uploads] Vérification cohérence catégorie échouée :', consErr.message);
-      }
+      } catch {}
     }
 
-    // ── Vignette automatique pour les vidéos (+ modération sur la vignette)
+    // ── Vignette automatique pour les vidéos ─────────────────────────────────
     if (type === 'post_video') {
       try {
         const thumb = await generateVideoThumbnail(req.file.buffer);
 
         const thumbModeration = await moderateImage(thumb.buffer, thumb.mimetype);
         if (thumbModeration.status === 'REJECTED') {
-          // La vidéo est déjà stockée mais on bloque sa publication : on la supprime
-          await supabaseStorage.storage.from(bucket).remove([filePath]);
+          await deleteMediaFromR2(publicUrl);
           return res.status(422).json({
             error: 'Ce contenu ne respecte pas les règles de la plateforme et a été refusé.',
             moderation_reason: thumbModeration.reason,
@@ -204,13 +176,13 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
         result.moderation_reason = thumbModeration.reason;
 
         const categoryName = (req.body?.category_name || '').slice(0, 50);
-        const caption = (req.body?.caption || '').slice(0, 300);
+        const caption      = (req.body?.caption || '').slice(0, 300);
+
         result.ai_tags = await generateTags({
           caption, imageBuffer: thumb.buffer, mimeType: thumb.mimetype,
           categoryName: categoryName || 'Général',
         });
 
-        // Empreinte perceptuelle + détection de doublons (sur la vignette)
         try {
           const hash = await computePerceptualHash(thumb.buffer);
           result.content_hash = hash;
@@ -229,38 +201,27 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
               }
             }
           }
-        } catch (hashErr) {
-          console.error('[Uploads] Calcul hash perceptuel échoué :', hashErr.message);
-        }
+        } catch {}
 
-        // Cohérence catégorie/contenu (sur la vignette)
         try {
           const consistency = await checkCategoryConsistency({
             imageBuffer: thumb.buffer, mimeType: thumb.mimetype,
             caption, categoryName: categoryName || 'Général',
           });
           if (!consistency.consistent) {
-            result.category_mismatch = true;
+            result.category_mismatch        = true;
             result.category_mismatch_reason = consistency.reason;
           }
-        } catch (consErr) {
-          console.error('[Uploads] Vérification cohérence catégorie échouée :', consErr.message);
-        }
+        } catch {}
 
-        const thumbPath = `${req.user.id}/thumbnail/${uuidv4()}.${thumb.ext}`;
-        const { error: thumbErr } = await supabaseStorage.storage.from('thumbnails').upload(thumbPath, thumb.buffer, {
-          contentType: thumb.mimetype, cacheControl: '31536000', upsert: false,
-        });
-        if (!thumbErr) {
-          const { data: thumbUrlData } = supabaseStorage.storage.from('thumbnails').getPublicUrl(thumbPath);
-          result.thumbnail_url = thumbUrlData?.publicUrl;
-        }
+        const { url: thumbUrl } = await uploadMediaToR2(thumb.buffer, req.user.id, 'thumbnail', thumb.mimetype);
+        result.thumbnail_url = thumbUrl;
       } catch (thumbErr) {
         console.error('[Uploads] Génération vignette échouée :', thumbErr.message);
       }
     }
 
-    // Mettre à jour automatiquement le profil pour banner
+    // Persister la bannière sur le profil
     if (type === 'banner') {
       await supabase.from('users').update({ banner_url: publicUrl }).eq('id', req.user.id);
     }
@@ -269,37 +230,42 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
   } catch (err) { res.status(500).json({ error: 'Erreur lors du téléversement', details: err.message }); }
 });
 
-// ── DELETE /uploads — supprimer un fichier (le propriétaire uniquement, via path complet)
+// ── DELETE /uploads — supprimer un fichier par URL R2
 router.delete('/', authMiddleware, async (req, res) => {
   try {
-    const { bucket, path: filePath } = req.body;
-    if (!bucket || !filePath) return res.status(400).json({ error: 'bucket et path requis' });
+    const { url: fileUrl } = req.body;
+    if (!fileUrl) return res.status(400).json({ error: 'url requis' });
 
-    // Vérifier que le fichier appartient bien à l'utilisateur (préfixe userId/)
-    if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
+    const pubBase = (process.env.CLOUDFLARE_R2_PUBLIC_URL || '').replace(/\/$/, '');
+    if (!pubBase || !fileUrl.startsWith(pubBase))
+      return res.status(400).json({ error: 'URL R2 invalide' });
+
+    const key = fileUrl.slice(pubBase.length + 1);
+    if (!key.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
-    const { error } = await supabaseStorage.storage.from(bucket).remove([filePath]);
-    if (error) throw error;
-
+    await deleteMediaFromR2(fileUrl);
     res.json({ message: 'Fichier supprimé' });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// ── POST /uploads/generate-caption — génère une légende IA pour un média déjà uploadé
-// Body : { bucket, path, category_name?, tone? }
+// ── POST /uploads/generate-caption — génère une légende IA pour un média R2
+// Body : { url, category_name?, tone? }
 router.post('/generate-caption', authMiddleware, requireMinRole('influencer'), async (req, res) => {
   try {
-    const { bucket, path: filePath, category_name, tone } = req.body;
-    if (!bucket || !filePath) return res.status(400).json({ error: 'bucket et path requis' });
-    if (!filePath.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
+    const { url: fileUrl, category_name, tone } = req.body;
+    if (!fileUrl) return res.status(400).json({ error: 'url requis' });
+
+    const pubBase = (process.env.CLOUDFLARE_R2_PUBLIC_URL || '').replace(/\/$/, '');
+    if (!pubBase || !fileUrl.startsWith(pubBase))
+      return res.status(400).json({ error: 'URL R2 invalide' });
+
+    const key = fileUrl.slice(pubBase.length + 1);
+    if (!key.startsWith(`${req.user.id}/`) && !['admin','super_admin','root_admin'].includes(req.user.role))
       return res.status(403).json({ error: 'Accès refusé' });
 
-    const { data, error } = await supabaseStorage.storage.from(bucket).download(filePath);
-    if (error) throw error;
-
-    const buffer = Buffer.from(await data.arrayBuffer());
-    const ext = filePath.split('.').pop()?.toLowerCase();
+    const buffer  = await downloadMediaFromR2(key);
+    const ext     = key.split('.').pop()?.toLowerCase();
     const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
     const mimeType = mimeMap[ext] || 'image/jpeg';
 

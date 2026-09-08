@@ -1,306 +1,191 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { BadgeCheck, ShieldCheck, ShieldAlert, ShieldQuestion, Plus, Star, Trash2 } from "lucide-react";
+import Link from "next/link";
+import {
+  BadgeCheck, Wallet, Heart, ChevronRight,
+  UserCircle, Shield, CreditCard, BarChart3, Settings,
+} from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useT } from "@/i18n/locale-context";
+import { useLocale } from "@/i18n/locale-context";
+import { formatFCFA } from "@/lib/utils";
+import { TabIdentite } from "./_sections/TabIdentite";
+import { TabSecurite } from "./_sections/TabSecurite";
+import { TabPaiements } from "./_sections/TabPaiements";
+import { TabStats } from "./_sections/TabStats";
+import { TabConfig } from "./_sections/TabConfig";
 
-interface MobileMoney {
-  id: string;
-  operator: string;
-  phone_masked: string;
-  is_default: boolean;
-  is_verified: boolean;
-}
+type Tab = "identite" | "securite" | "paiements" | "stats" | "config";
+
+const ROLE_LABELS: Record<string, string> = {
+  user: "Fan",
+  influencer: "Créateur",
+  admin: "Admin",
+  super_admin: "Super Admin",
+  root_admin: "Root Admin",
+};
+
+const CREATOR_ROLES = ["influencer", "admin", "super_admin", "root_admin"];
 
 export default function ProfilPage() {
-  const t = useT();
-  const { user, loading, refresh } = useAuth();
+  const { user, wallet, loading } = useAuth();
+  const { locale } = useLocale();
+  const isEn = locale === "en";
   const router = useRouter();
-  const [bio, setBio] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [mobileMoneys, setMobileMoneys] = useState<MobileMoney[]>([]);
-  const [showAddMm, setShowAddMm] = useState(false);
+
+  const [tab, setTab] = useState<Tab>("identite");
+  const [activeSubsCount, setActiveSubsCount] = useState<number>(0);
 
   useEffect(() => {
     if (!loading && !user) router.push("/connexion");
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (user) {
-      setBio((user as any).bio || "");
-      api.get("/wallet/mobile-money").then(({ data }) => setMobileMoneys(data || [])).catch(() => {});
-    }
+    if (!user) return;
+    import("@/lib/api").then(({ api }) => {
+      api.get("/subscriptions/me").then(({ data }) => {
+        const active = (data || []).filter((s: { status: string }) => s.status === "ACTIVE").length;
+        setActiveSubsCount(active);
+      }).catch(() => {});
+    });
   }, [user]);
 
   if (loading || !user) return null;
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingAvatar(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      await api.post("/uploads/avatar", formData, { headers: { "Content-Type": "multipart/form-data" } });
-      await refresh();
-    } catch {} finally {
-      setUploadingAvatar(false);
-    }
-  };
+  const u = user as any;
+  const isCreator = CREATOR_ROLES.includes(user.role);
 
-  const handleSaveBio = async () => {
-    setSaving(true);
-    try {
-      await api.put("/auth/profile", { bio });
-      await refresh();
-    } catch {} finally {
-      setSaving(false);
-    }
-  };
+  const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+    { key: "identite",  label: isEn ? "Identity"   : "Identité",     icon: UserCircle },
+    { key: "securite",  label: isEn ? "Security"   : "Sécurité",     icon: Shield     },
+    { key: "paiements", label: isEn ? "Payments"   : "Paiements",    icon: CreditCard },
+    { key: "stats",     label: isEn ? "Statistics" : "Statistiques", icon: BarChart3  },
+    { key: "config",    label: isEn ? "Settings"   : "Config",       icon: Settings   },
+  ];
 
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
-        <div className="flex items-center gap-4">
-          <div className="relative h-20 w-20 overflow-hidden rounded-full bg-ink-raised">
-            {user.avatar_url ? (
-              <Image src={user.avatar_url} alt="" fill className="object-cover" sizes="80px" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center font-display text-2xl text-gold">
-                {user.pseudo?.[0]?.toUpperCase()}
-              </div>
+      <main className="mx-auto max-w-2xl px-4 pb-24 pt-0 md:pb-12">
+
+        {/* ── HERO : bannière + avatar ─────────────────────────────── */}
+        <div className="relative -mx-4 md:mx-0">
+          <div className="relative aspect-[4/1] w-full overflow-hidden bg-gradient-to-br from-gold/20 via-ink-raised to-emerald/20 md:rounded-2xl">
+            {u.banner_url && (
+              <Image src={u.banner_url} alt="" fill className="object-cover" sizes="768px" />
             )}
-            <label className="absolute inset-0 flex items-center justify-center bg-ink/60 text-xs text-cream opacity-0 transition-opacity hover:opacity-100 cursor-pointer">
-              {uploadingAvatar ? "..." : "Modifier"}
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-            </label>
           </div>
-          <div>
-            <h1 className="font-display text-2xl font-medium text-cream">@{user.pseudo}</h1>
-            <p className="text-sm text-sage">{user.name}</p>
-            <Badge variant={['influencer','admin','super_admin','root_admin'].includes(user.role) ? "emerald" : "default"} className="mt-1">
-              {user.role}
-            </Badge>
+          <div className="absolute -bottom-10 left-4 md:left-0">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-ink bg-ink-raised">
+              {user.avatar_url ? (
+                <Image src={user.avatar_url} alt="" fill className="object-cover" sizes="80px" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center font-display text-2xl text-gold">
+                  {user.pseudo?.[0]?.toUpperCase() || "?"}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* KYC */}
-        <Card className="mt-6">
-          <CardContent className="flex items-center justify-between gap-3 p-4">
-            <div className="flex items-center gap-3">
-              <KycIcon status={user.kyc_status} />
-              <div>
-                <p className="font-medium text-cream">Vérification d&apos;identité (KYC)</p>
-                <p className="text-sm text-sage">{KYC_LABELS[user.kyc_status] || user.kyc_status}</p>
+        {/* ── Identité rapide ─────────────────────────────────────── */}
+        <div className="mt-14">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl font-medium text-cream">
+                  {u.name || user.pseudo}
+                </h1>
+                {user.kyc_status === "VERIFIED" && (
+                  <BadgeCheck className="h-5 w-5 shrink-0 text-gold" aria-label={isEn ? "Verified identity" : "Identité vérifiée"} />
+                )}
+              </div>
+              <p className="text-sm text-sage">@{user.pseudo}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Badge variant={isCreator ? "emerald" : "default"}>
+                  {ROLE_LABELS[user.role] || user.role}
+                </Badge>
+                {u.created_at && (
+                  <span className="text-xs text-sage-muted">
+                    {isEn ? "Member since " : "Membre depuis "}
+                    {new Date(u.created_at).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                  </span>
+                )}
               </div>
             </div>
-            {user.kyc_status !== "VERIFIED" && (
-              <Button size="sm" onClick={() => router.push("/profil/kyc")}>Vérifier</Button>
+            {!isCreator && (
+              <Link href="/devenir-createur" className="shrink-0">
+                <Button size="sm" variant="outline">{isEn ? "Become creator" : "Devenir créateur"}</Button>
+              </Link>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Bio */}
-        <Card className="mt-4">
-          <CardHeader><CardTitle>À propos</CardTitle></CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <textarea
-              className="min-h-24 rounded-xl border border-ink-line bg-ink-raised px-3.5 py-2.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              placeholder={t("profile.aboutPlaceholder")}
-              maxLength={500}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-            />
-            <Button size="sm" onClick={handleSaveBio} disabled={saving} className="self-start">
-              {saving ? t("common.saving") : t("common.save")}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Mobile Money */}
-        <Card className="mt-4">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>{t("profile.mobileMoneyNumbers")}</CardTitle>
-            <Button size="sm" variant="secondary" onClick={() => setShowAddMm(true)}>
-              <Plus className="h-4 w-4" /> Ajouter
-            </Button>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {mobileMoneys.length === 0 ? (
-              <p className="text-sm text-sage-muted">Aucun numéro enregistré.</p>
-            ) : (
-              mobileMoneys.map((mm) => (
-                <div key={mm.id} className="flex items-center justify-between rounded-xl border border-ink-line bg-ink-raised px-3 py-2">
-                  <div>
-                    <p className="text-sm text-cream">{mm.operator} · {mm.phone_masked}</p>
-                    <div className="mt-0.5 flex gap-1.5">
-                      {mm.is_default && <Badge variant="gold"><Star className="h-3 w-3" /> Par défaut</Badge>}
-                      <Badge variant={mm.is_verified ? "emerald" : "default"}>
-                        {mm.is_verified ? t("profile.verified") : t("profile.unverified")}
-                      </Badge>
-                    </div>
-                  </div>
-                  <MobileMoneyActions mm={mm} onChange={(updated) => setMobileMoneys(updated)} all={mobileMoneys} />
+          {/* Stat tiles */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Link href="/wallet" className="group">
+              <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
+                <Wallet className="h-5 w-5 shrink-0 text-gold" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-base font-medium tabular text-cream">
+                    {formatFCFA(wallet?.balance_xcon ?? 0)}
+                  </p>
+                  <p className="text-xs text-sage-muted">{isEn ? "Wallet balance" : "Solde wallet"}</p>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </Link>
+            <Link href="/abonnements" className="group">
+              <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
+                <Heart className="h-5 w-5 shrink-0 text-coral" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-base font-medium tabular text-cream">{activeSubsCount}</p>
+                  <p className="text-xs text-sage-muted">
+                    {isEn ? `${activeSubsCount} subscription${activeSubsCount !== 1 ? "s" : ""}` : `Abonnement${activeSubsCount !== 1 ? "s" : ""} actif${activeSubsCount !== 1 ? "s" : ""}`}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </Link>
+          </div>
+        </div>
 
-        {showAddMm && (
-          <AddMobileMoneyDialog
-            onClose={() => setShowAddMm(false)}
-            onAdded={(mm) => { setMobileMoneys((prev) => [...prev, mm]); setShowAddMm(false); }}
-          />
-        )}
+        {/* ── Navigation onglets ──────────────────────────────────── */}
+        <div className="mt-6 flex gap-1 overflow-x-auto scrollbar-none border-b border-ink-line pb-px">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                tab === key
+                  ? "border-gold text-gold"
+                  : "border-transparent text-sage hover:text-cream"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Contenu onglet ──────────────────────────────────────── */}
+        <div className="mt-4">
+          {tab === "identite"  && <TabIdentite />}
+          {tab === "securite"  && <TabSecurite />}
+          {tab === "paiements" && <TabPaiements />}
+          {tab === "stats"     && <TabStats />}
+          {tab === "config"    && <TabConfig />}
+        </div>
 
       </main>
       <BottomNav />
       <Footer />
     </>
-  );
-}
-
-const KYC_LABELS: Record<string, string> = {
-  PENDING: "Non vérifiée — requise pour devenir créateur ou retirer des fonds",
-  VERIFIED: "Identité vérifiée",
-  FAILED: "Vérification échouée — vous pouvez réessayer",
-  SUPPORT: "Limite de tentatives atteinte — contactez le support",
-};
-
-function KycIcon({ status }: { status: string }) {
-  if (status === "VERIFIED") return <ShieldCheck className="h-6 w-6 text-emerald-bright" />;
-  if (status === "FAILED" || status === "SUPPORT") return <ShieldAlert className="h-6 w-6 text-brick" />;
-  return <ShieldQuestion className="h-6 w-6 text-gold" />;
-}
-
-function MobileMoneyActions({
-  mm, onChange, all,
-}: { mm: MobileMoney; onChange: (list: MobileMoney[]) => void; all: MobileMoney[] }) {
-  const setDefault = async () => {
-    try {
-      await api.put(`/wallet/mobile-money/${mm.id}/default`);
-      onChange(all.map((m) => ({ ...m, is_default: m.id === mm.id })));
-    } catch {}
-  };
-  const remove = async () => {
-    if (!confirm("Supprimer ce numéro ?")) return;
-    try {
-      await api.delete(`/wallet/mobile-money/${mm.id}`);
-      onChange(all.filter((m) => m.id !== mm.id));
-    } catch {}
-  };
-  return (
-    <div className="flex gap-1">
-      {!mm.is_default && (
-        <button onClick={setDefault} className="rounded p-1.5 text-sage hover:text-gold" title="Définir par défaut">
-          <Star className="h-4 w-4" />
-        </button>
-      )}
-      <button onClick={remove} className="rounded p-1.5 text-sage hover:text-brick" title="Supprimer">
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
-function AddMobileMoneyDialog({
-  onClose, onAdded,
-}: { onClose: () => void; onAdded: (mm: MobileMoney) => void }) {
-  const t = useT();
-  const [phone, setPhone] = useState("");
-  const [operator, setOperator] = useState("MTN");
-  const [otpRequested, setOtpRequested] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleRequestOtp = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      await api.post("/wallet/mobile-money/request-otp", { phone, operator });
-      setOtpRequested(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || "Erreur lors de l'envoi du code.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirm = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const { data } = await api.post("/wallet/mobile-money", { phone, operator, otp });
-      onAdded(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || "Code invalide.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-surface p-5">
-        <h3 className="font-display text-lg text-cream">Ajouter un numéro Mobile Money</h3>
-        <div className="mt-3 flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-cream">Opérateur</label>
-            <select
-              className="h-11 rounded-xl border border-ink-line bg-ink-raised px-3.5 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              value={operator}
-              onChange={(e) => setOperator(e.target.value)}
-              disabled={otpRequested}
-            >
-              <option value="MTN">MTN Mobile Money</option>
-              <option value="ORANGE">Orange Money</option>
-            </select>
-          </div>
-          <Input
-            label={t("profile.phoneNumber")}
-            type="tel"
-            placeholder="+237690000000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            disabled={otpRequested}
-          />
-          {otpRequested && (
-            <Input
-              label={t("profile.smsCode")}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-            />
-          )}
-          {error && <p className="text-sm text-brick">{error}</p>}
-          <div className="flex gap-2">
-            <Button variant="ghost" className="flex-1" onClick={onClose}>{t("common.cancel")}</Button>
-            {otpRequested ? (
-              <Button className="flex-1" onClick={handleConfirm} disabled={loading || !otp}>
-                {loading ? "..." : t("common.confirm")}
-              </Button>
-            ) : (
-              <Button className="flex-1" onClick={handleRequestOtp} disabled={loading || !phone}>
-                {loading ? "..." : t("profile.sendCode")}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }

@@ -31,19 +31,19 @@ const WELCOME: Message = {
   id: "__welcome__",
   sender_role: "ADMIN",
   is_auto: true,
-  message: "Bonjour\u00a0! 👋 Bienvenue sur le support KasoLife.\n\nDécris ton problème et notre équipe te répondra rapidement. Pour les urgences (compte bloqué, fraude, paiement non reçu), un agent sera alerté immédiatement.",
+  message: "Bonjour ! 👋 Bienvenue sur le support KasoLife.\n\nDécris ton problème et notre équipe te répondra rapidement. Pour les urgences (compte bloqué, fraude, paiement non reçu), un agent sera alerté immédiatement.",
   created_at: null,
 };
 
 export default function SupportPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [messages, setMessages]   = useState<Message[]>([]);
-  const [text, setText]           = useState("");
-  const [sending, setSending]     = useState(false);
+  const [messages, setMessages]     = useState<Message[]>([]);
+  const [text, setText]             = useState("");
+  const [sending, setSending]       = useState(false);
   const [loadingMsg, setLoadingMsg] = useState(true);
-  const [error, setError]         = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [error, setError]           = useState("");
+  const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -82,75 +82,101 @@ export default function SupportPage() {
 
   const allMessages: Message[] = messages.length === 0 ? [WELCOME] : messages;
 
+  const inputBar = (
+    <div className="border-t border-ink-line/50 bg-ink/95 backdrop-blur-md px-4 py-3">
+      <div className="mx-auto flex max-w-2xl gap-2">
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+          }}
+          placeholder="Décris ton problème…"
+          rows={1}
+          className="flex-1 resize-none rounded-xl border border-ink-line bg-ink-raised px-4 py-2.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none"
+          style={{ maxHeight: 96 }}
+        />
+        <Button onClick={handleSend} disabled={!text.trim() || sending} size="icon">
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <>
+    /*
+     * Mise en page pleine hauteur :
+     * [Navbar] → [zone chat flex-1 : messages scrollables + saisie] → [Footer]
+     * Sur mobile : saisie fixe au-dessus de BottomNav, messages avec padding bas.
+     */
+    <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="mx-auto flex max-w-2xl flex-col px-4 pb-32 pt-6 md:pb-16">
-        <div className="mb-4">
-          <h1 className="font-display text-2xl font-medium text-cream">Support</h1>
-          <p className="mt-1 text-sm text-sage">Notre équipe répond 7j/7.</p>
+
+      {/* Zone de chat — s'étire entre navbar et footer */}
+      <div className="flex min-h-0 flex-1 flex-col">
+
+        {/* Messages — défilent dans leur propre conteneur */}
+        <main className="flex-1 overflow-y-auto pb-32 md:pb-0">
+          <div className="mx-auto max-w-2xl px-4 pt-6">
+            <div className="mb-4">
+              <h1 className="font-display text-2xl font-medium text-cream">Support</h1>
+              <p className="mt-1 text-sm text-sage">Notre équipe répond 7j/7.</p>
+            </div>
+
+            <div className="flex flex-col gap-3 min-h-64">
+              {loadingMsg ? (
+                <p className="text-center text-sm text-sage-muted py-8">Chargement...</p>
+              ) : (
+                allMessages.map((msg) => {
+                  const isUser = msg.sender_role === "USER";
+                  return (
+                    <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                        isUser
+                          ? "bg-gold text-ink rounded-br-sm"
+                          : msg.is_auto
+                          ? "border border-ink-line/50 bg-ink-surface text-sage"
+                          : "bg-ink-raised text-cream rounded-bl-sm"
+                      }`}>
+                        {msg.priority && msg.priority !== "LOW" && (
+                          <span className={`mb-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${PRIORITY_COLORS[msg.priority]}`}>
+                            {msg.priority}
+                          </span>
+                        )}
+                        <p style={{ whiteSpace: "pre-wrap" }}>{msg.message}</p>
+                        {msg.created_at && (
+                          <p className={`mt-1.5 text-[10px] ${isUser ? "text-ink/60" : "text-sage-muted"}`}>
+                            {formatRelativeDate(msg.created_at)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {error && <p className="mt-2 text-xs text-brick">{error}</p>}
+          </div>
+        </main>
+
+        {/* Saisie desktop — dans le flux, au bas de la zone chat, au-dessus du footer */}
+        <div className="hidden md:block shrink-0">
+          {inputBar}
         </div>
 
-        {/* Messages */}
-        <div className="flex flex-col gap-3 min-h-64">
-          {loadingMsg ? (
-            <p className="text-center text-sm text-sage-muted py-8">Chargement...</p>
-          ) : (
-            allMessages.map((msg) => {
-              const isUser = msg.sender_role === "USER";
-              return (
-                <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    isUser
-                      ? "bg-gold text-ink rounded-br-sm"
-                      : msg.is_auto
-                      ? "border border-ink-line/50 bg-ink-surface text-sage"
-                      : "bg-ink-raised text-cream rounded-bl-sm"
-                  }`}>
-                    {msg.priority && msg.priority !== "LOW" && (
-                      <span className={`mb-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${PRIORITY_COLORS[msg.priority]}`}>
-                        {msg.priority}
-                      </span>
-                    )}
-                    <p style={{ whiteSpace: "pre-wrap" }}>{msg.message}</p>
-                    {msg.created_at && (
-                      <p className={`mt-1.5 text-[10px] ${isUser ? "text-ink/60" : "text-sage-muted"}`}>
-                        {formatRelativeDate(msg.created_at)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={bottomRef} />
-        </div>
+      </div>
 
-        {error && <p className="mt-2 text-xs text-brick">{error}</p>}
-      </main>
+      {/* Footer desktop — toujours sous la barre de saisie */}
+      <Footer />
 
-      {/* Zone de saisie fixe */}
-      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-ink-line/50 bg-ink/95 backdrop-blur-md px-4 py-3 md:bottom-0">
-        <div className="mx-auto flex max-w-2xl gap-2">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-            }}
-            placeholder="Décris ton problème…"
-            rows={1}
-            className="flex-1 resize-none rounded-xl border border-ink-line bg-ink-raised px-4 py-2.5 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none"
-            style={{ maxHeight: 96 }}
-          />
-          <Button onClick={handleSend} disabled={!text.trim() || sending} size="icon">
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Saisie mobile — fixe au-dessus de BottomNav */}
+      <div className="fixed inset-x-0 bottom-14 z-20 md:hidden">
+        {inputBar}
       </div>
       <BottomNav />
-      <Footer />
-    </>
+    </div>
   );
 }

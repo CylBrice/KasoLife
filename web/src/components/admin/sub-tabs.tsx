@@ -24,7 +24,7 @@ export function SubTabs({
           key={tab.key}
           onClick={() => onChange(tab.key)}
           className={cn(
-            "relative shrink-0 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+            "relative shrink-0 rounded-xl px-3.5 py-2 text-sm font-medium transition-colors",
             active === tab.key
               ? "bg-gold/10 text-gold-bright"
               : "text-sage hover:bg-ink-raised hover:text-cream"

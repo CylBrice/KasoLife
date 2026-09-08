@@ -30,7 +30,7 @@ export function Footer() {
       <div className="mx-auto max-w-5xl px-4 py-4">
         <div className="flex flex-col items-center justify-between gap-3 md:flex-row">
           <Logo />
-          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-sage">
+          <nav className="footer-nav flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-sage">
             <Link href="/cgu" className="flex items-center gap-1 transition-colors hover:text-cream">
               <FileText size={13} /> {t("footer.terms")}
             </Link>
