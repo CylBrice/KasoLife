@@ -12,7 +12,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
 import {
-  User, Wallet, MessageCircle, Heart, LayoutDashboard,
+  User, Wallet, MessageSquare, Layers, LayoutDashboard,
   Video, LogOut, Settings, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -113,8 +113,8 @@ export function Navbar() {
                   <div className="py-1">
                     <DropItem icon={<User size={15} />} label={t("nav.profile")} onClick={() => navTo("/profil")} active={pathname === "/profil"} />
                     <DropItem icon={<Wallet size={15} />} label={t("nav.wallet")} onClick={() => navTo("/wallet")} active={pathname === "/wallet"} />
-                    <DropItem icon={<Heart size={15} />} label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")} active={pathname === "/abonnements"} />
-                    <DropItem icon={<MessageCircle size={15} />} label={t("nav.messages")} onClick={() => navTo("/messages")} active={pathname === "/messages"} />
+                    <DropItem icon={<Layers size={15} />} label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")} active={pathname === "/abonnements"} />
+                    <DropItem icon={<MessageSquare size={15} />} label={t("nav.messages")} onClick={() => navTo("/messages")} active={pathname === "/messages"} />
 
                     {isCreator && (
                       <DropItem icon={<Video size={15} />} label="Espace créateur" onClick={() => navTo("/createur")} active={pathname.startsWith("/createur")} />

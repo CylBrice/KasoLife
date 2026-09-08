@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Heart, MessageCircle, Wallet, User } from "lucide-react";
+import { Compass, Layers, MessageSquare, Wallet, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/locale-context";
 
 const ITEMS = [
   { href: "/",            key: "nav.discover",      icon: Compass },
-  { href: "/abonnements", key: "nav.subscriptions", icon: Heart },
-  { href: "/messages",    key: "nav.messages",      icon: MessageCircle },
+  { href: "/abonnements", key: "nav.subscriptions", icon: Layers },
+  { href: "/messages",    key: "nav.messages",      icon: MessageSquare },
   { href: "/wallet",      key: "nav.wallet",        icon: Wallet },
   { href: "/profil",      key: "nav.profile",       icon: User },
 ] as const;

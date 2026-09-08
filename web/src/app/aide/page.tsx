@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  MessageCircle, ShieldCheck, Wallet, Heart, Lock, Smartphone,
+  MessageSquare, ShieldCheck, Wallet, Heart, Layers, Lock, Smartphone,
   Mail, Unlock, BadgeDollarSign, ChevronUp, ChevronDown,
 } from "lucide-react";
 
@@ -60,7 +60,7 @@ const SECTIONS = [
   },
   {
     id: "abonnement",
-    icon: <Heart className="h-5 w-5" />,
+    icon: <Layers className="h-5 w-5" />,
     title: "Abonnements & Contenu PPV",
     content: (
       <>
@@ -73,7 +73,7 @@ const SECTIONS = [
             { icon: <Unlock className="h-3.5 w-3.5 text-emerald-400" />, label: "Gratuit",    desc: "Visible par tous" },
             { icon: <Lock   className="h-3.5 w-3.5 text-gold" />,        label: "Abonnés",    desc: "Abonnement mensuel" },
             { icon: <BadgeDollarSign className="h-3.5 w-3.5 text-coral" />, label: "PPV",     desc: "Achat unique" },
-            { icon: <MessageCircle   className="h-3.5 w-3.5 text-blue-400" />, label: "Message", desc: "Messagerie privée" },
+            { icon: <MessageSquare   className="h-3.5 w-3.5 text-blue-400" />, label: "Message", desc: "Messagerie privée" },
           ].map(({ icon, label, desc }) => (
             <div key={label} className="rounded-lg border border-ink-line/50 bg-ink-raised p-3">
               <p className="flex items-center gap-1.5 font-medium text-cream">{icon}{label}</p>
@@ -151,14 +151,14 @@ const SECTIONS = [
   },
   {
     id: "contact",
-    icon: <MessageCircle className="h-5 w-5" />,
+    icon: <MessageSquare className="h-5 w-5" />,
     title: "Contacter le support",
     content: (
       <>
         <p className="text-sm text-sage">Notre équipe est disponible 7j/7 via le chat intégré ou par email.</p>
         <div className="mt-3 flex flex-col gap-2">
           <Link href="/support" className="flex items-center gap-3 rounded-xl border border-ink-line/50 bg-ink-raised px-4 py-3 text-sm text-cream hover:border-gold/50 transition-colors">
-            <MessageCircle className="h-5 w-5 shrink-0 text-gold" />
+            <MessageSquare className="h-5 w-5 shrink-0 text-gold" />
             <span>Chat support en direct</span>
           </Link>
           <a href="mailto:support@kasolife.com" className="flex items-center gap-3 rounded-xl border border-ink-line/50 bg-ink-raised px-4 py-3 text-sm text-cream hover:border-gold/50 transition-colors">
@@ -209,7 +209,7 @@ export default function AidePage() {
           <p className="text-sm text-sage-muted">Tu n&apos;as pas trouvé ta réponse ?</p>
           <Button asChild className="mt-2 gap-2">
             <Link href="/support">
-              <MessageCircle className="h-4 w-4" />
+              <MessageSquare className="h-4 w-4" />
               Contacter le support
             </Link>
           </Button>
