@@ -6,7 +6,6 @@ import { useT } from "@/i18n/locale-context";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
 import { Send, Lock, Gift, ArrowLeft } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { formatFCFA, formatRelativeDate, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -101,7 +100,6 @@ export default function ConversationClient() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto flex h-[calc(100vh-4rem)] max-w-2xl flex-col px-4">
         {/* En-tête conversation */}
         <div className="flex items-center gap-3 border-b border-ink-line py-3">

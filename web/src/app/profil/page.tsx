@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,8 +8,6 @@ import {
   BadgeCheck, Wallet, Coins, Layers, ChevronRight,
   UserCircle, Shield, CreditCard, BarChart3, Settings,
 } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +70,6 @@ export default function ProfilPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-0 md:pb-12">
 
         {/* ── HERO : bannière + avatar ─────────────────────────────── */}
@@ -184,7 +181,6 @@ export default function ProfilPage() {
         </div>
 
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

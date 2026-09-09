@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -7,8 +7,6 @@ import {
   Mail, Unlock, BadgeDollarSign, ChevronUp, ChevronDown,
 } from "lucide-react";
 
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 
@@ -176,7 +174,6 @@ export default function AidePage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
         <div className="mb-6">
           <h1 className="font-display text-2xl font-medium text-cream">Centre d&apos;aide</h1>
@@ -215,7 +212,6 @@ export default function AidePage() {
           </Button>
         </div>
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

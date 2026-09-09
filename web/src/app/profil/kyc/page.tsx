@@ -1,10 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, ShieldQuestion, ShieldAlert } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,7 +53,6 @@ export default function KycPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-lg px-4 pb-24 pt-6 md:pb-12">
         <h1 className="font-display text-2xl font-medium text-cream">Vérification d&apos;identité</h1>
         <p className="mt-1 text-sm text-sage">
@@ -102,7 +99,6 @@ export default function KycPage() {
           </CardContent>
         </Card>
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

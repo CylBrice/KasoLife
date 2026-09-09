@@ -1,11 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +51,6 @@ export default function AbonnementsPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
         <h1 className="font-display text-2xl font-medium text-cream">{t("subscriptions.title")}</h1>
 
@@ -108,7 +105,6 @@ export default function AbonnementsPage() {
           </div>
         )}
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

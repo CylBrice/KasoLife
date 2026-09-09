@@ -1,9 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -49,7 +48,6 @@ export default function KycResultPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-lg px-4 pb-24 pt-6 md:pb-12">
         <Card>
           <CardContent className="flex flex-col items-center gap-3 p-8 text-center">

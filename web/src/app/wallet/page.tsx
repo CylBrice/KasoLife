@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDownToLine, ArrowUpFromLine, Wallet as WalletIcon } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +43,6 @@ export default function WalletPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
         <h1 className="font-display text-2xl font-medium text-cream">Wallet</h1>
 
@@ -101,7 +98,6 @@ export default function WalletPage() {
           ))}
         </div>
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

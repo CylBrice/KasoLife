@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,8 +6,6 @@ import { useT } from "@/i18n/locale-context";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
 import { BadgeCheck, Users, FileText } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/categories";
@@ -56,7 +54,6 @@ export default function CreatorProfileClient() {
   if (notFound || !creator) {
     return (
       <>
-        <Navbar />
         <main className="mx-auto max-w-3xl px-4 py-16 text-center">
           <p className="font-display text-2xl text-cream">{t('creatorProfile.notFound')}</p>
           <p className="mt-2 text-sm text-sage">Ce profil n&apos;existe pas ou n&apos;est plus disponible.</p>
@@ -64,7 +61,6 @@ export default function CreatorProfileClient() {
             Retour à l&apos;accueil
           </button>
         </main>
-        <BottomNav />
       <Footer />
       </>
     );
@@ -74,7 +70,6 @@ export default function CreatorProfileClient() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-3xl px-4 pb-24 md:pb-12">
         {/* Bannière */}
         <div className="relative -mx-4 aspect-[3/1] w-screen overflow-hidden bg-ink-raised md:-mx-0 md:w-full md:rounded-2xl">
@@ -146,7 +141,6 @@ export default function CreatorProfileClient() {
           <CreatorFeed creatorId={creator.id} />
         </div>
       </main>
-      <BottomNav />
       <Footer />
     </>
   );

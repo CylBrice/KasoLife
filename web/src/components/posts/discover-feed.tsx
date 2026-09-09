@@ -6,7 +6,17 @@ import { FeedCard } from "@/components/posts/feed-card";
 import { useT } from "@/i18n/locale-context";
 import type { Post } from "@/types";
 
-export function DiscoverFeed({ category }: { category?: string }) {
+export type FeedMode = "boosted" | "popular" | "trending" | "followed" | "personalized";
+
+export function DiscoverFeed({
+  categories,
+  search,
+  mode = "boosted",
+}: {
+  categories?: string[];
+  search?: string;
+  mode?: FeedMode;
+}) {
   const t = useT();
   const [posts, setPosts] = useState<Post[]>([]);
   const [page, setPage] = useState(1);
@@ -14,13 +24,22 @@ export function DiscoverFeed({ category }: { category?: string }) {
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const categoriesKey = categories?.join(",") ?? "";
+  const searchKey = search?.trim() ?? "";
+
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const { data } = await api.get("/posts/discover", {
-        params: { page, limit: 10, ...(category ? { category } : {}) },
-      });
+      let data;
+      if (searchKey) {
+        ({ data } = await api.get("/posts/search", { params: { q: searchKey, page, limit: 10 } }));
+      } else {
+        const params: Record<string, unknown> = { page, limit: 10 };
+        if (categoriesKey) params.categories = categoriesKey;
+        if (mode !== "boosted") params.mode = mode;
+        ({ data } = await api.get("/posts/discover", { params }));
+      }
       const newPosts: Post[] = data.posts || [];
       if (newPosts.length === 0) {
         setHasMore(false);
@@ -34,32 +53,28 @@ export function DiscoverFeed({ category }: { category?: string }) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, loading, hasMore, category]);
+  }, [page, loading, hasMore, categoriesKey, searchKey, mode]);
 
-  // Premier chargement (et rechargement si la catégorie change)
   useEffect(() => {
     setPosts([]);
     setPage(1);
     setHasMore(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [categoriesKey, searchKey, mode]);
 
   useEffect(() => {
     if (posts.length === 0 && hasMore && !loading) {
       loadMore();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts.length, category]);
+  }, [posts.length, categoriesKey, searchKey, mode]);
 
-  // Observer pour le chargement infini
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { rootMargin: "200% 0px" } // déclenche bien avant d'atteindre le bas
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200% 0px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -82,7 +97,7 @@ export function DiscoverFeed({ category }: { category?: string }) {
   }
 
   return (
-    <div className="snap-y snap-mandatory overflow-y-auto md:gap-2 md:px-2 md:py-2 md:[scroll-snap-type:y_proximity] h-[calc(100vh-4rem)]">
+    <div className="md:gap-2 md:px-2 md:py-2">
       {posts.map((post, idx) => (
         <div key={`${post.id}-${idx}`} className="md:pb-2">
           <FeedCard post={post} onUnlocked={handleUnlocked} />

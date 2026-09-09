@@ -58,9 +58,10 @@ export function Navbar() {
     };
   }, [menuOpen]);
 
-  const hidden = ["/connexion", "/inscription"].some((p) => pathname.startsWith(p));
-  const isAdminPanel = pathname.startsWith("/admin") || pathname.startsWith("/createur");
-  if (hidden || isAdminPanel) return null;
+  const hidden = ["/connexion", "/inscription", "/admin", "/createur", "/"].some(
+    (p) => p === "/" ? pathname === "/" : pathname.startsWith(p)
+  );
+  if (hidden) return null;
 
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
   const isCreator = user && CREATOR_ROLES.includes(user.role);
@@ -98,14 +99,13 @@ export function Navbar() {
 
           {user ? (
             <>
-
               <button
                 ref={avatarRef}
                 onClick={openMenu}
                 className="flex items-center gap-2 rounded-full border border-ink-line bg-ink-raised px-2 py-1 hover:border-gold/50 transition-colors"
               >
                 <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="xs" />
-                <span className="hidden text-sm font-medium text-cream md:block">@{user.pseudo}</span>
+                <span className="text-sm font-medium text-cream">{user.name?.split(" ")[0] || user.pseudo}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-sage-muted" />
               </button>
 

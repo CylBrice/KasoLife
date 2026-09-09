@@ -1,15 +1,12 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Smartphone, ArrowLeft } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Button } from "@/components/ui/button";
 
 export default function InstallerPage() {
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
         <div className="mb-6">
           <Link href="/" className="mb-4 flex items-center gap-1.5 text-sm text-sage-muted hover:text-cream transition-colors">
@@ -97,7 +94,6 @@ export default function InstallerPage() {
           </Button>
         </div>
       </main>
-      <BottomNav />
     </>
   );
 }

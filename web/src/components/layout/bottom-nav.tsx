@@ -14,12 +14,17 @@ const ITEMS = [
   { href: "/profil",      key: "nav.profile",       icon: User },
 ] as const;
 
+const HIDDEN_ROUTES = ["/connexion", "/inscription", "/admin", "/createur"];
+
 export function BottomNav() {
   const pathname = usePathname();
   const t = useT();
 
+  const hidden = HIDDEN_ROUTES.some((r) => pathname.startsWith(r));
+  if (hidden) return null;
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-line bg-ink/95 backdrop-blur-md md:hidden">
+    <nav className="border-t border-ink-line bg-ink/95 backdrop-blur-md md:hidden">
       <div className="flex h-16 items-center">
         {ITEMS.map(({ href, key, icon: Icon }) => {
           const active = pathname === href;

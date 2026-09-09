@@ -1,10 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -111,7 +109,6 @@ export default function SupportPage() {
      * Sur mobile : saisie fixe au-dessus de BottomNav, messages avec padding bas.
      */
     <div className="flex min-h-screen flex-col">
-      <Navbar />
 
       {/* Zone de chat — s'étire entre navbar et footer */}
       <div className="flex min-h-0 flex-1 flex-col">
@@ -176,7 +173,6 @@ export default function SupportPage() {
       <div className="fixed inset-x-0 bottom-14 z-20 md:hidden">
         {inputBar}
       </div>
-      <BottomNav />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LocaleProvider } from "@/i18n/locale-context";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { Navbar } from "@/components/layout/navbar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 // Applique la classe .dark AVANT l'hydratation React pour éviter un flash
 // du mauvais thème au chargement (lit la préférence sauvegardée, sinon la
@@ -114,7 +116,11 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <LocaleProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <Navbar />
+              {children}
+              <BottomNav />
+            </AuthProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

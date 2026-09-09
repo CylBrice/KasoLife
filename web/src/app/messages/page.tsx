@@ -1,11 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeDate, cn } from "@/lib/utils";
@@ -37,7 +35,6 @@ export default function MessagesPage() {
 
   return (
     <>
-      <Navbar />
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
         <h1 className="font-display text-2xl font-medium text-cream">{t("messages.title")}</h1>
 
@@ -89,7 +86,6 @@ export default function MessagesPage() {
           </div>
         )}
       </main>
-      <BottomNav />
       <Footer />
     </>
   );
