@@ -12,8 +12,8 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
 import {
-  User, Wallet, Coins, MessageSquare, Layers, LayoutDashboard,
-  Video, LogOut, Settings, ChevronDown,
+  User, Wallet, Coins, MessageSquare, Layers,
+  Video, LogOut, Settings, ChevronDown, Compass, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -73,13 +73,46 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Logo />
 
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link href="/" className="text-sm text-sage hover:text-cream transition-colors">
-            {t("nav.discover")}
-          </Link>
-          <Link href="/devenir-createur" className="text-sm text-sage hover:text-cream transition-colors">
-            {t("nav.becomeCreator")}
-          </Link>
+        <nav className="hidden items-center gap-1 md:flex">
+          {!user ? (
+            <>
+              <Link href="/" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname === "/" ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                <Compass className="h-3.5 w-3.5" />
+                {t("nav.discover")}
+              </Link>
+              <Link href="/devenir-createur" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname === "/devenir-createur" ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                {t("nav.becomeCreator")}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname === "/" ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                <Compass className="h-3.5 w-3.5" />
+                Explorer
+              </Link>
+              <Link href="/messages" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/messages") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                <MessageSquare className="h-3.5 w-3.5" />
+                Messages
+              </Link>
+              {isCreator ? (
+                <Link href="/createur" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/createur") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                  <Video className="h-3.5 w-3.5" />
+                  Mon espace
+                </Link>
+              ) : (
+                <Link href="/abonnements" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname === "/abonnements" ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+                  <Layers className="h-3.5 w-3.5" />
+                  Abonnements
+                </Link>
+              )}
+              {isAdmin && (
+                <Link href="/admin" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/admin") ? "bg-gold/10 text-gold font-medium" : "text-gold/70 hover:bg-gold/10 hover:text-gold")}>
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin
+                </Link>
+              )}
+            </>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">

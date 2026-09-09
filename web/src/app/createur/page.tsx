@@ -22,9 +22,9 @@ export default function CreatorDashboardPage() {
   if (!stats) return <p className="text-sm text-sage-muted">Chargement...</p>;
 
   const revenueData = [
-    { label: "Abonnements", value: stats.revenue_30d.subscriptions },
-    { label: "Pourboires", value: stats.revenue_30d.tips },
-    { label: "Contenu PPV", value: stats.revenue_30d.ppv },
+    { label: "Abonnements", value: stats.revenue_30d?.subscriptions ?? 0 },
+    { label: "Pourboires", value: stats.revenue_30d?.tips ?? 0 },
+    { label: "Contenu PPV", value: stats.revenue_30d?.ppv ?? 0 },
   ];
 
   return (
@@ -35,18 +35,18 @@ export default function CreatorDashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard icon={Users} label={t("creatorDashboard.subscribersStat")} value={stats.profile.subscribers_count.toString()} />
-        <StatCard icon={FileText} label={t("creatorDashboard.publicationsStat")} value={stats.profile.posts_count.toString()} />
+        <StatCard icon={Users} label={t("creatorDashboard.subscribersStat")} value={(stats.profile?.subscribers_count ?? 0).toString()} />
+        <StatCard icon={FileText} label={t("creatorDashboard.publicationsStat")} value={(stats.profile?.posts_count ?? 0).toString()} />
         <StatCard
           icon={WalletIcon}
           label={t("creatorDashboard.pendingBalance")}
-          value={formatFCFA(stats.wallet.pending_balance_xcon)}
+          value={formatFCFA(stats.wallet?.pending_balance_xcon ?? 0)}
           accent="emerald"
         />
         <StatCard
           icon={TrendingUp}
           label={t("creatorDashboard.revenue30d")}
-          value={formatFCFA(stats.revenue_30d.total)}
+          value={formatFCFA(stats.revenue_30d?.total ?? 0)}
           accent="gold"
         />
       </div>

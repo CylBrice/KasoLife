@@ -17,7 +17,7 @@ export function PostEditorDialog({
   onCreated,
   initialMediaUrl,
   initialThumbnailUrl,
-  initialMediaType = "VIDEO",
+  initialMediaType = "TEXT",
 }: {
   onClose: () => void;
   onCreated: () => void;
@@ -36,7 +36,7 @@ export function PostEditorDialog({
   ];
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mediaType, setMediaType] = useState<MediaType>(initialMediaUrl ? initialMediaType : "TEXT");
+  const [mediaType, setMediaType] = useState<MediaType>(initialMediaType);
   const [mediaUrl, setMediaUrl] = useState<string | undefined>(initialMediaUrl);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(initialThumbnailUrl);
   const [caption, setCaption] = useState("");

@@ -79,12 +79,98 @@ const serializePost = (post, access) => {
 // ── GET /posts/discover — feed découverte mixte (style "For You")
 // Mélange : 60% trending (engagement récent) / 25% découverte (petits créateurs prometteurs) / 15% frais (<24h)
 // Anti-répétition : un même créateur n'apparaît pas deux fois dans les 5 premiers posts.
+// ── GET /posts/discover — feed découverte + modes (tendances/populaires/nouveaux/pour-toi)
 router.get('/discover', async (req, res) => {
   try {
     const viewerId = getViewerId(req);
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, mode, category, categories: categoriesParam } = req.query;
     const pageNum  = Math.max(1, parseInt(page) || 1);
     const pageSize = Math.min(50, Math.max(1, parseInt(limit) || 20));
+
+    // ── Modes simplifiés : bypass de l'algorithme de mélange ────────────────
+    const MODES = ['trending', 'popular', 'fresh', 'personalized'];
+    if (mode && MODES.includes(mode)) {
+      const dbOffset = (pageNum - 1) * pageSize;
+
+      // Filtre catégorie optionnel (commun à tous les modes)
+      const slugs = categoriesParam
+        ? String(categoriesParam).split(',').map(s => s.trim()).filter(Boolean)
+        : category ? [String(category)] : [];
+      let catIds = [];
+      if (slugs.length > 0) {
+        const { data: cats } = await supabase.from('categories').select('id').in('slug', slugs);
+        catIds = (cats || []).map(c => c.id);
+      }
+
+      // Construction dynamique de la requête
+      const params   = [];
+      const where    = ['p.is_published = TRUE', 'p.is_flagged = FALSE'];
+      let orderClause = 'p.created_at DESC';
+
+      const addParam = (v) => { params.push(v); return `$${params.length}`; };
+
+      if (catIds.length > 0) {
+        where.push(`p.category_id = ANY(${addParam(catIds)}::uuid[])`);
+      }
+
+      if (mode === 'trending') {
+        const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+        where.push(`p.created_at >= ${addParam(since)}`);
+        orderClause = `(p.likes_count + p.comments_count * 2) * EXP(-EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 345600) DESC, p.created_at DESC`;
+
+      } else if (mode === 'popular') {
+        orderClause = `p.likes_count DESC, p.comments_count DESC, p.created_at DESC`;
+
+      } else if (mode === 'fresh') {
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        where.push(`p.created_at >= ${addParam(since)}`);
+        orderClause = `p.created_at DESC`;
+
+      } else if (mode === 'personalized') {
+        if (viewerId) {
+          const [{ data: subs }, { data: likedPosts }] = await Promise.all([
+            supabase.from('subscriptions')
+              .select('creator:users!subscriptions_creator_id_fkey(creator_profile:creator_profiles(category_id))')
+              .eq('fan_id', viewerId).eq('status', 'ACTIVE'),
+            supabase.from('post_likes')
+              .select('post:posts(category_id)')
+              .eq('user_id', viewerId).order('created_at', { ascending: false }).limit(30),
+          ]);
+          const prefIds = new Set();
+          for (const s of subs || []) { const id = s.creator?.creator_profile?.category_id; if (id) prefIds.add(id); }
+          for (const l of likedPosts || []) { const id = l.post?.category_id; if (id) prefIds.add(id); }
+          if (prefIds.size > 0) {
+            where.push(`p.category_id = ANY(${addParam([...prefIds])}::uuid[])`);
+          }
+        }
+        orderClause = `p.likes_count DESC, p.created_at DESC`;
+      }
+
+      const limitP  = addParam(pageSize);
+      const offsetP = addParam(dbOffset);
+
+      const { rows } = await supabase.pool.query(`
+        SELECT
+          p.id, p.creator_id, p.category_id, p.caption, p.media_type,
+          p.media_url, p.thumbnail_url, p.access_level, p.price_xcon,
+          p.likes_count, p.comments_count, p.created_at,
+          json_build_object('pseudo', u.pseudo, 'avatar_url', u.avatar_url) AS creator,
+          json_build_object('name', c.name, 'slug', c.slug)                 AS category
+        FROM posts p
+        LEFT JOIN users      u ON u.id = p.creator_id
+        LEFT JOIN categories c ON c.id = p.category_id
+        WHERE ${where.join(' AND ')}
+        ORDER BY ${orderClause}
+        LIMIT ${limitP} OFFSET ${offsetP}
+      `, params);
+
+      const serialized = await Promise.all((rows || []).map(async (post) => {
+        const access = await resolveAccess(post, viewerId);
+        return serializePost(post, access);
+      }));
+      return res.json({ posts: serialized, pagination: { page: pageNum, limit: pageSize } });
+    }
+    // ── Fin modes simplifiés ─────────────────────────────────────────────────
 
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -293,14 +379,59 @@ router.get('/discover', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur serveur', details: err.message }); }
 });
 
+// ── GET /posts/search — recherche full-text (caption + pseudo créateur)
+router.get('/search', async (req, res) => {
+  try {
+    const viewerId = getViewerId(req);
+    const { q, page = 1, limit = 20 } = req.query;
+
+    const term = String(q || '').trim();
+    if (term.length < 2) return res.json({ posts: [], pagination: { page: 1, limit: 20 } });
+
+    const pageNum  = Math.max(1, parseInt(page) || 1);
+    const pageSize = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const offset   = (pageNum - 1) * pageSize;
+    const pattern  = `%${term}%`;
+
+    const { rows } = await supabase.pool.query(`
+      SELECT
+        p.id, p.creator_id, p.category_id, p.caption, p.media_type,
+        p.media_url, p.thumbnail_url, p.access_level, p.price_xcon,
+        p.likes_count, p.comments_count, p.created_at,
+        json_build_object('pseudo', u.pseudo, 'avatar_url', u.avatar_url) AS creator,
+        json_build_object('name', c.name, 'slug', c.slug)                 AS category
+      FROM posts p
+      LEFT JOIN users       u ON u.id = p.creator_id
+      LEFT JOIN categories  c ON c.id = p.category_id
+      WHERE p.is_published = true
+        AND p.is_flagged   = false
+        AND (p.caption ILIKE $1 OR u.pseudo ILIKE $1)
+      ORDER BY p.likes_count DESC, p.created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [pattern, pageSize, offset]);
+
+    const serialized = await Promise.all((rows || []).map(async (post) => {
+      const access = await resolveAccess(post, viewerId);
+      return serializePost(post, access);
+    }));
+
+    res.json({ posts: serialized, pagination: { page: pageNum, limit: pageSize } });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur', details: err.message }); }
+});
+
 // ── GET /posts/feed — fil d'actualité (découverte)
 router.get('/feed', async (req, res) => {
   try {
     const viewerId = getViewerId(req);
-    const { category, page = 1, limit = 20 } = req.query;
+    const { category, categories: categoriesParam, page = 1, limit = 20 } = req.query;
     const pageNum  = Math.max(1, parseInt(page) || 1);
     const pageSize = Math.min(50, Math.max(1, parseInt(limit) || 20));
     const offset   = (pageNum - 1) * pageSize;
+
+    // Slugs à filtrer : priorité à `categories` (CSV multi-sélection), fallback `category` (legacy)
+    const slugs = categoriesParam
+      ? String(categoriesParam).split(',').map(s => s.trim()).filter(Boolean)
+      : category ? [String(category)] : [];
 
     let query = supabase.from('posts')
       .select(`
@@ -314,9 +445,10 @@ router.get('/feed', async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + pageSize - 1);
 
-    if (category) {
-      const { data: cat } = await supabase.from('categories').select('id').eq('slug', category).single();
-      if (cat) query = query.eq('category_id', cat.id);
+    if (slugs.length > 0) {
+      const { data: cats } = await supabase.from('categories').select('id').in('slug', slugs);
+      const ids = (cats || []).map(c => c.id);
+      if (ids.length > 0) query = query.in('category_id', ids);
     }
 
     const { data, error, count } = await query;

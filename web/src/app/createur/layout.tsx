@@ -2,16 +2,18 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FileText, Users, Wallet, Film } from "lucide-react";
+import { LayoutDashboard, Images, Users, Wallet, Film, Radio, Layers } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 import { useAuth } from "@/contexts/auth-context";
 
 const NAV: NavItem[] = [
-  { href: "/createur", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/createur/posts", label: "Publications", icon: FileText },
-  { href: "/createur/abonnes", label: "Abonnés", icon: Users },
-  { href: "/createur/editeur", label: "Studio vidéo", icon: Film },
-  { href: "/wallet", label: "Wallet", icon: Wallet },
+  { href: "/createur",          label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/createur/posts",    label: "Publications",    icon: Images },
+  { href: "/createur/editeur",  label: "Studio vidéo",   icon: Film },
+  { href: "/createur/live",     label: "Livestream",      icon: Radio },
+  { href: "/abonnements",       label: "Abonnements",     icon: Layers },
+  { href: "/createur/abonnes",  label: "Abonnés",         icon: Users },
+  { href: "/wallet",            label: "Wallet",           icon: Wallet },
 ];
 
 export default function CreateurLayout({ children }: { children: React.ReactNode }) {

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
-import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut } from "lucide-react";
+import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, SlidersHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 
 export interface NavItem {
   href: string;
@@ -104,7 +104,8 @@ export function DashboardShell({
   const NavLink = ({
     href, label, icon: Icon, gold = false,
   }: NavItem & { gold?: boolean }) => {
-    const active = pathname === href || (href !== "/admin" && pathname.startsWith(href));
+    const isRootRoute = href === "/admin" || href === "/createur";
+    const active = pathname === href || (!isRootRoute && pathname.startsWith(href));
     return (
       <Link
         href={href}
@@ -137,18 +138,10 @@ export function DashboardShell({
       )}>
         <div className={cn("flex items-center p-4 pb-3", collapsed ? "justify-center" : "justify-between")}>
           {!collapsed && <Logo />}
-          <div className="flex items-center gap-1">
-            {!collapsed && (
-              <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                className="rounded-xl p-1.5 text-sage hover:text-cream transition-colors">
-                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-            )}
-            <button onClick={toggleCollapsed} title={collapsed ? "Déplier" : "Réduire"}
-              className="rounded-xl p-1.5 text-sage hover:text-cream transition-colors">
-              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-            </button>
-          </div>
+          <button onClick={toggleCollapsed} title={collapsed ? "Déplier" : "Réduire"}
+            className="rounded-xl p-1.5 text-sage hover:text-cream transition-colors">
+            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
         </div>
 
         {/* Cmd+K */}
@@ -197,35 +190,69 @@ export function DashboardShell({
         </nav>
 
         {/* Footer utilisateur */}
-        <div className="border-t border-ink-line/50 p-3 space-y-1">
-          {user && !collapsed && (
-            <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
-              <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-cream">@{user.pseudo}</p>
-                <p className="truncate text-[10px] text-sage-muted capitalize">{user.role.replace("_", " ")}</p>
+        <div className="border-t border-ink-line/50 p-2">
+          {collapsed ? (
+            /* Mode réduit — icônes uniquement */
+            <div className="flex flex-col items-center gap-1">
+              <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
+                className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+              <Link href="/" title="Retour au site"
+                className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                <Home className="h-4 w-4" />
+              </Link>
+              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
+                <Link href="/admin" title="Admin Dashboard"
+                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Link>
+              )}
+              <button onClick={logout} title="Déconnexion"
+                className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-brick/10 hover:text-brick transition-colors">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            /* Mode étendu */
+            <div className="space-y-0.5">
+              {/* Ligne 1 : icônes thème + langue, centrées */}
+              <div className="flex items-center justify-center gap-3 px-2 py-2">
+                <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
+                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <LanguageSwitcher />
               </div>
+
+              <div className="mx-1 my-1 h-px bg-ink-line/40" />
+
+              {/* Ligne 2 : Retour au site */}
+              <Link href="/"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                <Home className="h-4 w-4 shrink-0" />
+                Retour au site
+              </Link>
+
+              {/* Ligne 3 : Admin Dashboard (si admin) */}
+              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
+                <Link href="/admin"
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
+                  <SlidersHorizontal className="h-4 w-4 shrink-0" />
+                  Admin Dashboard
+                </Link>
+              )}
+
+              <div className="mx-1 my-1 h-px bg-ink-line/40" />
+
+              {/* Ligne 4 : Déconnexion */}
+              <button onClick={logout}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-brick/80 hover:bg-brick/10 hover:text-brick transition-colors">
+                <LogOut className="h-4 w-4 shrink-0" />
+                Déconnexion
+              </button>
             </div>
           )}
-          <Link href="/" className={cn(
-            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sage hover:text-cream transition-colors",
-            collapsed && "justify-center px-2"
-          )}>
-            {collapsed ? "←" : "← Retour au site"}
-          </Link>
-          {!collapsed && (
-            <button onClick={toggleDark} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-sage hover:text-cream transition-colors">
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              {dark ? "Mode clair" : "Mode sombre"}
-            </button>
-          )}
-          <button onClick={logout} title="Déconnexion" className={cn(
-            "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-sage hover:text-brick transition-colors",
-            collapsed && "justify-center px-2"
-          )}>
-            <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && "Déconnexion"}
-          </button>
         </div>
       </aside>
 
@@ -254,7 +281,8 @@ export function DashboardShell({
       {/* ── Nav mobile bottom ── */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-ink-line/50 bg-ink/95 backdrop-blur-md md:hidden overflow-x-auto scrollbar-none">
         {commonItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== "/admin" && pathname.startsWith(href));
+          const isRootRoute = href === "/admin" || href === "/createur";
+    const active = pathname === href || (!isRootRoute && pathname.startsWith(href));
           return (
             <Link
               key={href}

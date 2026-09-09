@@ -5,8 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   Zap, Flame, TrendingUp, Sparkles, Rocket,
   ListFilter, Search, X, LayoutGrid,
-  User, BookImage, LogOut, LayoutDashboard,
+  User, Wallet, Layers, MessageSquare, Video, Settings, LogOut, ChevronDown, Coins,
 } from "lucide-react";
+
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Logo } from "@/components/layout/logo";
 import { Footer } from "@/components/layout/footer";
@@ -15,6 +16,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { DiscoverFeed, type FeedMode } from "@/components/posts/discover-feed";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
+import { formatFCFA } from "@/lib/utils";
 import { useT } from "@/i18n/locale-context";
 import { getCategoryIcon } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -42,7 +44,7 @@ export default function HomePage() {
 function HomeFeed() {
   const t = useT();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, wallet } = useAuth();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -92,7 +94,10 @@ function HomeFeed() {
   const activeMode  = searchQuery ? "boosted" as FeedMode : feedMode;
   const feedKey     = searchQuery || `${feedMode}-${selectedSlugs.join(",")}` || "all";
 
-  // Menu déroulant avatar
+  const isCreator = ["influencer", "admin", "super_admin", "root_admin"].includes((user as any)?.role);
+  const isAdmin   = ["admin", "super_admin", "root_admin"].includes((user as any)?.role);
+
+  // Menu déroulant avatar — identique à la navbar
   const UserMenu = () => (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -102,6 +107,7 @@ function HomeFeed() {
         >
           <UserAvatar src={(user as any)?.avatar_url} pseudo={user?.pseudo} name={user?.name} size="xs" />
           <span className="text-sm font-medium text-cream">{user?.name?.split(" ")[0] || user?.pseudo}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-sage-muted" />
         </button>
       </DropdownMenu.Trigger>
 
@@ -110,45 +116,63 @@ function HomeFeed() {
           align="end"
           sideOffset={8}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          className="z-50 min-w-[200px] overflow-hidden rounded-xl border border-ink-line bg-ink-raised shadow-xl backdrop-blur-md animate-in fade-in-0 zoom-in-95"
+          className="z-50 w-56 overflow-hidden rounded-xl border border-ink-line bg-ink-surface shadow-2xl animate-in fade-in-0 zoom-in-95"
         >
-          <div className="border-b border-ink-line px-3 py-3">
-            <p className="text-sm font-semibold text-cream">@{user?.pseudo}</p>
+          {/* En-tête */}
+          <div className="border-b border-ink-line px-4 py-3">
+            <p className="truncate text-sm font-semibold text-cream">@{user?.pseudo}</p>
+            <p className="text-xs capitalize text-sage-muted">{(user as any)?.role?.replace(/_/g, " ")}</p>
           </div>
 
+          {/* Navigation */}
           <div className="py-1">
-            <DropdownMenu.Item
-              onSelect={() => router.push("/profil")}
-              className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm text-cream outline-none transition-colors hover:bg-ink-surface focus:bg-ink-surface"
-            >
-              <User className="h-4 w-4 text-sage-muted" />
-              Mon profil
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onSelect={() => router.push("/profil?tab=posts")}
-              className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm text-cream outline-none transition-colors hover:bg-ink-surface focus:bg-ink-surface"
-            >
-              <BookImage className="h-4 w-4 text-sage-muted" />
-              Mes publications
-            </DropdownMenu.Item>
-            {["admin", "super_admin", "root_admin"].includes((user as any)?.role) && (
+            {(
+              [
+                { icon: User,         label: t("nav.profile"),       href: "/profil" },
+                { icon: Wallet,       label: t("nav.wallet"),        href: "/wallet" },
+                { icon: Layers,       label: t("nav.subscriptions"), href: "/abonnements" },
+                { icon: MessageSquare,label: t("nav.messages"),      href: "/messages" },
+              ] as const
+            ).map(({ icon: Icon, label, href }) => (
+              <DropdownMenu.Item
+                key={href}
+                onSelect={() => router.push(href)}
+                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-sage outline-none transition-colors hover:bg-ink-raised hover:text-cream focus:bg-ink-raised focus:text-cream"
+              >
+                <Icon size={15} />
+                {label}
+              </DropdownMenu.Item>
+            ))}
+
+            {isCreator && (
+              <DropdownMenu.Item
+                onSelect={() => router.push("/createur")}
+                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-sage outline-none transition-colors hover:bg-ink-raised hover:text-cream focus:bg-ink-raised focus:text-cream"
+              >
+                <Video size={15} />
+                Espace créateur
+              </DropdownMenu.Item>
+            )}
+
+            {isAdmin && (
               <DropdownMenu.Item
                 onSelect={() => router.push("/admin")}
-                className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm text-gold outline-none transition-colors hover:bg-gold/10 focus:bg-gold/10"
+                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-gold/80 outline-none transition-colors hover:bg-gold/10 hover:text-gold focus:bg-gold/10 focus:text-gold"
               >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard admin
+                <Settings size={15} />
+                Administration
               </DropdownMenu.Item>
             )}
           </div>
 
+          {/* Déconnexion */}
           <div className="border-t border-ink-line py-1">
             <DropdownMenu.Item
               onSelect={() => { logout(); router.push("/connexion"); }}
-              className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm text-brick outline-none transition-colors hover:bg-brick/10 focus:bg-brick/10"
+              className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-brick outline-none transition-colors hover:bg-brick/10 focus:bg-brick/10"
             >
-              <LogOut className="h-4 w-4" />
-              Déconnexion
+              <LogOut size={15} />
+              {t("profile.logout")}
             </DropdownMenu.Item>
           </div>
         </DropdownMenu.Content>
@@ -264,6 +288,16 @@ function HomeFeed() {
           </div>
 
           <div className="flex items-center gap-2 justify-end">
+            {user && wallet != null && (
+              <button
+                onClick={() => router.push("/wallet")}
+                className="flex items-center gap-1.5 rounded-xl border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm font-semibold text-gold transition-colors hover:bg-gold/20"
+                title="Mon wallet"
+              >
+                <Coins className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-mono tabular-nums">{formatFCFA(wallet.balance_xcon ?? 0)}</span>
+              </button>
+            )}
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
@@ -343,6 +377,17 @@ function HomeFeed() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle />
+
+            {user && wallet != null && (
+              <button
+                onClick={() => router.push("/wallet")}
+                className="flex items-center gap-1 rounded-xl border border-gold/30 bg-gold/10 px-2.5 py-1 text-xs font-semibold text-gold transition-colors hover:bg-gold/20"
+                title="Mon wallet"
+              >
+                <Coins className="h-3 w-3 shrink-0" />
+                <span className="font-mono tabular-nums">{formatFCFA(wallet.balance_xcon ?? 0)}</span>
+              </button>
+            )}
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>

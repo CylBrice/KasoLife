@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Eye, EyeOff, Trash2, Film, Lock } from "lucide-react";
+import { Plus, Eye, EyeOff, Trash2, Film, Lock, Image as ImageIcon, Video, Music, AlignLeft, Camera } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ export default function CreatorPostsPage() {
   const [posts, setPosts] = useState<MyPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
+  const [editorType, setEditorType] = useState<"TEXT" | "IMAGE" | "VIDEO" | "AUDIO">("TEXT");
+
+  const openEditor = (type: "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" = "TEXT") => {
+    setEditorType(type);
+    setShowEditor(true);
+  };
 
   const loadPosts = () => {
     api.get("/posts/me").then(({ data }) => setPosts(data.posts || [])).finally(() => setLoading(false));
@@ -48,12 +54,13 @@ export default function CreatorPostsPage() {
           <p className="mt-1 text-sm text-sage">Gérez votre contenu publié.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/createur/editeur">
-            <Button variant="secondary">
-              <Film className="h-4 w-4" /> Studio vidéo
-            </Button>
-          </Link>
-          <Button onClick={() => setShowEditor(true)}>
+          <Button variant="secondary" onClick={() => openEditor("IMAGE")}>
+            <Camera className="h-4 w-4" /> Photo
+          </Button>
+          <Button variant="secondary" onClick={() => openEditor("VIDEO")}>
+            <Film className="h-4 w-4" /> Vidéo
+          </Button>
+          <Button onClick={() => openEditor()}>
             <Plus className="h-4 w-4" /> Nouvelle publication
           </Button>
         </div>
@@ -65,9 +72,17 @@ export default function CreatorPostsPage() {
         <div className="rounded-2xl border border-dashed border-ink-line px-6 py-16 text-center">
           <p className="font-display text-lg text-cream">{t("creatorDashboard.noPosts")}</p>
           <p className="mt-1 text-sm text-sage">Créez votre première publication pour vos abonnés.</p>
-          <Button className="mt-4" onClick={() => setShowEditor(true)}>
-            <Plus className="h-4 w-4" /> Nouvelle publication
-          </Button>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button variant="secondary" onClick={() => openEditor("IMAGE")}>
+              <Camera className="h-4 w-4" /> Photo
+            </Button>
+            <Button variant="secondary" onClick={() => openEditor("VIDEO")}>
+              <Film className="h-4 w-4" /> Vidéo
+            </Button>
+            <Button onClick={() => openEditor()}>
+              <Plus className="h-4 w-4" /> Autre
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -87,6 +102,13 @@ export default function CreatorPostsPage() {
                     {post.caption?.slice(0, 80) || t("creatorDashboard.textOnly")}
                   </div>
                 )}
+                {/* Badge type média — coin inférieur droit */}
+                <div className="absolute bottom-2 right-2">
+                  {post.media_type === "VIDEO" && <div className="flex items-center justify-center rounded-lg bg-ink/70 p-1 backdrop-blur-sm"><Video className="h-3.5 w-3.5 text-cream" /></div>}
+                  {post.media_type === "IMAGE" && <div className="flex items-center justify-center rounded-lg bg-ink/70 p-1 backdrop-blur-sm"><ImageIcon className="h-3.5 w-3.5 text-cream" /></div>}
+                  {post.media_type === "AUDIO" && <div className="flex items-center justify-center rounded-lg bg-ink/70 p-1 backdrop-blur-sm"><Music className="h-3.5 w-3.5 text-cream" /></div>}
+                  {post.media_type === "TEXT" && <div className="flex items-center justify-center rounded-lg bg-ink/70 p-1 backdrop-blur-sm"><AlignLeft className="h-3.5 w-3.5 text-cream" /></div>}
+                </div>
                 <div className="absolute left-2 top-2 flex gap-1">
                   {post.access_level !== "FREE" && (
                     <Badge variant={post.access_level === "PPV" ? "gold" : "emerald"}>
@@ -126,6 +148,7 @@ export default function CreatorPostsPage() {
         <PostEditorDialog
           onClose={() => setShowEditor(false)}
           onCreated={() => { setShowEditor(false); loadPosts(); }}
+          initialMediaType={editorType}
         />
       )}
     </div>
