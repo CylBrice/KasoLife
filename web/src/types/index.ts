@@ -50,6 +50,7 @@ export interface UserProfile {
   banner_url?: string;
   bio?: string;
   kyc_status: "PENDING" | "VERIFIED" | "FAILED" | "SUPPORT";
+  referral_code?: string;
 }
 
 export interface Wallet {

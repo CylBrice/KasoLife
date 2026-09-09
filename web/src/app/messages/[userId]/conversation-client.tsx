@@ -116,7 +116,7 @@ export default function ConversationClient() {
             )}
           </div>
           <p className="font-medium text-cream">@{otherUser?.pseudo || "..."}</p>
-          {["influencer","admin","super_admin","root_admin"].includes(otherUser?.role) && (
+          {["influencer","admin","super_admin","root_admin"].includes(otherUser?.role ?? "") && (
             <button onClick={() => setShowTip(true)} className="ml-auto flex items-center gap-1.5 rounded-xl border border-gold/30 bg-gold/10 px-3 py-1.5 text-sm text-gold-bright hover:bg-gold/20">
               <Gift className="h-4 w-4" /> Pourboire
             </button>

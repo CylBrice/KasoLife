@@ -54,7 +54,7 @@ export default function WalletPage() {
                 {formatFCFA(wallet?.balance_xcon ?? 0)}
               </p>
             </div>
-            {['influencer','admin','super_admin','root_admin'].includes(role) && (
+            {(['influencer','admin','super_admin','root_admin'] as string[]).includes(user.role) && (
               <div>
                 <p className="text-sm text-sage">{t("wallet.pendingEarnings")}</p>
                 <p className="font-mono text-xl tabular text-emerald-bright">
