@@ -1,47 +1,61 @@
 import axios from "axios";
-import Cookies from "js-cookie";
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
-  timeout: 15000,
-});
+// ─── Token en mémoire uniquement ───────────────────────────────────────────
+// Le refresh token vit dans un cookie HttpOnly géré par Next.js (invisible au JS).
+// L'access token (JWT 15 min) vit ici, en mémoire — jamais dans localStorage ni cookie.
+// Un rechargement de page déclenche un appel /api/auth/refresh pour le restaurer.
 
-/** Événement émis quand une requête échoue en 401 — AuthProvider s'y abonne
- * pour vider son état et rediriger, au lieu de laisser l'UI croire à tort
- * que l'utilisateur est toujours connecté. */
+let _token: string | null = null;
+// Promise partagée pour éviter d'envoyer plusieurs requêtes refresh simultanément
+let _refreshing: Promise<string | null> | null = null;
+
 export const AUTH_UNAUTHORIZED_EVENT = "kasolife:unauthorized";
 
-// Attache le token JWT à chaque requête si présent
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+  timeout: 15_000,
+});
+
+// Injecte le Bearer token sur chaque requête
 api.interceptors.request.use((config) => {
-  const token = Cookies.get("kasolife_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (_token) config.headers.Authorization = `Bearer ${_token}`;
   return config;
 });
 
-// Sur 401, nettoie la session locale et notifie l'app (AuthProvider redirige)
+// Sur 401 : tente un refresh silencieux, puis rejoue la requête originale.
+// Si le refresh échoue → événement global → AuthProvider redirige vers /connexion.
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      Cookies.remove("kasolife_token");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
-      }
+  (res) => res,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status !== 401 || original._retry) return Promise.reject(error);
+    original._retry = true;
+
+    if (!_refreshing) {
+      _refreshing = fetch("/api/auth/refresh", { method: "POST" })
+        .then(async (r) => {
+          if (!r.ok) throw new Error("refresh_failed");
+          const d = await r.json();
+          return d.accessToken as string;
+        })
+        .catch(() => null)
+        .finally(() => { _refreshing = null; });
     }
-    return Promise.reject(error);
+
+    const newToken = await _refreshing;
+
+    if (!newToken) {
+      _token = null;
+      if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+      return Promise.reject(error);
+    }
+
+    _token = newToken;
+    original.headers.Authorization = `Bearer ${newToken}`;
+    return api(original);
   }
 );
 
-export function setAuthToken(token: string) {
-  Cookies.set("kasolife_token", token, { expires: 30, sameSite: "lax" });
-}
-
-export function clearAuthToken() {
-  Cookies.remove("kasolife_token");
-}
-
-export function getAuthToken(): string | undefined {
-  return Cookies.get("kasolife_token");
-}
+export function setApiToken(token: string) { _token = token; }
+export function clearApiToken() { _token = null; }
+export function getApiToken(): string | null { return _token; }

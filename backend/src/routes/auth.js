@@ -11,6 +11,7 @@ const jwt       = require('jsonwebtoken');
 const crypto    = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const supabase  = require('../config/supabase');
+const redis     = require('../lib/redis');
 const { authMiddleware } = require('../middleware/auth');
 const { encrypt, decrypt, encryptDeterministic } = require('../services/encryption');
 const { generateOTP, sendPasswordResetOTP, sendSMS, sendEmailOTP } = require('../services/sms');
@@ -39,23 +40,36 @@ const generateTokens = async (userId, userAgent, ip) => {
   const rawRefresh   = crypto.randomBytes(40).toString('hex');
   const tokenHash    = crypto.createHash('sha256').update(rawRefresh).digest('hex');
   const expiresAt    = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS).toISOString();
+  const ttlSeconds   = Math.floor(REFRESH_TOKEN_EXPIRY_MS / 1000);
 
-  // Limiter à MAX_ACTIVE_SESSIONS sessions actives — révoquer les plus anciennes au-delà
-  const { data: activeSessions } = await supabase.from('refresh_tokens')
-    .select('id, created_at')
-    .eq('user_id', userId).eq('revoked', false)
-    .gt('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: true });
-  if (activeSessions && activeSessions.length >= MAX_ACTIVE_SESSIONS) {
-    const toRevoke = activeSessions.slice(0, activeSessions.length - MAX_ACTIVE_SESSIONS + 1);
-    await supabase.from('refresh_tokens').update({ revoked: true })
-      .in('id', toRevoke.map(s => s.id));
-  }
+  // Redis — session store primaire (O(1), TTL natif). Optionnel : si Redis
+  // est indisponible, safeSetex() est un no-op et Supabase prend le relais.
+  await redis.safeSetex(
+    `rt:${tokenHash}`,
+    ttlSeconds,
+    JSON.stringify({ userId, createdAt: Date.now() })
+  );
 
-  await supabase.from('refresh_tokens').insert({
-    id: uuidv4(), user_id: userId, token_hash: tokenHash,
-    expires_at: expiresAt, user_agent: userAgent, ip_address: ip,
-  });
+  // Supabase — audit trail asynchrone (non bloquant)
+  Promise.all([
+    supabase.from('refresh_tokens')
+      .select('id, created_at')
+      .eq('user_id', userId).eq('revoked', false)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: true })
+      .then(({ data: sessions }) => {
+        if (sessions && sessions.length >= MAX_ACTIVE_SESSIONS) {
+          const toRevoke = sessions.slice(0, sessions.length - MAX_ACTIVE_SESSIONS + 1);
+          return supabase.from('refresh_tokens').update({ revoked: true })
+            .in('id', toRevoke.map(s => s.id));
+        }
+      }),
+    supabase.from('refresh_tokens').insert({
+      id: uuidv4(), user_id: userId, token_hash: tokenHash,
+      expires_at: expiresAt, user_agent: userAgent, ip_address: ip,
+    }),
+  ]).catch((err) => console.error('[generateTokens] Supabase audit:', err.message));
+
   return { accessToken, refreshToken: rawRefresh };
 };
 
@@ -307,52 +321,64 @@ router.post('/refresh', async (req, res) => {
     if (!refreshToken) return res.status(401).json({ error: 'Refresh token manquant' });
 
     const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    const { data: stored } = await supabase.from('refresh_tokens')
-      .select('*, user:users(id, role, is_active, pseudo, last_active)')
-      .eq('token_hash', tokenHash).eq('revoked', false).single();
+    let userId = null;
 
-    if (!stored) return res.status(401).json({ error: 'Refresh token invalide ou révoqué' });
-    if (new Date(stored.expires_at) < new Date())
-      return res.status(401).json({ error: 'Refresh token expiré — reconnectez-vous' });
-    if (!stored.user?.is_active)
-      return res.status(403).json({ error: 'Compte suspendu' });
+    // Chemin rapide : Redis (no-op si Redis est indisponible)
+    const cached = await redis.safeGet(`rt:${tokenHash}`);
+    if (cached) {
+      try { ({ userId } = JSON.parse(cached)); } catch { userId = null; }
+      if (userId) {
+        await redis.safeDel(`rt:${tokenHash}`);
+        supabase.from('refresh_tokens').update({ revoked: true })
+          .eq('token_hash', tokenHash).catch(() => {});
+      }
+    }
 
-    const lastActive = stored.user?.last_active ? new Date(stored.user.last_active).getTime() : 0;
-    const inactiveMs = Date.now() - lastActive;
+    // Chemin de repli : Supabase (sessions antérieures au déploiement Redis)
+    if (!userId) {
+      const { data: stored } = await supabase.from('refresh_tokens')
+        .select('user_id, expires_at, revoked')
+        .eq('token_hash', tokenHash).eq('revoked', false).single();
+      if (!stored) return res.status(401).json({ error: 'Session invalide ou révoquée' });
+      if (new Date(stored.expires_at) < new Date())
+        return res.status(401).json({ error: 'Session expirée — reconnectez-vous' });
+      userId = stored.user_id;
+      await supabase.from('refresh_tokens').update({ revoked: true }).eq('token_hash', tokenHash);
+    }
 
-    if (inactiveMs > SESSION_HARD_EXPIRY_MS) {
-      await supabase.from('refresh_tokens').update({ revoked: true }).eq('id', stored.id);
+    // Validation du compte
+    const { data: user } = await supabase.from('users')
+      .select('id, is_active, last_active')
+      .eq('id', userId).single();
+    if (!user?.is_active) return res.status(403).json({ error: 'Compte suspendu' });
+
+    const inactiveMs = Date.now() - (user.last_active ? new Date(user.last_active).getTime() : 0);
+    if (inactiveMs > SESSION_HARD_EXPIRY_MS)
       return res.status(401).json({ error: 'Session expirée — reconnectez-vous', session_expired: true });
-    }
+    if (inactiveMs > SESSION_SOFT_EXPIRY_MS)
+      return res.status(401).json({ error: 'Vérification requise', reauth_required: true });
 
-    if (inactiveMs > SESSION_SOFT_EXPIRY_MS) {
-      return res.status(401).json({
-        error: 'Vérification requise',
-        reauth_required: true,
-        message_fr: 'Veuillez confirmer votre identité pour continuer',
-        message_en: 'Please verify your identity to continue',
-      });
-    }
-
-    // Session active : rotation normale du token
-    await supabase.from('refresh_tokens').update({ revoked: true }).eq('id', stored.id);
+    // Rotation : nouveau couple de tokens
     const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
-      stored.user_id, req.headers['user-agent'], req.ip
+      userId, req.headers['user-agent'], req.ip
     );
     res.json({ accessToken, refreshToken: newRefreshToken });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// ── POST /auth/logout
-router.post('/logout', authMiddleware, async (req, res) => {
+// ── POST /auth/logout (authMiddleware optionnel — logout toujours autorisé)
+router.post('/logout', async (req, res) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken) {
       const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-      await supabase.from('refresh_tokens').update({ revoked: true })
-        .eq('token_hash', tokenHash).eq('user_id', req.user.id);
+      // Révocation immédiate dans Redis (no-op si Redis est indisponible)
+      redis.safeDel(`rt:${tokenHash}`);
+      // Révocation dans Supabase (audit)
+      supabase.from('refresh_tokens').update({ revoked: true })
+        .eq('token_hash', tokenHash).catch(() => {});
     }
-    res.json({ message: 'Déconnecté avec succès' });
+    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 

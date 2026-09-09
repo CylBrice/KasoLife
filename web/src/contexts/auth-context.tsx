@@ -4,7 +4,7 @@ import {
   createContext, useContext, useEffect, useState, type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { api, setAuthToken, clearAuthToken, getAuthToken, AUTH_UNAUTHORIZED_EVENT } from "@/lib/api";
+import { api, setApiToken, clearApiToken, getApiToken, AUTH_UNAUTHORIZED_EVENT } from "@/lib/api";
 import type { UserProfile, Wallet } from "@/types";
 
 interface AuthContextType {
@@ -13,7 +13,7 @@ interface AuthContextType {
   loading: boolean;
   login: (phone: string, password: string) => Promise<void>;
   register: (data: RegisterPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -36,57 +36,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const fetchMe = async () => {
+    const { data } = await api.get("/auth/me");
+    setUser(data);
     try {
-      const { data } = await api.get("/auth/me");
-      setUser(data);
-      const walletRes = await api.get("/wallet");
-      setWallet(walletRes.data);
+      const { data: w } = await api.get("/wallet");
+      setWallet(w);
     } catch {
-      setUser(null);
       setWallet(null);
     }
   };
 
+  // Au démarrage de l'app : restaure la session depuis le cookie HttpOnly kaso_rt.
+  // Le BFF /api/auth/refresh lit le cookie serveur-side et retourne un nouvel access token.
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    fetchMe().finally(() => setLoading(false));
+    fetch("/api/auth/refresh", { method: "POST" })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const { accessToken } = await r.json();
+        if (accessToken) {
+          setApiToken(accessToken);
+          await fetchMe();
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Session expirée/révoquée (401 sur une requête API) : purge l'état en
-  // mémoire immédiatement, sinon l'UI continue d'afficher "connecté" jusqu'au
-  // prochain rechargement de page.
+  // Token expiré non-récupérable (refresh échoué) → déconnexion immédiate
   useEffect(() => {
-    const handleUnauthorized = () => {
+    const handle = () => {
       setUser(null);
       setWallet(null);
       router.push("/connexion");
     };
-    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
-    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handle);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handle);
   }, [router]);
 
   const login = async (phone: string, password: string) => {
-    const { data } = await api.post("/auth/login", { phone, password });
-    setAuthToken(data.accessToken || data.token);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Connexion échouée");
+
+    // Access token en mémoire, refresh token dans le cookie HttpOnly (posé par le BFF)
+    setApiToken(data.accessToken);
+    setUser(data.user);
     await fetchMe();
   };
 
   const register = async (payload: RegisterPayload) => {
-    const { data } = await api.post("/auth/register", payload);
-    if (data.accessToken || data.token) {
-      setAuthToken(data.accessToken || data.token);
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Inscription échouée");
+
+    if (data.accessToken) {
+      setApiToken(data.accessToken);
       await fetchMe();
     }
   };
 
-  const logout = () => {
-    clearAuthToken();
+  const logout = async () => {
+    const token = getApiToken();
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).catch(() => {});
+    clearApiToken();
     setUser(null);
     setWallet(null);
+    router.push("/connexion");
   };
 
   return (

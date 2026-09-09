@@ -4,6 +4,7 @@ import {
   createContext, useContext, useEffect, useState, type ReactNode,
 } from "react";
 import Cookies from "js-cookie";
+import { getApiToken } from "@/lib/api";
 import fr from "./fr.json";
 import en from "./en.json";
 
@@ -70,7 +71,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // Synchronise avec le backend (best-effort) pour que les contenus IA
     // générés (légendes, résumés, notifications) respectent la langue choisie.
     try {
-      const token = Cookies.get("kasolife_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("kasolife_token") : null);
+      const token = getApiToken();
       if (token) {
         fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/auth/profile`, {
           method: "PUT",
