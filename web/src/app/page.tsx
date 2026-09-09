@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, Check } from "lucide-react";
+import { ListFilter, Check } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Logo } from "@/components/layout/logo";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -71,7 +71,7 @@ function HomeFeed() {
                 )}
                 aria-label={t("nav.filterByCategory")}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <ListFilter className="h-4 w-4" />
               </button>
             </DropdownMenu.Trigger>
 
