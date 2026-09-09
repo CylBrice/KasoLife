@@ -133,6 +133,9 @@ router.get('/:pseudo', async (req, res) => {
       } catch {}
     }
 
+    const { data: liveStream } = await supabase.from('live_streams')
+      .select('id').eq('creator_id', user.id).eq('status', 'LIVE').single();
+
     res.json({
       id: user.id,
       pseudo: user.pseudo,
@@ -150,6 +153,8 @@ router.get('/:pseudo', async (req, res) => {
       welcome_message: isSubscribed ? profile.welcome_message : undefined,
       is_subscribed: isSubscribed,
       is_own_profile: viewerId === user.id,
+      is_live: !!liveStream,
+      live_stream_id: liveStream?.id || null,
     });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });

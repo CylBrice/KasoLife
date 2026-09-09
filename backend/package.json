@@ -26,6 +26,7 @@
     "hpp": "^0.2.3",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.19.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.9",

@@ -55,6 +55,25 @@ services:
           cpus: '0.5'
           memory: 256M
 
+  livekit:
+    image: livekit/livekit-server:v1.13.6
+    container_name: kasolife-livekit
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./livekit.dev.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "50000-50100:50000-50100/udp"
+    networks:
+      - kasolife-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
   backend:
     build:
       context: ./backend
@@ -66,6 +85,8 @@ services:
       redis:
         condition: service_healthy
       klando-keygen-kasolife:
+        condition: service_started
+      livekit:
         condition: service_started
     environment:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://kasolife.com,https://www.kasolife.com}
@@ -85,6 +106,9 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
       JWT_SECRET: ${JWT_SECRET}
       KLANDO_KEYGEN_URL: http://klando-keygen-kasolife:3102
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
 NODE_ENV: production
       PORT: 3003
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
