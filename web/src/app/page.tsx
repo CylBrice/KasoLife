@@ -51,68 +51,70 @@ function HomeFeed() {
 
   return (
     <>
-      {/* ── DESKTOP (md+) : layout avec sidebar gauche ──────────────── */}
-      <div className="hidden md:flex min-h-screen">
+      {/* ── DESKTOP (md+) : header plein-largeur + sidebar + feed ─────── */}
+      <div className="hidden md:flex min-h-screen flex-col">
 
-        {/* Sidebar catégories */}
-        <aside className="sticky top-0 h-screen w-56 shrink-0 overflow-y-auto border-r border-ink-line bg-ink px-3 py-6">
-          <div className="mb-4 px-2">
-            <Logo />
+        {/* Header plein-largeur */}
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-ink-line bg-ink px-6">
+          <Logo />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            {user ? (
+              <button
+                onClick={() => router.push("/profil")}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-ink-raised"
+                aria-label="Mon profil"
+              >
+                <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="xs" />
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/connexion")}
+                className="rounded-xl bg-gold/90 px-4 py-1.5 text-sm font-semibold text-ink hover:bg-gold transition-colors"
+              >
+                {t("nav.login")}
+              </button>
+            )}
           </div>
-          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sage-muted">
-            {t("nav.filterByCategory")}
-          </p>
-          <nav className="flex flex-col gap-0.5">
-            <SidebarCategoryItem
-              label={t("nav.all")}
-              active={!category}
-              onClick={() => setCategory(undefined)}
-            />
-            {(categories ?? []).map((cat) => {
-              const Icon = getCategoryIcon(cat.slug);
-              return (
-                <SidebarCategoryItem
-                  key={cat.id}
-                  label={cat.name}
-                  icon={Icon}
-                  active={category === cat.slug}
-                  onClick={() => setCategory(cat.slug)}
-                />
-              );
-            })}
-          </nav>
-        </aside>
+        </header>
 
-        {/* Feed + header desktop */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex items-center justify-between border-b border-ink-line bg-ink px-6 py-3">
-            <span />
-            <div className="flex items-center gap-2">
-              <LanguageSwitcher />
-              <ThemeToggle />
-              {user ? (
-                <button
-                  onClick={() => router.push("/profil")}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-ink-raised"
-                  aria-label="Mon profil"
-                >
-                  <UserAvatar src={(user as any).avatar_url} pseudo={user.pseudo} name={user.name} size="xs" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => router.push("/connexion")}
-                  className="rounded-xl bg-gold/90 px-4 py-1.5 text-sm font-semibold text-ink hover:bg-gold transition-colors"
-                >
-                  {t("nav.login")}
-                </button>
-              )}
-            </div>
-          </header>
+        {/* Corps : sidebar + feed */}
+        <div className="flex flex-1 overflow-hidden">
+
+          {/* Sidebar catégories */}
+          <aside className="w-56 shrink-0 overflow-y-auto border-r border-ink-line bg-ink px-3 py-4">
+            <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sage-muted">
+              {t("nav.filterByCategory")}
+            </p>
+            <nav className="flex flex-col gap-0.5">
+              <SidebarCategoryItem
+                label={t("nav.all")}
+                active={!category}
+                onClick={() => setCategory(undefined)}
+              />
+              {(categories ?? []).map((cat) => {
+                const Icon = getCategoryIcon(cat.slug);
+                return (
+                  <SidebarCategoryItem
+                    key={cat.id}
+                    label={cat.name}
+                    icon={Icon}
+                    active={category === cat.slug}
+                    onClick={() => setCategory(cat.slug)}
+                  />
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Feed */}
           <main className="flex-1 overflow-y-auto">
             <DiscoverFeed category={category} />
           </main>
-          <Footer />
         </div>
+
+        <Footer />
       </div>
 
       {/* ── MOBILE (< md) : plein écran avec bouton filtre ──────────── */}
