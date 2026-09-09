@@ -79,8 +79,8 @@ function HomeFeed() {
           </div>
         </header>
 
-        {/* Corps : sidebar + feed */}
-        <div className="flex flex-1 overflow-hidden">
+        {/* Corps : sidebar + feed — min-h-0 indispensable pour que flex-1 ne depasse pas le footer */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
 
           {/* Sidebar catégories */}
           <aside className="w-56 shrink-0 overflow-y-auto border-r border-ink-line bg-ink px-3 py-4">
