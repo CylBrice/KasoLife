@@ -32,7 +32,7 @@ export function PillToggle({
       className={cn(
         "rounded-xl font-medium transition-colors",
         active
-          ? "bg-gold text-white dark:text-[#0B2545]"
+          ? "bg-gold text-white dark:text-[#0B2545] shadow-md"
           : cn("text-sage hover:text-cream", inactiveClassName),
         className
       )}
