@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgeCheck, Wallet, Coins, Layers, ChevronRight,
-  UserCircle, Shield, CreditCard, BarChart3, Settings, Users,
+  UserCircle, Shield, CreditCard, BarChart3, Settings, Users, ShoppingBag,
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -132,7 +132,7 @@ export default function ProfilPage() {
           </div>
 
           {/* Stat tiles */}
-          <div className={`mt-4 grid gap-3 ${isCreator ? "grid-cols-3" : "grid-cols-2"}`}>
+          <div className={`mt-4 grid gap-3 ${isCreator ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
             <Link href="/wallet" className="group">
               <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
                 <Coins className="h-5 w-5 shrink-0 text-gold" />
@@ -151,6 +151,16 @@ export default function ProfilPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-base font-medium tabular text-cream">{activeSubsCount}</p>
                   <p className="text-xs text-sage-muted">{isEn ? "Subscriptions" : "Abonnements"}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </Link>
+            <Link href="/mes-achats" className="group">
+              <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
+                <ShoppingBag className="h-5 w-5 shrink-0 text-emerald" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-cream">{isEn ? "My purchases" : "Mes achats"}</p>
+                  <p className="text-xs text-sage-muted">{isEn ? "Content" : "Contenus"}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
               </div>

@@ -9,10 +9,11 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const rateLimit = require('express-rate-limit');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireMinRole, requireNotWalletFrozen } = require('../middleware/auth');
+const { authMiddleware, requireMinRole, requireNotWalletFrozen, logAdminContentView } = require('../middleware/auth');
 const { createRoom, endRoom, createRoomToken } = require('../services/livekit');
 const { notifyStreamEnded } = require('../services/liveSocket');
-const { PPV_COMMISSION_RATE, PPV_PRICE_MIN, PPV_PRICE_MAX } = require('../config/constants');
+const { PPV_PRICE_MIN, PPV_PRICE_MAX } = require('../config/constants');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
@@ -114,8 +115,15 @@ router.post('/:id/purchase', authMiddleware, requireNotWalletFrozen, async (req,
       .select('id').eq('live_stream_id', stream.id).eq('buyer_id', req.user.id).single();
     if (existing) return res.status(409).json({ error: 'Vous avez déjà acheté l\'accès à ce direct' });
 
+    // Les admins+ accèdent sans paiement (modération)
+    if (req.isAdminAccess) {
+      logAdminContentView(req, 'live_stream', stream.id);
+      return res.json({ message: 'Accès admin — accès direct sans paiement', admin_access: true });
+    }
+
     const price      = stream.price_xcon;
-    const commission = Math.round(price * PPV_COMMISSION_RATE);
+    const ppvRate    = await configService.getCommissionRate('ppv');
+    const commission = Math.round(price * ppvRate);
     const creatorShare = price - commission;
 
     const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
@@ -144,7 +152,7 @@ router.post('/:id/purchase', authMiddleware, requireNotWalletFrozen, async (req,
       {
         id: uuidv4(), user_id: stream.creator_id, type: 'LIVE_PPV_INCOME', amount_xcon: creatorShare,
         balance_after: 0,
-        description: `Vente ticket direct (commission ${(PPV_COMMISSION_RATE * 100).toFixed(0)}%)`,
+        description: `Vente ticket direct (commission ${(ppvRate * 100).toFixed(0)}%)`,
         related_user_id: req.user.id,
       },
     ]);

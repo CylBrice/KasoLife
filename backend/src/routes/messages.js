@@ -6,11 +6,12 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireNotWalletFrozen } = require('../middleware/auth');
+const { authMiddleware, requireNotWalletFrozen, logAdminContentView } = require('../middleware/auth');
 const {
-  PPV_PRICE_MIN, PPV_PRICE_MAX, PPV_COMMISSION_RATE,
-  TIP_MIN, TIP_MAX, TIP_COMMISSION_RATE,
+  PPV_PRICE_MIN, PPV_PRICE_MAX,
+  TIP_MIN, TIP_MAX,
 } = require('../config/constants');
+const configService = require('../services/configService');
 const { moderateText, triageReport, detectDistress, translateText } = require('../services/aiModeration');
 
 const router = express.Router();
@@ -59,18 +60,22 @@ router.get('/:userId', authMiddleware, async (req, res) => {
     const offset   = (pageNum - 1) * pageSize;
 
     const { data, error } = await supabase.from('messages')
-      .select('id, sender_id, receiver_id, content, media_url, price_xcon, is_paid, paid_by, created_at')
+      .select('id, sender_id, receiver_id, content, media_url, price_xcon, is_paid, paid_by, created_at, view_once, view_once_opened_at')
       .or(`and(sender_id.eq.${req.user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${req.user.id})`)
       .order('created_at', { ascending: false })
       .range(offset, offset + pageSize - 1);
     if (error) throw error;
 
-    // Masquer le contenu PPV non payé pour le destinataire
     const serialized = (data || []).map(msg => {
+      // PPV non payé : masquer le contenu pour le destinataire
       if (msg.price_xcon > 0 && !msg.is_paid && msg.receiver_id === req.user.id) {
         return { ...msg, content: null, media_url: null, locked: true };
       }
-      return { ...msg, locked: false };
+      // Vue unique déjà ouverte par le destinataire : masquer le média
+      if (msg.view_once && msg.view_once_opened_at && msg.receiver_id === req.user.id) {
+        return { ...msg, media_url: null, locked: false, view_once_expired: true };
+      }
+      return { ...msg, locked: false, view_once_expired: false };
     });
 
     res.json(serialized.reverse());
@@ -81,10 +86,12 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 router.post('/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { content, media_url, price_xcon } = req.body;
+    const { content, media_url, price_xcon, view_once } = req.body;
 
     if (userId === req.user.id) return res.status(400).json({ error: 'Action impossible sur votre propre profil' });
     if (!content && !media_url) return res.status(400).json({ error: 'Message vide' });
+    // Vue unique uniquement sur les médias (pas sur le texte seul)
+    if (view_once && !media_url) return res.status(400).json({ error: 'La vue unique nécessite un média' });
     if (content && content.length > 2000) return res.status(400).json({ error: 'Message trop long (max 2000 caractères)' });
 
     const { data: receiver } = await supabase.from('users').select('id, is_active').eq('id', userId).single();
@@ -114,6 +121,7 @@ router.post('/:userId', authMiddleware, async (req, res) => {
       id: uuidv4(), sender_id: req.user.id, receiver_id: userId,
       content: content || null, media_url: media_url || null,
       price_xcon: price, is_paid: isPaid,
+      view_once: media_url && view_once ? true : false,
     }).select().single();
     if (error) throw error;
 
@@ -154,11 +162,19 @@ router.post('/:messageId/unlock', authMiddleware, requireNotWalletFrozen, async 
     const { data: message } = await supabase.from('messages')
       .select('id, sender_id, receiver_id, price_xcon, is_paid').eq('id', messageId).single();
     if (!message) return res.status(404).json({ error: 'Message introuvable' });
-    if (message.receiver_id !== req.user.id) return res.status(403).json({ error: 'Accès refusé' });
+    if (message.receiver_id !== req.user.id && !req.isAdminAccess) return res.status(403).json({ error: 'Accès refusé' });
     if (message.price_xcon <= 0 || message.is_paid) return res.status(400).json({ error: 'Ce message ne nécessite pas de paiement' });
 
+    // Les admins+ accèdent sans paiement (modération)
+    if (req.isAdminAccess) {
+      logAdminContentView(req, 'message', messageId);
+      const { data: unlocked } = await supabase.from('messages').select('*').eq('id', messageId).single();
+      return res.json({ message: 'Accès admin — contenu disponible sans paiement', data: unlocked, admin_access: true });
+    }
+
     const price = message.price_xcon;
-    const commission = Math.round(price * PPV_COMMISSION_RATE);
+    const ppvRate = await configService.getCommissionRate('ppv');
+    const commission = Math.round(price * ppvRate);
     const creatorShare = price - commission;
 
     const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
@@ -180,7 +196,7 @@ router.post('/:messageId/unlock', authMiddleware, requireNotWalletFrozen, async 
       },
       {
         id: uuidv4(), user_id: message.sender_id, type: 'PPV_INCOME', amount_xcon: creatorShare,
-        balance_after: 0, description: `Message exclusif débloqué (commission ${(PPV_COMMISSION_RATE * 100).toFixed(0)}%)`,
+        balance_after: 0, description: `Message exclusif débloqué (commission ${(ppvRate * 100).toFixed(0)}%)`,
         related_user_id: req.user.id,
       },
     ]);
@@ -193,6 +209,33 @@ router.post('/:messageId/unlock', authMiddleware, requireNotWalletFrozen, async 
     const { data: unlocked } = await supabase.from('messages').select('*').eq('id', messageId).single();
     res.json({ message: 'Message débloqué', data: unlocked, balance_xcon: newBalance });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur', details: err.message }); }
+});
+
+// ── POST /messages/:messageId/mark-viewed — marquer vue unique comme ouverte
+// Appelé par le destinataire dès qu'il commence à voir le média.
+// Enregistre l'horodatage, rendant le média inaccessible à l'avenir.
+router.post('/:messageId/mark-viewed', authMiddleware, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const { data: message } = await supabase.from('messages')
+      .select('id, sender_id, receiver_id, view_once, view_once_opened_at')
+      .eq('id', messageId).single();
+
+    if (!message)              return res.status(404).json({ error: 'Message introuvable' });
+    if (!message.view_once)    return res.status(400).json({ error: 'Ce message n\'est pas en vue unique' });
+    if (message.receiver_id !== req.user.id)
+      return res.status(403).json({ error: 'Accès refusé' });
+    // Idempotent : déjà marqué → on renvoie OK sans écrire à nouveau
+    if (message.view_once_opened_at)
+      return res.json({ message: 'Déjà marqué comme vu', already_viewed: true });
+
+    await supabase.from('messages')
+      .update({ view_once_opened_at: new Date().toISOString() })
+      .eq('id', messageId);
+
+    res.json({ message: 'Message marqué comme vu', already_viewed: false });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
 // ── POST /messages/:userId/tip — envoyer un pourboire
@@ -218,7 +261,8 @@ router.post('/:userId/tip', authMiddleware, requireNotWalletFrozen, async (req, 
       if (!post) return res.status(404).json({ error: 'Post introuvable' });
     }
 
-    const commission = Math.round(amount * TIP_COMMISSION_RATE);
+    const tipRate = await configService.getCommissionRate('tip');
+    const commission = Math.round(amount * tipRate);
     const creatorShare = amount - commission;
 
     const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
@@ -245,7 +289,7 @@ router.post('/:userId/tip', authMiddleware, requireNotWalletFrozen, async (req, 
       },
       {
         id: uuidv4(), user_id: userId, type: 'TIP_RECEIVED', amount_xcon: creatorShare,
-        balance_after: 0, description: `Pourboire reçu (commission ${(TIP_COMMISSION_RATE * 100).toFixed(0)}%)`,
+        balance_after: 0, description: `Pourboire reçu (commission ${(tipRate * 100).toFixed(0)}%)`,
         related_user_id: req.user.id, related_post_id: post_id || null,
       },
     ]);

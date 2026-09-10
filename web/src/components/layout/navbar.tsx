@@ -14,7 +14,7 @@ import { useT } from "@/i18n/locale-context";
 import { api } from "@/lib/api";
 import {
   User, Wallet, Coins, MessageSquare, Layers,
-  Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard, Cast,
+  Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard, Cast, ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -187,6 +187,7 @@ export function Navbar() {
                     )}
 
                     <DropItem icon={<Layers size={15} />} label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")} active={pathname === "/abonnements"} />
+                    <DropItem icon={<ShoppingBag size={15} />} label="Mes achats" onClick={() => navTo("/mes-achats")} active={pathname === "/mes-achats"} />
                     <DropItem icon={<Wallet size={15} />} label={t("nav.wallet")} onClick={() => navTo("/wallet")} active={pathname === "/wallet"} />
 
                     {isAdmin && (

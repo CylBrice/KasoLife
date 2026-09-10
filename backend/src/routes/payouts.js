@@ -9,7 +9,8 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
 const { authMiddleware, requireKYC, requireMinRole, requireNotWalletFrozen } = require('../middleware/auth');
 const { decrypt } = require('../services/encryption');
-const { MIN_PAYOUT_AMOUNT, WITHDRAWAL_COMMISSION_RATE } = require('../config/constants');
+const { MIN_PAYOUT_AMOUNT } = require('../config/constants');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
@@ -50,7 +51,8 @@ router.post('/', authMiddleware, requireMinRole('influencer'), requireKYC, requi
     if (!wallet || wallet.pending_balance_xcon < amount)
       return res.status(400).json({ error: `Solde disponible insuffisant — solde en attente : ${wallet?.pending_balance_xcon ?? 0} FCFA` });
 
-    const commission = Math.round(amount * WITHDRAWAL_COMMISSION_RATE);
+    const withdrawalRate = await configService.getCommissionRate('withdrawal');
+    const commission = Math.round(amount * withdrawalRate);
     const netAmount  = amount - commission;
 
     // Réserve le montant : transfert pending -> disponible puis débit immédiat (montant "gelé" en attente de validation admin)

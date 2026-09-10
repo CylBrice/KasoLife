@@ -1,3 +1,50 @@
+# 🖥️ ACCÈS SERVEUR VPS — INFOS DE CONNEXION
+
+**Serveur de production KasoLife**
+- IP publique : `62.171.155.184`
+- Domaine : `api.kasolife.com`
+
+**PostgreSQL**
+- Hôte : `api.kasolife.com` (ou `62.171.155.184`)
+- Port : `5433`
+- Base de données : `kasolife`
+- Utilisateur : `postgres`
+- ⚠️ Mot de passe : voir `backend/.env` → `POSTGRES_PASSWORD` / `DATABASE_URL`
+
+**Redis**
+- Port : `6380`
+- ⚠️ Mot de passe : voir `backend/.env` → `REDIS_PASSWORD`
+
+**Services Docker**
+- Backend API : port `3003`
+- Frontend Next.js : port `3002`
+- LiveKit : port `7880`
+
+**Connexion directe PostgreSQL (psql)**
+```
+psql "postgresql://postgres:<MOT_DE_PASSE>@api.kasolife.com:5433/kasolife"
+```
+→ Le mot de passe complet est dans `backend/.env` à la clé `DATABASE_URL`
+
+**Appliquer une migration SQL**
+```
+psql "$(grep DATABASE_URL backend/.env | cut -d= -f2-)" -f backend/migrations/XXXX_nom.sql
+```
+
+---
+
+# 🚨 RÈGLE 00 - PLAN D'IMPLÉMENTATION : CONSULTER ET METTRE À JOUR
+
+⛔ **TOUTE SESSION IA doit obligatoirement :**
+1. ✅ Lire `IMPLEMENTATION_PLAN.md` à la racine du projet EN DÉBUT de session
+2. ✅ Mettre à jour le statut de chaque étape terminée (⏳ → ✅) dans ce fichier
+3. ✅ Ne jamais sauter d'étape sans la documenter
+4. ✅ Documenter toute décision architecturale dans la section "Décisions" du fichier
+
+**Ce fichier est la mémoire inter-sessions du projet. Sans lui, le travail est perdu.**
+
+---
+
 # 🚨 RÈGLE 0A - BORDER-RADIUS DES BOUTONS : `rounded-xl` UNIQUEMENT
 
 ⛔ **TOUS les boutons du site utilisent `rounded-xl` — sans exception**

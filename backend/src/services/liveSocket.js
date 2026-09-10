@@ -11,10 +11,33 @@ const { WebSocketServer } = require('ws');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { TIP_COMMISSION_RATE, TIP_MIN, TIP_MAX } = require('../config/constants');
+const { TIP_MIN, TIP_MAX } = require('../config/constants');
+const configService = require('./configService');
 
 // streamId -> Set<ws>
 const rooms = new Map();
+
+// userId -> Set<ws>  (pour dispatch ciblé toy-control)
+const userSockets = new Map();
+
+const addUserSocket = (userId, ws) => {
+  if (!userSockets.has(userId)) userSockets.set(userId, new Set());
+  userSockets.get(userId).add(ws);
+};
+const removeUserSocket = (userId, ws) => {
+  const set = userSockets.get(userId);
+  if (!set) return;
+  set.delete(ws);
+  if (set.size === 0) userSockets.delete(userId);
+};
+const sendToUser = (userId, payload) => {
+  const set = userSockets.get(userId);
+  if (!set) return;
+  const data = JSON.stringify(payload);
+  for (const client of set) {
+    if (client.readyState === client.OPEN) client.send(data);
+  }
+};
 
 const joinRoom = (streamId, ws) => {
   if (!rooms.has(streamId)) rooms.set(streamId, new Set());
@@ -55,7 +78,8 @@ const handleGift = async (ws, stream, msg) => {
       return;
     }
 
-    const commission    = Math.round(amount * TIP_COMMISSION_RATE);
+    const tipRate       = await configService.getCommissionRate('tip');
+    const commission    = Math.round(amount * tipRate);
     const creatorShare  = amount - commission;
 
     const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
@@ -81,7 +105,7 @@ const handleGift = async (ws, stream, msg) => {
       },
       {
         id: uuidv4(), user_id: stream.creator_id, type: 'TIP_RECEIVED', amount_xcon: creatorShare,
-        balance_after: 0, description: `Cadeau reçu en direct (commission ${(TIP_COMMISSION_RATE * 100).toFixed(0)}%)`,
+        balance_after: 0, description: `Cadeau reçu en direct (commission ${(tipRate * 100).toFixed(0)}%)`,
         related_user_id: ws.userId,
       },
     ]);
@@ -149,10 +173,12 @@ const attachLiveSocket = (server) => {
       ws.streamId = streamId;
 
       joinRoom(streamId, ws);
+      addUserSocket(user.id, ws);
       broadcast(streamId, { type: 'VIEWER_COUNT', count: getRoomViewerCount(streamId) });
 
       ws.on('close', () => {
         leaveRoom(streamId, ws);
+        removeUserSocket(user.id, ws);
         broadcast(streamId, { type: 'VIEWER_COUNT', count: getRoomViewerCount(streamId) });
       });
 
@@ -162,4 +188,4 @@ const attachLiveSocket = (server) => {
   });
 };
 
-module.exports = { attachLiveSocket, getRoomViewerCount, notifyStreamEnded };
+module.exports = { attachLiveSocket, getRoomViewerCount, notifyStreamEnded, sendToUser };

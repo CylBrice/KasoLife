@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Lock, Play, Music, ChevronUp } from "lucide-react";
+import { SecureImage } from "@/components/ui/secure-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatFCFA, formatRelativeDate, cn } from "@/lib/utils";
@@ -88,8 +89,12 @@ export function PostCard({ post, onUnlocked }: { post: Post; onUnlocked?: (postI
                 <Music className="h-8 w-8 text-gold" />
                 <audio src={post.media_url} controls />
               </div>
+            ) : !locked ? (
+              // IMAGE déverrouillée → Canvas sécurisé (pas de src exposé, watermark)
+              <SecureImage postId={post.id} className="absolute inset-0" />
             ) : (
-              <Image src={post.media_url} alt="" fill className="object-cover" sizes="600px" />
+              // IMAGE verrouillée → aperçu flou via next/image (pas de contenu réel)
+              <Image src={post.thumbnail_url ?? post.media_url} alt="" fill className="object-cover blur-md scale-105" sizes="600px" />
             )
           ) : post.thumbnail_url ? (
             <Image src={post.thumbnail_url} alt="" fill className="object-cover" sizes="600px" />

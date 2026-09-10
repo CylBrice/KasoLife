@@ -11,8 +11,8 @@ const { initDeposit, initPayout } = require('../services/payment');
 const { encrypt, decrypt, encryptDeterministic } = require('../services/encryption');
 const rateLimit = require('express-rate-limit');
 const { sendSMS } = require('../services/sms');
+const configService = require('../services/configService');
 const {
-  WITHDRAWAL_COMMISSION_RATE,
   MIN_WALLET_BALANCE_XCON,
   KYC_LIMITS,
   RETRAIT_MAX_DAY_XCON,
@@ -222,7 +222,8 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     }
 
     const requiresManualValidation = false;
-    const commission    = Math.round(montant_xcon * WITHDRAWAL_COMMISSION_RATE);
+    const withdrawalRate = await configService.getCommissionRate('withdrawal');
+    const commission    = Math.round(montant_xcon * withdrawalRate);
     const montant_verse = montant_xcon - commission;
 
     // Vérification solde

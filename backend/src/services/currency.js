@@ -1,89 +1,106 @@
 // ============================================================
-// KASOLIFE — Service de conversion des devises
-// Taux fixes stockés en DB (exchange_rates) — modifiables sans redéploiement
-// Règle : résultat toujours arrondi au multiple de 100 inférieur
-// USAGE SERVEUR UNIQUEMENT — jamais exposé au client
+// KASOLIFE — Service de conversion des devises v2.0
+// Taux stockés en DB (exchange_rates) + cache Redis 1h.
+// Règle d'arrondi : Math.floor (entier inférieur) — jamais de centimes.
+// USAGE SERVEUR UNIQUEMENT.
 // ============================================================
+'use strict';
+
 const supabase = require('../config/supabase');
+const redis    = require('../config/redis');
 
-// Cache local des taux (rechargé toutes les heures)
-let ratesCache = null;
-let ratesCacheAt = null;
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 heure
+const CACHE_KEY = 'exchange_rates:all';
+const CACHE_TTL = 3600; // 1 heure
 
-/**
- * Charger les taux depuis la DB avec cache
- */
+// Taux de repli si DB et Redis sont indisponibles
+const FALLBACK_RATES = {
+  XAF:  { rate: 1,        symbol: 'FCFA', name: 'Franc CFA Afrique Centrale' },
+  FCFA: { rate: 1,        symbol: 'FCFA', name: 'Franc CFA' },
+  XOF:  { rate: 1,        symbol: 'FCFA', name: 'Franc CFA Afrique de l\'Ouest' },
+  EUR:  { rate: 655.957,  symbol: '€',    name: 'Euro' },
+  USD:  { rate: 615.0,    symbol: '$',    name: 'Dollar US' },
+  GBP:  { rate: 785.0,    symbol: '£',    name: 'Livre sterling' },
+  NGN:  { rate: 0.38,     symbol: '₦',    name: 'Naira nigérian' },
+  GHS:  { rate: 42.0,     symbol: 'GH₵',  name: 'Cedi ghanéen' },
+  KES:  { rate: 4.7,      symbol: 'KSh',  name: 'Shilling kenyan' },
+  ZAR:  { rate: 33.0,     symbol: 'R',    name: 'Rand sud-africain' },
+};
+
+// ── Charger les taux depuis Redis → DB → fallback
 const getRates = async () => {
-  const now = Date.now();
-  if (ratesCache && ratesCacheAt && (now - ratesCacheAt) < CACHE_TTL_MS) {
-    return ratesCache;
-  }
+  try {
+    const cached = await redis.get(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (_) {}
 
-  const { data, error } = await supabase
-    .from('exchange_rates')
-    .select('currency, rate_to_xcon')
-    .eq('is_active', true);
+  try {
+    const { data, error } = await supabase
+      .from('exchange_rates')
+      .select('currency, rate_to_xcon, symbol, name')
+      .eq('is_active', true);
 
-  if (error || !data || data.length === 0) {
-    // Fallback sur les taux par défaut si la DB est inaccessible
-    console.warn('[currency] Impossible de charger les taux depuis la DB — fallback sur valeurs par défaut');
-    return {
-      FCFA: 1,
-      USD:  500,
-      EUR:  600,
-    };
-  }
+    if (!error && data && data.length > 0) {
+      const rates = {};
+      data.forEach(r => {
+        rates[r.currency.toUpperCase()] = {
+          rate:   parseFloat(r.rate_to_xcon),
+          symbol: r.symbol || r.currency,
+          name:   r.name   || r.currency,
+        };
+      });
+      try { await redis.set(CACHE_KEY, JSON.stringify(rates), 'EX', CACHE_TTL); } catch (_) {}
+      return rates;
+    }
+  } catch (_) {}
 
-  const rates = {};
-  data.forEach(r => { rates[r.currency] = parseFloat(r.rate_to_xcon); });
-
-  ratesCache   = rates;
-  ratesCacheAt = now;
-  return rates;
+  console.warn('[currency] Fallback sur taux par défaut');
+  return FALLBACK_RATES;
 };
 
-/**
- * Convertir un montant dans une devise en xcon
- * @param {number} amount    - Montant dans la devise source
- * @param {string} currency  - Devise source : 'FCFA' | 'USD' | 'EUR'
- * @returns {number}         - Montant en xcon, arrondi au multiple de 100 inférieur
- */
-const toXcon = async (amount, currency) => {
+// ── Convertir un montant (devise quelconque) → xcon
+// Arrondi : Math.floor (entier inférieur, jamais de centimes)
+const toXcon = async (amount, currency = 'XAF') => {
   if (!amount || amount <= 0) return 0;
-
   const rates = await getRates();
-  const curr  = (currency || 'FCFA').toUpperCase();
-
-  if (!rates[curr]) {
-    throw new Error(`Devise non supportée: ${currency}. Devises acceptées: FCFA, USD, EUR`);
-  }
-
-  const raw    = amount * rates[curr];
-  // Arrondi au multiple de 100 inférieur
-  const xcon   = Math.floor(raw / 100) * 100;
-  return xcon;
+  const key   = currency.toUpperCase();
+  if (!rates[key]) throw new Error(`Devise non supportée : ${currency}`);
+  return Math.floor(amount * rates[key].rate);
 };
 
-/**
- * Obtenir les taux actuels (pour affichage dans le dashboard admin)
- */
-const getCurrentRates = async () => {
+// ── Convertir xcon → montant dans une devise d'affichage
+// Arrondi : Math.floor (entier inférieur)
+const fromXcon = async (amountXcon, currency = 'XAF') => {
+  if (!amountXcon || amountXcon <= 0) return 0;
   const rates = await getRates();
-  return {
-    FCFA: rates.FCFA || 1,
-    USD:  rates.USD  || 500,
-    EUR:  rates.EUR  || 600,
-    note: 'Arrondi au multiple de 100 inférieur appliqué à la conversion',
-  };
+  const key   = currency.toUpperCase();
+  if (!rates[key] || rates[key].rate === 0) throw new Error(`Devise non supportée : ${currency}`);
+  return Math.floor(amountXcon / rates[key].rate);
 };
 
-/**
- * Invalider le cache (appelé quand un admin met à jour les taux)
- */
-const invalidateCache = () => {
-  ratesCache   = null;
-  ratesCacheAt = null;
+// ── Formater un montant xcon pour affichage dans une devise
+// Exemple : formatAmount(15000, 'EUR') → '22 €'
+const formatAmount = async (amountXcon, currency = 'XAF') => {
+  const rates     = await getRates();
+  const key       = currency.toUpperCase();
+  const rateInfo  = rates[key] || rates['XAF'];
+  const converted = Math.floor(amountXcon / rateInfo.rate);
+  return `${converted.toLocaleString('fr-FR')} ${rateInfo.symbol}`;
 };
 
-module.exports = { toXcon, getCurrentRates, invalidateCache };
+// ── Retourner tous les taux actifs (pour dashboard admin et affichage frontend)
+const getAllRates = async () => {
+  const rates  = await getRates();
+  return Object.entries(rates).map(([currency, info]) => ({
+    currency,
+    rate_to_xcon: info.rate,
+    symbol:       info.symbol,
+    name:         info.name,
+  }));
+};
+
+// ── Invalider le cache (appelé après mise à jour admin)
+const invalidateCache = async () => {
+  try { await redis.del(CACHE_KEY); } catch (_) {}
+};
+
+module.exports = { toXcon, fromXcon, formatAmount, getAllRates, invalidateCache, getRates };

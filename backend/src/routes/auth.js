@@ -35,8 +35,8 @@ const pseudoCheckLimit= rateLimit({ windowMs: 60000,   max: 30, message: { error
 const registerLimit   = rateLimit({ windowMs: 3600000, max: 5,  message: { error: "Trop d'inscriptions depuis cette adresse — réessayez dans 1 heure" } });
 
 // ── Génération de la paire de tokens (access + refresh)
-const generateTokens = async (userId, userAgent, ip) => {
-  const accessToken  = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+const generateTokens = async (userId, userAgent, ip, role = 'user') => {
+  const accessToken  = jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
   const rawRefresh   = crypto.randomBytes(40).toString('hex');
   const tokenHash    = crypto.createHash('sha256').update(rawRefresh).digest('hex');
   const expiresAt    = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS).toISOString();
@@ -262,7 +262,7 @@ router.post('/login', loginLimit, async (req, res) => {
     await supabase.from('users').update({ last_active: new Date().toISOString() }).eq('id', user.id);
 
     const { accessToken, refreshToken } = await generateTokens(
-      user.id, req.headers['user-agent'], req.ip
+      user.id, req.headers['user-agent'], req.ip, user.role
     );
 
     // ── Détection nouvel appareil / pays suspect (non bloquant) ─────────────
@@ -348,7 +348,7 @@ router.post('/refresh', async (req, res) => {
 
     // Validation du compte
     const { data: user } = await supabase.from('users')
-      .select('id, is_active, last_active')
+      .select('id, role, is_active, last_active')
       .eq('id', userId).single();
     if (!user?.is_active) return res.status(403).json({ error: 'Compte suspendu' });
 
@@ -358,9 +358,9 @@ router.post('/refresh', async (req, res) => {
     if (inactiveMs > SESSION_SOFT_EXPIRY_MS)
       return res.status(401).json({ error: 'Vérification requise', reauth_required: true });
 
-    // Rotation : nouveau couple de tokens
+    // Rotation : nouveau couple de tokens (role inclus pour bypass admin côté contenu)
     const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
-      userId, req.headers['user-agent'], req.ip
+      userId, req.headers['user-agent'], req.ip, user.role
     );
     res.json({ accessToken, refreshToken: newRefreshToken });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }

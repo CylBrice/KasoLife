@@ -56,6 +56,8 @@ const authMiddleware = async (req, res, next) => {
     if (!user.is_active) return res.status(403).json({ error: 'Compte suspendu — contactez le support' });
 
     req.user = user;
+    // Flag utilisé par les routes de contenu pour lever les protections (paiement, anti-scraping)
+    req.isAdminAccess = (ROLE_RANK[user.role] || 0) >= ROLE_RANK['admin'];
     next();
   } catch (err) {
     console.error('[Auth] Erreur middleware:', err.message);
@@ -165,6 +167,26 @@ const canModifyRole = (actorRole, targetRole, newRole) => {
   return false;
 };
 
+// ── logAdminContentView : trace chaque consultation de contenu par un admin
+// Non-bloquante (fire-and-forget) — ne ralentit pas la réponse
+const logAdminContentView = (req, resourceType, resourceId) => {
+  if (!req.isAdminAccess) return;
+  setImmediate(async () => {
+    try {
+      await supabase.from('admin_actions').insert({
+        admin_id:    req.user.id,
+        action:      'VIEW_CONTENT',
+        target_type: resourceType,   // ex: 'post', 'album', 'message', 'live_stream'
+        target_id:   resourceId,
+        metadata:    { ip: req.ip, user_agent: req.headers['user-agent'] },
+      });
+    } catch { /* non-bloquant */ }
+  });
+};
+
+// ── isAdminRole : helper booléen (usage dans les routes sans middleware)
+const isAdminRole = (role) => (ROLE_RANK[role] || 0) >= ROLE_RANK['admin'];
+
 module.exports = {
   ROLE_RANK,
   authMiddleware,
@@ -174,4 +196,6 @@ module.exports = {
   requireNotMaintenance,
   getMaintStatus,
   canModifyRole,
+  logAdminContentView,
+  isAdminRole,
 };

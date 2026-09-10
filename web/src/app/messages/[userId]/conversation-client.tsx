@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/i18n/locale-context";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
-import { Send, Lock, Gift, ArrowLeft } from "lucide-react";
+import { Send, Lock, Gift, ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatFCFA, formatRelativeDate, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
+import { ViewOnceMedia } from "@/components/ui/view-once-media";
 import type { Message } from "@/types";
 
 export default function ConversationClient() {
@@ -24,6 +25,7 @@ export default function ConversationClient() {
   const [ppvPrice, setPpvPrice] = useState("");
   const [showTip, setShowTip] = useState(false);
   const [tipAmount, setTipAmount] = useState("500");
+  const [viewOnce, setViewOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -63,9 +65,14 @@ export default function ConversationClient() {
     setError(null);
     try {
       const price = isCreator && ppvPrice ? Number(ppvPrice) : 0;
-      await api.post(`/messages/${userId}`, { content: content.trim(), price_xcon: price || undefined });
+      await api.post(`/messages/${userId}`, {
+        content: content.trim() || undefined,
+        price_xcon: price || undefined,
+        view_once: viewOnce || undefined,
+      });
       setContent("");
       setPpvPrice("");
+      setViewOnce(false);
       loadMessages();
     } catch (err: any) {
       setError(err?.response?.data?.error || t("messages.sendError"));
@@ -143,10 +150,19 @@ export default function ConversationClient() {
                     ) : (
                       <>
                         {msg.content && <p>{msg.content}</p>}
-                        {msg.media_url && (
+                        {msg.view_once ? (
+                          <div className="mt-1">
+                            <ViewOnceMedia
+                              messageId={msg.id}
+                              mediaUrl={msg.media_url ?? ""}
+                              isSender={mine}
+                              alreadyOpened={!!msg.view_once_opened_at || !!msg.view_once_expired}
+                            />
+                          </div>
+                        ) : msg.media_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={msg.media_url} alt="" className="mt-1 max-h-48 rounded-lg" />
-                        )}
+                        ) : null}
                       </>
                     )}
                     <p className={cn("mt-1 text-[10px]", mine ? "text-ink/60" : "text-sage-muted")}>
@@ -181,6 +197,19 @@ export default function ConversationClient() {
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
+            {/* Toggle vue unique — visible uniquement si un média est joint */}
+            <button
+              title={viewOnce ? "Vue unique activée" : "Vue unique désactivée"}
+              onClick={() => setViewOnce((v) => !v)}
+              className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors",
+                viewOnce
+                  ? "border-gold/60 bg-gold/20 text-gold-bright"
+                  : "border-ink-line bg-ink-surface text-sage hover:text-cream"
+              )}
+            >
+              <Eye className="h-4 w-4" />
+            </button>
             <Button size="icon" onClick={handleSend}><Send className="h-4 w-4" /></Button>
           </div>
         </div>

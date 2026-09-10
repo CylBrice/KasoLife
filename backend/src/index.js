@@ -75,7 +75,15 @@ const messagesRouter      = require('./routes/messages');
 const payoutsRouter       = require('./routes/payouts');
 const adminRouter         = require('./routes/admin');
 const uploadsRouter       = require('./routes/uploads');
-const webhookRouter       = require('./routes/webhook');
+const mediaRouter         = require('./routes/media');
+const albumsRouter        = require('./routes/albums');
+const purchasesRouter     = require('./routes/purchases');
+const privateChatRouter   = require('./routes/private-chat');
+const vipShowsRouter      = require('./routes/vip-shows');
+const snapshotsRouter        = require('./routes/snapshots');
+const customRequestsRouter   = require('./routes/custom-requests');
+const toyControlRouter       = require('./routes/toy-control');
+const webhookRouter          = require('./routes/webhook');
 const referralRouter      = require('./routes/referral');
 const supportRouter       = require('./routes/support');
 const configRouter        = require('./routes/config');
@@ -149,7 +157,15 @@ app.use('/messages',      messagesRouter);
 app.use('/payouts',       payoutsRouter);
 app.use('/admin',         adminRouter);
 app.use('/uploads',       uploadsRouter);
-app.use('/webhook',       webhookRouter);
+app.use('/media',         mediaRouter);
+app.use('/albums',        albumsRouter);
+app.use('/purchases',     purchasesRouter);
+app.use('/private-chat',  privateChatRouter);
+app.use('/vip-shows',     vipShowsRouter);
+app.use('/snapshots',        snapshotsRouter);
+app.use('/custom-requests',  customRequestsRouter);
+app.use('/toy-control',      toyControlRouter);
+app.use('/webhook',          webhookRouter);
 app.use('/referral',      referralRouter);
 app.use('/support',       supportRouter);
 app.use('/config',        configRouter);
@@ -188,7 +204,7 @@ const notifySuperAdminAlert = async (title, body, data = {}) => {
 const SUBSCRIPTION_PERIOD_DAYS = 30;
 cron.schedule('0 * * * *', async () => {
   try {
-    const { SUBSCRIPTION_COMMISSION_RATE } = require('./config/constants');
+    const configService = require('./services/configService');
     const now = new Date().toISOString();
 
     const { data: dueSubs } = await supabase.from('subscriptions')
@@ -196,10 +212,12 @@ cron.schedule('0 * * * *', async () => {
       .eq('status', 'ACTIVE').eq('auto_renew', true)
       .lte('current_period_end', now);
 
+    const subscriptionRate = await configService.getCommissionRate('subscription');
+
     for (const sub of dueSubs || []) {
       try {
         const price = sub.price_xcon;
-        const commission = Math.round(price * SUBSCRIPTION_COMMISSION_RATE);
+        const commission = Math.round(price * subscriptionRate);
         const creatorShare = price - commission;
 
         const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {

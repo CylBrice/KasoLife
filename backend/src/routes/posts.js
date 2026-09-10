@@ -7,10 +7,11 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
-const { authMiddleware, requireMinRole, requireNotWalletFrozen } = require('../middleware/auth');
+const { authMiddleware, requireMinRole, requireNotWalletFrozen, logAdminContentView, isAdminRole } = require('../middleware/auth');
 const {
-  PPV_PRICE_MIN, PPV_PRICE_MAX, PPV_COMMISSION_RATE,
+  PPV_PRICE_MIN, PPV_PRICE_MAX,
 } = require('../config/constants');
+const configService = require('../services/configService');
 const { moderateText, triageReport, analyzeSentiment, translateText } = require('../services/aiModeration');
 
 const router = express.Router();
@@ -19,10 +20,14 @@ const MEDIA_TYPES = ['TEXT', 'IMAGE', 'VIDEO', 'AUDIO'];
 const ACCESS_LEVELS = ['FREE', 'SUBSCRIBERS', 'PPV'];
 
 // ── Helper : l'utilisateur a-t-il accès au contenu d'un post ?
-const resolveAccess = async (post, viewerId) => {
+// Les admins+ ont toujours accès (modération) — chaque consultation est auditée.
+const resolveAccess = async (post, viewerId, viewerRole) => {
   if (post.access_level === 'FREE') return { hasAccess: true, reason: 'FREE' };
   if (!viewerId) return { hasAccess: false, reason: 'AUTH_REQUIRED' };
   if (viewerId === post.creator_id) return { hasAccess: true, reason: 'OWNER' };
+
+  // Accès admin : bypass paiement/abonnement, consultation auditée dans logAdminContentView
+  if (isAdminRole(viewerRole)) return { hasAccess: true, reason: 'ADMIN_ACCESS' };
 
   if (post.access_level === 'SUBSCRIBERS') {
     const { data: sub } = await supabase.from('subscriptions')
@@ -38,16 +43,20 @@ const resolveAccess = async (post, viewerId) => {
   return { hasAccess: false, reason: 'UNKNOWN' };
 };
 
-// ── Helper : extraire viewerId depuis un token optionnel
-const getViewerId = (req) => {
+// ── Helper : extraire {id, role} depuis un token optionnel
+const getViewer = (req) => {
+  // Si authMiddleware a déjà peuplé req.user, on l'utilise directement
+  if (req.user) return { id: req.user.id, role: req.user.role };
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return null;
+  if (!authHeader?.startsWith('Bearer ')) return { id: null, role: null };
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-    return decoded.userId;
-  } catch { return null; }
+    return { id: decoded.userId, role: decoded.role || null };
+  } catch { return { id: null, role: null }; }
 };
+// Rétro-compatibilité : certains appels anciens utilisent encore getViewerId
+const getViewerId = (req) => getViewer(req).id;
 
 // ── Helper : sérialise un post selon l'accès du viewer
 const serializePost = (post, access) => {
@@ -168,7 +177,7 @@ router.get('/discover', async (req, res) => {
       `, params);
 
       const serialized = await Promise.all((rows || []).map(async (post) => {
-        const access = await resolveAccess(post, viewerId);
+        const access = await resolveAccess(post, viewerId, getViewer(req).role);
         return serializePost(post, access);
       }));
       return res.json({ posts: serialized, pagination: { page: pageNum, limit: pageSize } });
@@ -548,7 +557,9 @@ router.get('/:id', async (req, res) => {
       .eq('id', id).single();
     if (error || !post || !post.is_published) return res.status(404).json({ error: 'Post introuvable' });
 
-    const access = await resolveAccess(post, viewerId);
+    const viewer = getViewer(req);
+    const access = await resolveAccess(post, viewer.id, viewer.role);
+    if (access.reason === 'ADMIN_ACCESS') logAdminContentView(req, 'post', id);
     res.json(serializePost(post, access));
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
@@ -956,6 +967,12 @@ router.post('/:id/purchase', authMiddleware, requireNotWalletFrozen, async (req,
       .select('id, creator_id, access_level, price_xcon, is_published').eq('id', id).single();
     if (!post || !post.is_published) return res.status(404).json({ error: 'Post introuvable' });
     if (post.access_level !== 'PPV') return res.status(400).json({ error: 'Ce post n\'est pas un contenu payant à l\'unité' });
+
+    // Les admins+ ont accès sans paiement (modération)
+    if (req.isAdminAccess) {
+      logAdminContentView(req, 'post', id);
+      return res.json({ message: 'Accès admin — contenu disponible sans paiement', admin_access: true });
+    }
     if (post.creator_id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas acheter votre propre contenu' });
 
     const { data: existing } = await supabase.from('post_purchases')
@@ -963,7 +980,8 @@ router.post('/:id/purchase', authMiddleware, requireNotWalletFrozen, async (req,
     if (existing) return res.status(409).json({ error: 'Vous avez déjà acheté ce contenu' });
 
     const price = post.price_xcon;
-    const commission = Math.round(price * PPV_COMMISSION_RATE);
+    const commissionRate = await configService.getCommissionRate('ppv');
+    const commission = Math.round(price * commissionRate);
     const creatorShare = price - commission;
 
     const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
@@ -988,7 +1006,7 @@ router.post('/:id/purchase', authMiddleware, requireNotWalletFrozen, async (req,
       },
       {
         id: uuidv4(), user_id: post.creator_id, type: 'PPV_INCOME', amount_xcon: creatorShare,
-        balance_after: 0, description: `Vente contenu PPV (commission ${(PPV_COMMISSION_RATE * 100).toFixed(0)}%)`,
+        balance_after: 0, description: `Vente contenu PPV (commission ${(commissionRate * 100).toFixed(0)}%)`,
         related_user_id: req.user.id, related_post_id: id,
       },
     ]);

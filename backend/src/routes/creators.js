@@ -361,4 +361,123 @@ router.get('/bookmarks/me', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+// ── GET /creators/me/earnings — dashboard gains créateur (4.3) ───────────────
+// ?period=week|month|year|all
+router.get('/me/earnings', authMiddleware, requireMinRole('influencer'), async (req, res) => {
+  const { Pool } = require('pg');
+  const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const creatorId = req.user.id;
+  const period = req.query.period || 'month';
+
+  const intervals = {
+    week: '7 days', month: '30 days', year: '365 days', all: null,
+  };
+  const interval = intervals[period] || intervals.month;
+  const since = interval ? `NOW() - INTERVAL '${interval}'` : "'1970-01-01'";
+
+  const client = await pgPool.connect();
+  try {
+    // Totaux par source
+    const { rows: totals } = await client.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN type IN ('PPV_PURCHASE','POST_PURCHASE') THEN amount_xcon ELSE 0 END), 0)    AS ppv,
+        COALESCE(SUM(CASE WHEN type = 'ALBUM_PURCHASE'    THEN amount_xcon ELSE 0 END), 0)                  AS albums,
+        COALESCE(SUM(CASE WHEN type = 'PRIVATE_CHAT'      THEN amount_xcon ELSE 0 END), 0)                  AS private_chat,
+        COALESCE(SUM(CASE WHEN type = 'VIP_SHOW'          THEN amount_xcon ELSE 0 END), 0)                  AS vip_shows,
+        COALESCE(SUM(CASE WHEN type = 'SNAPSHOT_PURCHASE' THEN amount_xcon ELSE 0 END), 0)                  AS snapshots,
+        COALESCE(SUM(CASE WHEN type = 'SUBSCRIPTION'      THEN amount_xcon ELSE 0 END), 0)                  AS subscriptions,
+        COALESCE(SUM(CASE WHEN type = 'CUSTOM_REQUEST'    THEN amount_xcon ELSE 0 END), 0)                  AS custom_requests,
+        COALESCE(SUM(CASE WHEN type IN ('TIP','TIP_RECEIVED') THEN amount_xcon ELSE 0 END), 0)              AS tips,
+        COALESCE(SUM(amount_xcon), 0)                                                                        AS gross_total
+      FROM transactions
+      WHERE user_id = $1 AND amount_xcon > 0 AND created_at >= ${since}
+    `, [creatorId]);
+
+    const gross = totals[0] || {};
+
+    // Commission totale (payée à la plateforme)
+    const { rows: commRows } = await client.query(`
+      SELECT COALESCE(SUM(amount_xcon), 0) AS total_commission
+      FROM transactions
+      WHERE user_id = $1 AND amount_xcon < 0 AND type LIKE '%COMMISSION%'
+        AND created_at >= ${since}
+    `, [creatorId]);
+    const commission = Math.abs(Number(commRows[0]?.total_commission || 0));
+    const net = Math.floor(Number(gross.gross_total) - commission);
+
+    // Série temporelle pour graphique (par jour sur 30j, par semaine sur 90j+)
+    const groupBy = (period === 'week') ? 'day' : (period === 'month') ? 'day' : 'week';
+    const { rows: series } = await client.query(`
+      SELECT
+        DATE_TRUNC('${groupBy}', created_at)::date AS period,
+        COALESCE(SUM(amount_xcon), 0) AS total
+      FROM transactions
+      WHERE user_id = $1 AND amount_xcon > 0 AND created_at >= ${since}
+      GROUP BY 1
+      ORDER BY 1
+    `, [creatorId]);
+
+    res.json({
+      period,
+      gross: {
+        total:          Number(gross.gross_total),
+        ppv:            Number(gross.ppv),
+        albums:         Number(gross.albums),
+        private_chat:   Number(gross.private_chat),
+        vip_shows:      Number(gross.vip_shows),
+        snapshots:      Number(gross.snapshots),
+        subscriptions:  Number(gross.subscriptions),
+        custom_requests:Number(gross.custom_requests),
+        tips:           Number(gross.tips),
+      },
+      commission,
+      net,
+      series: series.map(r => ({ period: r.period, total: Number(r.total) })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+    await pgPool.end();
+  }
+});
+
+// ── GET /creators/me/onboarding — état onboarding créateur (4.4) ─────────────
+router.get('/me/onboarding', authMiddleware, requireMinRole('influencer'), async (req, res) => {
+  const { Pool } = require('pg');
+  const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const creatorId = req.user.id;
+  const client = await pgPool.connect();
+  try {
+    const { rows: [profile] } = await client.query(
+      `SELECT cp.display_name, cp.bio, cp.avatar_url, cp.subscription_price_xcon
+       FROM creator_profiles cp WHERE cp.user_id = $1`,
+      [creatorId]
+    );
+    const { rows: [postCount] } = await client.query(
+      `SELECT COUNT(*) AS cnt FROM posts WHERE creator_id = $1 AND is_published = true`,
+      [creatorId]
+    );
+    const { rows: [subCount] } = await client.query(
+      `SELECT COUNT(*) AS cnt FROM subscriptions WHERE creator_id = $1`,
+      [creatorId]
+    );
+
+    const steps = [
+      { key: 'avatar',      label: 'Ajouter une photo de profil',  done: !!profile?.avatar_url },
+      { key: 'bio',         label: 'Écrire une bio',               done: !!profile?.bio && profile.bio.length > 10 },
+      { key: 'first_post',  label: 'Publier votre premier contenu', done: Number(postCount?.cnt) > 0 },
+      { key: 'sub_price',   label: 'Fixer votre prix d\'abonnement', done: (profile?.subscription_price_xcon || 0) > 0 },
+      { key: 'first_sub',   label: 'Obtenir votre premier abonné', done: Number(subCount?.cnt) > 0 },
+    ];
+    const completed = steps.filter(s => s.done).length;
+    res.json({ steps, completed, total: steps.length, percent: Math.floor((completed / steps.length) * 100) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+    await pgPool.end();
+  }
+});
+
 module.exports = router;

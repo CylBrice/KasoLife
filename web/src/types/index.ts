@@ -128,6 +128,9 @@ export interface Message {
   paid_by?: string;
   created_at: string;
   locked: boolean;
+  view_once?: boolean;
+  view_once_opened_at?: string | null;
+  view_once_expired?: boolean;
 }
 
 export interface CreatorApplication {

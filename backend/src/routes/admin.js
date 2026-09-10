@@ -12,6 +12,9 @@ const supabase = require('../config/supabase');
 const { authMiddleware, requireMinRole, canModifyRole } = require('../middleware/auth');
 const { sendPushNotification } = require('../services/notifications');
 const { invalidateAIConfigCache } = require('../services/aiModeration');
+const { extractWatermark }        = require('../services/steganographyService');
+const { downloadMediaFromR2, extractR2Key } = require('../services/cloudflare');
+const multer = require('multer');
 
 const router = express.Router();
 router.use(authMiddleware, requireMinRole('admin'));
@@ -162,6 +165,90 @@ router.put('/config/:key', requireMinRole('super_admin'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+
+// ════════════════════════════════════════════════════════════════════════════════
+// TAUX DE CHANGE — SUPERADMIN uniquement
+// ════════════════════════════════════════════════════════════════════════════════
+
+const { invalidateCache: invalidateCurrencyCache } = require('../services/currency');
+
+// ── GET /admin/exchange-rates — liste tous les taux
+router.get('/exchange-rates', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('exchange_rates')
+      .select('currency, rate_to_xcon, symbol, name, is_active, updated_at, updated_by')
+      .order('currency');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PUT /admin/exchange-rates/:currency — mettre à jour un taux
+router.put('/exchange-rates/:currency', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const currency = req.params.currency.toUpperCase();
+    const { rate_to_xcon, is_active } = req.body;
+
+    if (rate_to_xcon !== undefined && (isNaN(rate_to_xcon) || parseFloat(rate_to_xcon) <= 0))
+      return res.status(400).json({ error: 'Le taux doit être un nombre positif' });
+
+    const { data: existing } = await supabase
+      .from('exchange_rates').select('currency').eq('currency', currency).single();
+    if (!existing) return res.status(404).json({ error: `Devise "${currency}" introuvable` });
+
+    const updates = { updated_at: new Date().toISOString(), updated_by: req.user.id };
+    if (rate_to_xcon !== undefined) updates.rate_to_xcon = parseFloat(rate_to_xcon);
+    if (is_active !== undefined)    updates.is_active    = Boolean(is_active);
+
+    await supabase.from('exchange_rates').update(updates).eq('currency', currency);
+
+    // Invalider le cache Redis des taux
+    await invalidateCurrencyCache();
+
+    await supabase.from('admin_actions').insert({
+      admin_id: req.user.id, action: 'UPDATE_EXCHANGE_RATE',
+      target_type: 'exchange_rate',
+      metadata: { currency, ...updates },
+    });
+
+    res.json({ message: `Taux ${currency} mis à jour`, currency, rate_to_xcon: updates.rate_to_xcon });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// ── POST /admin/watermark/decode — extraire le watermark invisible d'une image
+// Outil de forensique : upload une image suspecte, on extrait l'identité du leaker.
+// Accepte : upload multipart (champ "file") OU body JSON { media_url } (URL R2).
+const uploadSingle = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
+router.post('/watermark/decode', requireMinRole('admin'), uploadSingle.single('file'), async (req, res) => {
+  try {
+    let buffer;
+
+    if (req.file) {
+      buffer = req.file.buffer;
+    } else if (req.body?.media_url) {
+      const pubBase = (process.env.CLOUDFLARE_R2_PUBLIC_URL || '').replace(/\/$/, '');
+      const url     = req.body.media_url;
+      if (!pubBase || !url.startsWith(pubBase))
+        return res.status(400).json({ error: 'URL R2 invalide' });
+      const key = extractR2Key(url);
+      buffer    = await downloadMediaFromR2(key);
+    } else {
+      return res.status(400).json({ error: 'Fournir un fichier (champ "file") ou une URL R2 (media_url)' });
+    }
+
+    const result = await extractWatermark(buffer);
+
+    await supabase.from('admin_actions').insert({
+      admin_id: req.user.id, action: 'WATERMARK_DECODE',
+      target_type: 'watermark_forensic',
+      metadata: { found: result.found, userId: result.userId, timestamp: result.timestamp },
+    }).catch(() => {});
+
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // ════════════════════════════════════════════════════════════════════════════════
 // GESTION DES ADMINS — SUPERADMIN uniquement
@@ -985,6 +1072,167 @@ router.put('/categories/:id', requireMinRole('super_admin'), async (req, res) =>
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Catégorie introuvable' });
     res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
+// BONUS BIENVENUE CRÉATEURS (activation manuelle uniquement)
+// PAS DE CRON — versement toujours déclenché par un super_admin+
+// ════════════════════════════════════════════════════════════════════════════════
+
+const configService = require('../services/configService');
+const { Pool } = require('pg');
+const _pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// ── GET /admin/bonus/config — lire la config des bonus
+router.get('/bonus/config', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const keys = [
+      'bonus_welcome_enabled',
+      'bonus_welcome_threshold_1_xcon',
+      'bonus_welcome_amount_1_xcon',
+      'bonus_welcome_threshold_2_xcon',
+      'bonus_welcome_amount_2_xcon',
+      'bonus_welcome_period_2_days',
+      'commission_welcome_rate',
+      'commission_welcome_days',
+    ];
+    const config = {};
+    for (const k of keys) config[k] = await configService.get(k);
+    res.json(config);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PATCH /admin/bonus/config — modifier les paramètres bonus
+router.patch('/bonus/config', requireMinRole('super_admin'), async (req, res) => {
+  const allowed = [
+    'bonus_welcome_enabled',
+    'bonus_welcome_threshold_1_xcon',
+    'bonus_welcome_amount_1_xcon',
+    'bonus_welcome_threshold_2_xcon',
+    'bonus_welcome_amount_2_xcon',
+    'bonus_welcome_period_2_days',
+    'commission_welcome_rate',
+    'commission_welcome_days',
+  ];
+  try {
+    const updated = {};
+    for (const key of allowed) {
+      if (key in req.body) {
+        await configService.set(key, req.body[key], req.user.id);
+        updated[key] = req.body[key];
+      }
+    }
+    await supabase.from('admin_actions').insert({
+      id: uuidv4(), admin_id: req.user.id, action: 'BONUS_CONFIG_UPDATE',
+      target_type: 'platform', details: JSON.stringify(updated),
+    });
+    res.json({ updated });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GET /admin/bonus/eligible — créateurs éligibles au bonus (non encore versé)
+// Éligible = premier contenu publié existe + gains bruts >= seuil + bonus pas encore payé
+router.get('/bonus/eligible', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const threshold1 = await configService.get('bonus_welcome_threshold_1_xcon');
+    const threshold2 = await configService.get('bonus_welcome_threshold_2_xcon');
+    const periodDays = await configService.get('bonus_welcome_period_2_days');
+
+    const { rows } = await _pgPool.query(`
+      SELECT
+        u.id,
+        u.pseudo,
+        u.avatar_url,
+        cp.display_name,
+        cp.first_published_at,
+        COALESCE(w.pending_balance_xcon, 0) AS pending_balance_xcon,
+        COALESCE(w.balance_xcon, 0)         AS balance_xcon,
+        -- Somme des revenus créateur depuis premier contenu
+        COALESCE((
+          SELECT SUM(ABS(t.amount_xcon))
+          FROM transactions t
+          WHERE t.user_id = u.id
+            AND t.type IN ('PPV_INCOME','SUBSCRIPTION_INCOME','ALBUM_INCOME')
+            AND t.created_at >= cp.first_published_at
+        ), 0) AS gross_earnings_xcon,
+        -- Bonus déjà versés
+        COALESCE((
+          SELECT COUNT(*) FROM transactions t2
+          WHERE t2.user_id = u.id AND t2.type = 'BONUS_WELCOME'
+        ), 0) AS bonus_already_paid_count
+      FROM users u
+      JOIN creator_profiles cp ON cp.user_id = u.id
+      LEFT JOIN wallets w ON w.user_id = u.id
+      WHERE cp.first_published_at IS NOT NULL
+        AND cp.first_published_at >= NOW() - INTERVAL '1 day' * $1
+      ORDER BY gross_earnings_xcon DESC
+      LIMIT 100
+    `, [periodDays]);
+
+    const eligible = rows.map(r => ({
+      ...r,
+      threshold1_reached: r.gross_earnings_xcon >= threshold1,
+      threshold2_reached: r.gross_earnings_xcon >= threshold2,
+      bonus_1_eligible: r.gross_earnings_xcon >= threshold1 && r.bonus_already_paid_count < 1,
+      bonus_2_eligible: r.gross_earnings_xcon >= threshold2 && r.bonus_already_paid_count < 2,
+    }));
+
+    res.json({ creators: eligible, threshold1, threshold2, periodDays });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /admin/bonus/pay/:creatorId — verser manuellement un bonus
+// tier : 1 | 2
+router.post('/bonus/pay/:creatorId', requireMinRole('super_admin'), async (req, res) => {
+  const { creatorId } = req.params;
+  const tier = parseInt(req.body.tier) || 1;
+  if (![1, 2].includes(tier)) return res.status(400).json({ error: 'tier doit être 1 ou 2' });
+
+  const enabled = await configService.get('bonus_welcome_enabled');
+  if (!enabled) return res.status(403).json({ error: 'Bonus bienvenue désactivés en config' });
+
+  try {
+    const amountKey = `bonus_welcome_amount_${tier}_xcon`;
+    const amount = await configService.get(amountKey);
+    if (!amount || amount <= 0) return res.status(400).json({ error: `Montant bonus tier ${tier} non configuré` });
+
+    const { data: creator } = await supabase.from('users').select('id, pseudo').eq('id', creatorId).single();
+    if (!creator) return res.status(404).json({ error: 'Créateur introuvable' });
+
+    // Vérifier qu'un bonus du même tier n'a pas déjà été versé (idempotence)
+    const { data: existing } = await supabase.from('transactions')
+      .select('id').eq('user_id', creatorId).eq('type', 'BONUS_WELCOME')
+      .eq('description', `Bonus bienvenue créateur — palier ${tier}`)
+      .single();
+    if (existing) return res.status(409).json({ error: `Bonus tier ${tier} déjà versé à ce créateur` });
+
+    // Créditer le wallet
+    const { data: newBalance, error: creditErr } = await supabase.rpc('credit_wallet', {
+      p_user_id: creatorId, p_amount: amount,
+    });
+    if (creditErr) throw creditErr;
+
+    const txId = uuidv4();
+    await supabase.from('transactions').insert({
+      id: txId, user_id: creatorId, type: 'BONUS_WELCOME',
+      amount_xcon: amount, balance_after: newBalance,
+      description: `Bonus bienvenue créateur — palier ${tier}`,
+      related_user_id: req.user.id,
+    });
+
+    await supabase.from('admin_actions').insert({
+      id: uuidv4(), admin_id: req.user.id, action: 'BONUS_WELCOME_PAID',
+      target_type: 'user', target_id: creatorId,
+      details: JSON.stringify({ tier, amount_xcon: amount, tx_id: txId }),
+    });
+
+    res.json({
+      message: `Bonus palier ${tier} versé`,
+      amount_xcon: amount,
+      new_balance: newBalance,
+      transaction_id: txId,
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

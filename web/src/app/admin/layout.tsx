@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, UserCheck, Flag, Banknote, Users, SlidersHorizontal,
-  Cpu, ShieldAlert, Settings, TrendingUp, Crown, ClipboardList, MessageSquare,
+  Cpu, ShieldAlert, Settings, TrendingUp, Crown, ClipboardList, MessageSquare, Gift, AlertTriangle,
 } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 import { useAuth } from "@/contexts/auth-context";
@@ -33,6 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/revenus",       label: "Finances",          icon: TrendingUp,        superAdminOnly: true },
     { href: "/admin/support",       label: "Support",           icon: MessageSquare,     superAdminOnly: true },
     { href: "/admin/admins",        label: t("admin.admins"),   icon: Crown,             superAdminOnly: true },
+    { href: "/admin/bonus",          label: "Bonus bienvenue",  icon: Gift,              superAdminOnly: true },
+    { href: "/admin/litiges",        label: "Litiges",          icon: AlertTriangle,     superAdminOnly: true },
     { href: "/admin/configuration", label: "Config",            icon: SlidersHorizontal, superAdminOnly: true },
     { href: "/admin/audit",         label: t("admin.audit"),    icon: ClipboardList,     superAdminOnly: true },
   ] : [];
