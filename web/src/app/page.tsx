@@ -5,8 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   Zap, Flame, TrendingUp, Sparkles, Rocket,
   ListFilter, Search, X, LayoutGrid,
-  User, Wallet, Layers, MessageSquare, Video, Settings, LogOut, ChevronDown, Coins,
-  Radio, Lock, Users,
+  Coins, Radio, Lock, Users,
 } from "lucide-react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -14,11 +13,11 @@ import { Logo } from "@/components/layout/logo";
 import { Footer } from "@/components/layout/footer";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserDropdown } from "@/components/layout/user-dropdown";
 import { DiscoverFeed, type FeedMode } from "@/components/posts/discover-feed";
 import { api } from "@/lib/api";
 
 type ViewMode = FeedMode | "live";
-import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { formatFCFA } from "@/lib/utils";
 import { useT, useLocale } from "@/i18n/locale-context";
@@ -269,92 +268,6 @@ function HomeFeed() {
   const activeMode  = searchQuery ? "boosted" as FeedMode : (feedMode === "live" ? "boosted" : feedMode) as FeedMode;
   const feedKey     = searchQuery || `${feedMode}-${selectedSlugs.join(",")}` || "all";
 
-  const isCreator = ["influencer", "admin", "super_admin", "root_admin"].includes((user as any)?.role);
-  const isAdmin   = ["admin", "super_admin", "root_admin"].includes((user as any)?.role);
-
-  // Menu déroulant avatar — identique à la navbar
-  const UserMenu = () => (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          className="flex items-center gap-2 rounded-full border border-ink-line bg-ink-raised px-2 py-1 hover:border-gold/50 transition-colors"
-          aria-label="Mon compte"
-        >
-          <UserAvatar src={(user as any)?.avatar_url} pseudo={user?.pseudo} name={user?.name} size="xs" />
-          <span className="text-sm font-medium text-cream">{user?.name?.split(" ")[0] || user?.pseudo}</span>
-          <ChevronDown className="h-3.5 w-3.5 text-sage-muted" />
-        </button>
-      </DropdownMenu.Trigger>
-
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={8}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-          className="z-50 w-56 overflow-hidden rounded-xl border border-ink-line bg-ink-surface shadow-2xl animate-in fade-in-0 zoom-in-95"
-        >
-          {/* En-tête */}
-          <div className="border-b border-ink-line px-4 py-3">
-            <p className="truncate text-sm font-semibold text-cream">@{user?.pseudo}</p>
-            <p className="text-xs capitalize text-sage-muted">{(user as any)?.role?.replace(/_/g, " ")}</p>
-          </div>
-
-          {/* Navigation */}
-          <div className="py-1">
-            {(
-              [
-                { icon: User,         label: t("nav.profile"),       href: "/profil" },
-                { icon: Wallet,       label: t("nav.wallet"),        href: "/wallet" },
-                { icon: Layers,       label: t("nav.subscriptions"), href: "/abonnements" },
-                { icon: MessageSquare,label: t("nav.messages"),      href: "/messages" },
-              ] as const
-            ).map(({ icon: Icon, label, href }) => (
-              <DropdownMenu.Item
-                key={href}
-                onSelect={() => router.push(href)}
-                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-sage outline-none transition-colors hover:bg-ink-raised hover:text-cream focus:bg-ink-raised focus:text-cream"
-              >
-                <Icon size={15} />
-                {label}
-              </DropdownMenu.Item>
-            ))}
-
-            {isCreator && (
-              <DropdownMenu.Item
-                onSelect={() => router.push("/createur")}
-                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-sage outline-none transition-colors hover:bg-ink-raised hover:text-cream focus:bg-ink-raised focus:text-cream"
-              >
-                <Video size={15} />
-                Espace créateur
-              </DropdownMenu.Item>
-            )}
-
-            {isAdmin && (
-              <DropdownMenu.Item
-                onSelect={() => router.push("/admin")}
-                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-gold/80 outline-none transition-colors hover:bg-gold/10 hover:text-gold focus:bg-gold/10 focus:text-gold"
-              >
-                <Settings size={15} />
-                Administration
-              </DropdownMenu.Item>
-            )}
-          </div>
-
-          {/* Déconnexion */}
-          <div className="border-t border-ink-line py-1">
-            <DropdownMenu.Item
-              onSelect={() => { logout(); router.push("/connexion"); }}
-              className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm text-brick outline-none transition-colors hover:bg-brick/10 focus:bg-brick/10"
-            >
-              <LogOut size={15} />
-              {t("profile.logout")}
-            </DropdownMenu.Item>
-          </div>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  );
-
   // Pills de section (partagées desktop + mobile)
   const SectionPills = ({ withSearch = false }: { withSearch?: boolean }) => (
     <div className="sticky top-0 z-10 bg-ink">
@@ -498,7 +411,7 @@ function HomeFeed() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <UserMenu />
+              <UserDropdown />
             ) : (
               <button
                 onClick={() => router.push("/connexion")}
@@ -658,7 +571,7 @@ function HomeFeed() {
             </DropdownMenu.Root>
 
             {user ? (
-              <UserMenu />
+              <UserDropdown />
             ) : (
               <button
                 onClick={() => router.push("/connexion")}
