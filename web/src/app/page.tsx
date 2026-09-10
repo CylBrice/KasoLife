@@ -204,7 +204,7 @@ function HomeFeed() {
   const { user, logout, wallet } = useAuth();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[] | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [feedMode, setFeedMode] = useState<ViewMode>("all");
   const [liveCount, setLiveCount] = useState(0);
 
@@ -437,7 +437,7 @@ function HomeFeed() {
               collapsed ? "justify-center" : "justify-between px-2"
             )}>
               {!collapsed && (
-                <p className="text-xs font-semibold uppercase tracking-wider text-sage-muted">
+                <p className="truncate whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-sage-muted">
                   {t("nav.filterByCategory")}
                 </p>
               )}

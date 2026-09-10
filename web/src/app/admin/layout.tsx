@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, UserCheck, Flag, Banknote, Users, SlidersHorizontal,
   Cpu, ShieldAlert, Settings, TrendingUp, Crown, ClipboardList, MessageSquare, Gift, AlertTriangle,
+  MonitorPlay,
 } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 import { useAuth } from "@/contexts/auth-context";
@@ -24,8 +25,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/fraude",       label: t("admin.fraud"),        icon: ShieldAlert },
     { href: "/admin/retraits",     label: t("admin.payouts"),      icon: Banknote },
     { href: "/admin/utilisateurs", label: t("admin.users"),        icon: Users },
-    { href: "/admin/ia",           label: "IA",                    icon: Cpu },
-    { href: "/admin/maintenance",  label: "Maintenances",          icon: Settings },
+    { href: "/admin/ia",              label: "IA",                    icon: Cpu },
+    { href: "/admin/maintenance",     label: "Maintenances",          icon: Settings },
+    { href: "/admin/private-shows",   label: "Private Shows",         icon: MonitorPlay },
   ];
 
   /* ── Onglets exclusifs SUPERADMIN ── */

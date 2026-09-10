@@ -6,7 +6,7 @@ import { useT } from "@/i18n/locale-context";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Users, FileText, Radio } from "lucide-react";
+import { BadgeCheck, Users, FileText, Radio, MonitorPlay } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/categories";
@@ -128,13 +128,24 @@ export default function CreatorProfileClient() {
               </div>
             </div>
 
-            <SubscribeButton
-              creatorId={creator.id}
-              priceXcon={creator.subscription_price_xcon}
-              isSubscribed={creator.is_subscribed}
-              isOwnProfile={creator.is_own_profile}
-              acceptingSubs={creator.is_accepting_subs}
-            />
+            <div className="flex flex-col items-end gap-2">
+              <SubscribeButton
+                creatorId={creator.id}
+                priceXcon={creator.subscription_price_xcon}
+                isSubscribed={creator.is_subscribed}
+                isOwnProfile={creator.is_own_profile}
+                acceptingSubs={creator.is_accepting_subs}
+              />
+              {!creator.is_own_profile && (
+                <Link
+                  href={`/private-shows/demande?creator=${creator.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm text-gold hover:bg-gold/20 transition-colors"
+                >
+                  <MonitorPlay className="h-3.5 w-3.5" />
+                  Private Show
+                </Link>
+              )}
+            </div>
           </div>
 
           {creator.bio && <p className="mt-3 text-sm text-cream">{creator.bio}</p>}

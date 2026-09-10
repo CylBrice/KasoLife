@@ -85,6 +85,31 @@
 
 ---
 
+## PHASE 5 — Private Show (vidéo 1-to-1 LiveKit)
+
+> Distinct du Private Chat (messagerie). Types : STANDARD (spy OK) | PREMIUM (exclusif).
+> Forfaits 15/30/45/60 min. Queue avec enchère temps réel. Grâce de 5 min sur déco réseau.
+
+### Décisions architecturales validées
+
+- **Facturation** : forfaits fixes (15/30/45/60 min), prix plancher plateforme, créateur peut augmenter
+- **Spy** : flux complet lecture seule — rôle subscriber-only LiveKit, même room, uniquement sur STANDARD
+- **Queue** : enchère temps réel — `bid_xcon` bloqué au wallet à l'entrée, re-tri dynamique par bid décroissant
+- **Déco créateur** : distinguer volontaire (bouton Stop → flag `ended_voluntarily`) vs involontaire (signal LiveKit → grâce 5 min via Redis, timer session en pause)
+- **Live public pendant priv'** : room reste ouverte, flux vidéo coupé côté frontend + flou CSS Canvas sur dernière frame + message incitatif "en session privée"
+- **Remboursement** : prorata minutes non consommées (hors temps de grâce)
+
+| Étape | Description | Statut |
+|---|---|---|
+| 5.1 | Migration 0026 — `private_shows`, `private_show_queue`, `private_show_spies`, `private_show_prices`, platform_config | ✅ Terminé |
+| 5.2 | Backend routes `/private-shows` — CRUD, queue, spy, webhook LiveKit, grâce Redis | ✅ Terminé |
+| 5.3 | LiveKit — tokens par rôle (publisher / subscriber-only), gestion room | ⏳ À faire |
+| 5.4 | Frontend créateur — config prix, panneau queue, session active, flou live public | ✅ Terminé |
+| 5.5 | Frontend fan — demande + enchère, show interface, spy interface, grâce UI | ✅ Terminé |
+| 5.6 | Admin — minimums par tranche/type, logs sessions, remboursements | ✅ Terminé |
+
+---
+
 ## Migrations SQL prévues
 
 | Numéro | Description | Statut |
@@ -99,6 +124,7 @@
 | `0023` | Custom requests | ✅ Terminé |
 | `0024` | Snapshots payants | ✅ Terminé |
 | `0025` | Toy control sessions (jouets interactifs) | ⏳ À faire |
+| `0026` | Private Shows (vidéo LiveKit) — sessions, queue enchère, spy, prix créateur | ✅ Terminé |
 
 ---
 
