@@ -47,14 +47,14 @@ interface LiveStream {
 }
 
 // ── Section "En direct" — 6 cards max, intégrée en haut du feed ──────────────
-function LiveSection({ onShowAll }: { onShowAll: () => void }) {
+function LiveSection({ onShowAll, collapsed = true }: { onShowAll: () => void; collapsed?: boolean }) {
   const router = useRouter();
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get("/live").then(({ data }) => {
-      setStreams((data?.streams || []).slice(0, 6));
+      setStreams((data?.streams || []).slice(0, 8));
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -72,9 +72,9 @@ function LiveSection({ onShowAll }: { onShowAll: () => void }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 px-4 sm:grid-cols-3">
+      <div className={cn("grid grid-cols-2 gap-1 px-1", collapsed ? "md:grid-cols-8" : "md:grid-cols-7")}>
         {loading
-          ? Array.from({ length: 3 }).map((_, i) => (
+          ? Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="aspect-video animate-pulse rounded-xl bg-ink-raised" />
             ))
           : streams.map((s) => (
@@ -118,7 +118,7 @@ function LiveSection({ onShowAll }: { onShowAll: () => void }) {
 }
 
 // ── Grille complète (onglet Livestreams) ─────────────────────────────────────
-function LiveGrid() {
+function LiveGrid({ collapsed = true }: { collapsed?: boolean }) {
   const router = useRouter();
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,8 +131,8 @@ function LiveGrid() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className={cn("grid grid-cols-2 gap-1 p-1", collapsed ? "md:grid-cols-8" : "md:grid-cols-7")}>
+        {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="aspect-video animate-pulse rounded-xl bg-ink-raised" />
         ))}
       </div>
@@ -150,7 +150,7 @@ function LiveGrid() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
+    <div className={cn("grid grid-cols-2 gap-1 p-1", collapsed ? "md:grid-cols-8" : "md:grid-cols-7")}>
       {streams.map((s) => (
         <button
           key={s.id}
@@ -159,29 +159,28 @@ function LiveGrid() {
         >
           <div className="aspect-video w-full bg-gradient-to-br from-brick/20 via-ink-raised to-ink-surface" />
 
-          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-xl bg-brick/90 px-2 py-0.5 text-[10px] font-bold text-white">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-            EN DIRECT
+          <div className="absolute left-1.5 top-1.5 flex items-center gap-0.5 rounded-xl bg-brick/90 px-1.5 py-0.5 text-[8px] font-bold text-white">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+            LIVE
           </div>
 
           {s.price_xcon && (
-            <div className="absolute right-2 top-2 flex items-center gap-1 rounded-xl bg-ink/80 px-2 py-0.5 text-[10px] font-semibold text-gold">
-              <Lock className="h-2.5 w-2.5" />
-              {s.price_xcon.toLocaleString("fr-FR")} XC
+            <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-xl bg-ink/80 px-1.5 py-0.5 text-[8px] font-semibold text-gold">
+              <Lock className="h-2 w-2" />
+              {s.price_xcon.toLocaleString("fr-FR")}
             </div>
           )}
 
-          <div className="p-2">
-            <div className="flex items-center gap-1.5">
-              <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full bg-ink-surface">
+          <div className="p-1">
+            <div className="flex items-center gap-1">
+              <div className="h-3.5 w-3.5 shrink-0 overflow-hidden rounded-full bg-ink-surface">
                 {s.creator?.avatar_url
                   ? <img src={s.creator.avatar_url} alt="" className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center text-[8px] font-bold text-gold">{s.creator?.pseudo?.[0]?.toUpperCase()}</div>
+                  : <div className="flex h-full w-full items-center justify-center text-[6px] font-bold text-gold">{s.creator?.pseudo?.[0]?.toUpperCase()}</div>
                 }
               </div>
-              <span className="truncate text-xs font-medium text-cream">@{s.creator?.pseudo}</span>
+              <span className="truncate text-[9px] font-medium text-cream">@{s.creator?.pseudo}</span>
             </div>
-            {s.title && <p className="mt-1 truncate text-[11px] text-sage">{s.title}</p>}
           </div>
         </button>
       ))}
@@ -473,10 +472,10 @@ function HomeFeed() {
             <SectionPills />
             <main key={feedKey} className="flex-1 overflow-y-auto animate-in fade-in-0 duration-200">
               {feedMode === "live" && !searchQuery
-                ? <LiveGrid />
+                ? <LiveGrid collapsed={collapsed} />
                 : <>
-                    {!searchQuery && <LiveSection onShowAll={() => setFeedMode("live")} />}
-                    <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} />
+                    {!searchQuery && <LiveSection onShowAll={() => setFeedMode("live")} collapsed={collapsed} />}
+                    <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} sidebarCollapsed={collapsed} />
                   </>}
             </main>
           </div>

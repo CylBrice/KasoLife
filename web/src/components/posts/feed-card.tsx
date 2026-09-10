@@ -17,7 +17,15 @@ import type { Post } from "@/types";
  * Réutilise le même voile de verrouillage (.lock-overlay) que PostCard,
  * sans modifier la palette ni les styles existants — uniquement la disposition.
  */
-export function FeedCard({ post, onUnlocked }: { post: Post; onUnlocked?: (postId: string) => void }) {
+export function FeedCard({
+  post,
+  onUnlocked,
+  compact = false,
+}: {
+  post: Post;
+  onUnlocked?: (postId: string) => void;
+  compact?: boolean;
+}) {
   const t = useT();
   const [unlocking, setUnlocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +56,67 @@ export function FeedCard({ post, onUnlocked }: { post: Post; onUnlocked?: (postI
     } catch {}
   };
 
+  // ── Mode compact : tuile de grille ─────────────────────────────────────────
+  if (compact) {
+    return (
+      <Link
+        href={`/createurs/${post.creator?.pseudo}`}
+        className="group relative block overflow-hidden rounded-xl bg-ink-raised"
+      >
+        <div className="aspect-square w-full overflow-hidden">
+          {post.media_url ? (
+            post.media_type === "VIDEO" ? (
+              <video src={post.media_url} muted loop playsInline className="h-full w-full object-cover" />
+            ) : post.media_type === "AUDIO" ? (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald/20 to-gold/10">
+                <Music className="h-6 w-6 text-gold" />
+              </div>
+            ) : (
+              <Image src={post.media_url} alt="" fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 12.5vw" />
+            )
+          ) : post.thumbnail_url ? (
+            <Image src={post.thumbnail_url} alt="" fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 12.5vw" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald/20 to-gold/10 p-2 text-center">
+              <p className="line-clamp-3 text-[10px] font-medium text-cream">{post.caption}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Voile + infos au hover */}
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-ink/80 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100 p-1.5">
+          <div className="flex items-center gap-1">
+            {post.creator?.avatar_url && (
+              <div className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full border border-ink">
+                <Image src={post.creator.avatar_url} alt="" fill className="object-cover" sizes="16px" />
+              </div>
+            )}
+            <span className="truncate text-[9px] font-medium text-cream">@{post.creator?.pseudo}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2 text-[9px] text-cream/70">
+            <span className="flex items-center gap-0.5"><Heart className="h-2.5 w-2.5" />{post.likes_count}</span>
+            <span className="flex items-center gap-0.5"><MessageCircle className="h-2.5 w-2.5" />{post.comments_count}</span>
+          </div>
+        </div>
+
+        {/* Verrou */}
+        {locked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/40 backdrop-blur-[2px]">
+            <Lock className="h-4 w-4 text-gold drop-shadow" />
+          </div>
+        )}
+
+        {/* Badge accès */}
+        {post.access_level !== "FREE" && (
+          <div className="absolute right-1 top-1 rounded-md bg-ink/70 px-1 py-0.5 text-[8px] font-semibold text-gold backdrop-blur-sm">
+            {post.access_level === "PPV" ? formatFCFA(post.price_xcon) : "SUB"}
+          </div>
+        )}
+      </Link>
+    );
+  }
+
+  // ── Mode plein écran (TikTok scroll) ─────────────────────────────────────────
   return (
     <section className="relative h-[calc(100vh-4rem)] w-full snap-start overflow-hidden bg-ink md:h-[calc(100vh-2rem)] md:rounded-2xl md:border md:border-ink-line">
       {/* Média en arrière-plan */}

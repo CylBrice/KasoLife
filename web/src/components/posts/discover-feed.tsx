@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { FeedCard } from "@/components/posts/feed-card";
 import { useT } from "@/i18n/locale-context";
+import { cn } from "@/lib/utils";
 import type { Post } from "@/types";
 
 export type FeedMode = "boosted" | "popular" | "trending" | "followed" | "personalized" | "all";
@@ -12,10 +13,12 @@ export function DiscoverFeed({
   categories,
   search,
   mode = "boosted",
+  sidebarCollapsed = true,
 }: {
   categories?: string[];
   search?: string;
   mode?: FeedMode;
+  sidebarCollapsed?: boolean;
 }) {
   const t = useT();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -97,15 +100,16 @@ export function DiscoverFeed({
   }
 
   return (
-    <div className="md:gap-2 md:px-2 md:py-2">
+    <div className={cn(
+      "grid grid-cols-2 gap-1 p-1",
+      sidebarCollapsed ? "md:grid-cols-8" : "md:grid-cols-7",
+    )}>
       {posts.map((post, idx) => (
-        <div key={`${post.id}-${idx}`} className="md:pb-2">
-          <FeedCard post={post} onUnlocked={handleUnlocked} />
-        </div>
+        <FeedCard key={`${post.id}-${idx}`} post={post} onUnlocked={handleUnlocked} compact />
       ))}
-      <div ref={sentinelRef} className="h-1" />
+      <div ref={sentinelRef} className="col-span-full h-1" />
       {loading && (
-        <div className="flex h-24 items-center justify-center">
+        <div className="col-span-full flex h-24 items-center justify-center">
           <p className="text-sm text-sage-muted">{t("common.loading")}</p>
         </div>
       )}
