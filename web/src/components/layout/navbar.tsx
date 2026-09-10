@@ -14,7 +14,7 @@ import { useT } from "@/i18n/locale-context";
 import { api } from "@/lib/api";
 import {
   User, Wallet, Coins, MessageSquare, Layers,
-  Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard,
+  Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard, Cast,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -179,7 +179,7 @@ export function Navbar() {
                     <DropItem icon={<MessageSquare size={15} />} label="Messages" onClick={() => navTo("/messages")} active={pathname.startsWith("/messages")} />
 
                     {isCreator && (
-                      <DropItem icon={<Radio size={15} />} label="Livestream" onClick={() => navTo("/createur/live")} active={pathname === "/createur/live"} />
+                      <DropItem icon={<Cast size={15} />} label="Streamcast" onClick={() => navTo("/createur/live")} active={pathname === "/createur/live"} />
                     )}
 
                     {isCreator && (

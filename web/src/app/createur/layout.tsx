@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, Images, Users, Wallet, Film, Radio, Layers } from "lucide-react";
+import { LayoutDashboard, Images, Users, Wallet, Film, Radio, Layers, Cast } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -10,7 +10,7 @@ const NAV: NavItem[] = [
   { href: "/createur",          label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/createur/posts",    label: "Publications",    icon: Images },
   { href: "/createur/editeur",  label: "Studio vidéo",   icon: Film },
-  { href: "/createur/live",     label: "Livestream",      icon: Radio },
+  { href: "/createur/live",     label: "Streamcast",      icon: Cast },
   { href: "/abonnements",       label: "Abonnements",     icon: Layers },
   { href: "/createur/abonnes",  label: "Abonnés",         icon: Users },
   { href: "/wallet",            label: "Wallet",           icon: Wallet },
