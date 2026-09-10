@@ -109,7 +109,7 @@ services:
       LIVEKIT_URL: http://livekit:7880
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
-NODE_ENV: production
+      NODE_ENV: production
       PORT: 3003
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       SENTRY_DSN: ${SENTRY_DSN:-}
