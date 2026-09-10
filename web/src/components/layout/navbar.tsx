@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
 import {
   User, Wallet, Coins, MessageSquare, Layers,
-  Video, LogOut, Settings, ChevronDown, Compass, Shield,
+  Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +69,7 @@ export function Navbar() {
   const navTo = (href: string) => { setMenuOpen(false); router.push(href); };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-ink-line bg-ink/90 backdrop-blur-md">
+    <header className="sticky top-0 z-30 bg-ink/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Logo />
 
@@ -107,7 +107,7 @@ export function Navbar() {
               )}
               {isAdmin && (
                 <Link href="/admin" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/admin") ? "bg-gold/10 text-gold font-medium" : "text-gold/70 hover:bg-gold/10 hover:text-gold")}>
-                  <Shield className="h-3.5 w-3.5" />
+                  <LayoutDashboard className="h-3.5 w-3.5" />
                   Admin
                 </Link>
               )}
@@ -157,16 +157,21 @@ export function Navbar() {
                   {/* Navigation */}
                   <div className="py-1">
                     <DropItem icon={<User size={15} />} label={t("nav.profile")} onClick={() => navTo("/profil")} active={pathname === "/profil"} />
-                    <DropItem icon={<Wallet size={15} />} label={t("nav.wallet")} onClick={() => navTo("/wallet")} active={pathname === "/wallet"} />
-                    <DropItem icon={<Layers size={15} />} label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")} active={pathname === "/abonnements"} />
-                    <DropItem icon={<MessageSquare size={15} />} label={t("nav.messages")} onClick={() => navTo("/messages")} active={pathname === "/messages"} />
+                    <DropItem icon={<MessageSquare size={15} />} label="Messages" onClick={() => navTo("/messages")} active={pathname.startsWith("/messages")} />
 
                     {isCreator && (
-                      <DropItem icon={<Video size={15} />} label="Espace créateur" onClick={() => navTo("/createur")} active={pathname.startsWith("/createur")} />
+                      <DropItem icon={<Radio size={15} />} label="Livestream" onClick={() => navTo("/createur/live")} active={pathname === "/createur/live"} />
                     )}
 
+                    {isCreator && (
+                      <DropItem icon={<Video size={15} />} label="Espace Créateur" onClick={() => navTo("/createur")} active={pathname.startsWith("/createur") && pathname !== "/createur/live"} />
+                    )}
+
+                    <DropItem icon={<Layers size={15} />} label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")} active={pathname === "/abonnements"} />
+                    <DropItem icon={<Wallet size={15} />} label={t("nav.wallet")} onClick={() => navTo("/wallet")} active={pathname === "/wallet"} />
+
                     {isAdmin && (
-                      <DropItem icon={<Settings size={15} />} label="Administration" onClick={() => navTo("/admin")} active={pathname.startsWith("/admin")} gold />
+                      <DropItem icon={<LayoutDashboard size={15} />} label="Dashboard Admin" onClick={() => navTo("/admin")} active={pathname.startsWith("/admin")} gold />
                     )}
                   </div>
 

@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgeCheck, Wallet, Coins, Layers, ChevronRight,
-  UserCircle, Shield, CreditCard, BarChart3, Settings,
+  UserCircle, Shield, CreditCard, BarChart3, Settings, Users,
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function ProfilPage() {
 
   const [tab, setTab] = useState<Tab>("identite");
   const [activeSubsCount, setActiveSubsCount] = useState<number>(0);
+  const [subscribersCount, setSubscribersCount] = useState<number>(0);
 
   useEffect(() => {
     if (!loading && !user) router.push("/connexion");
@@ -52,6 +53,12 @@ export default function ProfilPage() {
         const active = (data || []).filter((s: { status: string }) => s.status === "ACTIVE").length;
         setActiveSubsCount(active);
       }).catch(() => {});
+
+      if (CREATOR_ROLES.includes(user.role)) {
+        api.get("/subscriptions/subscribers?limit=1").then(({ data }) => {
+          setSubscribersCount(data?.pagination?.total ?? 0);
+        }).catch(() => {});
+      }
     });
   }, [user]);
 
@@ -125,7 +132,7 @@ export default function ProfilPage() {
           </div>
 
           {/* Stat tiles */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className={`mt-4 grid gap-3 ${isCreator ? "grid-cols-3" : "grid-cols-2"}`}>
             <Link href="/wallet" className="group">
               <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
                 <Coins className="h-5 w-5 shrink-0 text-gold" />
@@ -133,7 +140,7 @@ export default function ProfilPage() {
                   <p className="truncate font-mono text-base font-medium tabular text-cream">
                     {formatFCFA(wallet?.balance_xcon ?? 0)}
                   </p>
-                  <p className="text-xs text-sage-muted">{isEn ? "Wallet balance" : "Solde wallet"}</p>
+                  <p className="text-xs text-sage-muted">{isEn ? "Wallet" : "Wallet"}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
@@ -143,13 +150,23 @@ export default function ProfilPage() {
                 <Layers className="h-5 w-5 shrink-0 text-coral" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-base font-medium tabular text-cream">{activeSubsCount}</p>
-                  <p className="text-xs text-sage-muted">
-                    {isEn ? `${activeSubsCount} subscription${activeSubsCount !== 1 ? "s" : ""}` : `Abonnement${activeSubsCount !== 1 ? "s" : ""} actif${activeSubsCount !== 1 ? "s" : ""}`}
-                  </p>
+                  <p className="text-xs text-sage-muted">{isEn ? "Subscriptions" : "Abonnements"}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
             </Link>
+            {isCreator && (
+              <Link href="/createur/abonnes" className="group">
+                <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
+                  <Users className="h-5 w-5 shrink-0 text-emerald" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-mono text-base font-medium tabular text-cream">{subscribersCount}</p>
+                    <p className="text-xs text-sage-muted">{isEn ? "Subscribers" : "Abonnés"}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

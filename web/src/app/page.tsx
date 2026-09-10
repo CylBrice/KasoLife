@@ -372,7 +372,7 @@ function HomeFeed() {
 
       {/* ── MOBILE (< md) ────────────────────────────────────────────── */}
       <div className="flex flex-col md:hidden">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-line bg-ink/95 px-4 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-ink/95 px-4 backdrop-blur-md">
           <Logo />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />

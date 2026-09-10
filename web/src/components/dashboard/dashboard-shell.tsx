@@ -257,7 +257,7 @@ export function DashboardShell({
       </aside>
 
       {/* ── Header mobile ── */}
-      <header className="flex items-center justify-between border-b border-ink-line/50 bg-ink-surface px-4 py-3 md:hidden">
+      <header className="flex items-center justify-between bg-ink-surface px-4 py-3 md:hidden">
         <Logo />
         <div className="flex items-center gap-2">
           <button onClick={openCmdk} className="rounded-xl border border-ink-line p-2 text-sage">
