@@ -14,11 +14,12 @@ const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
 const roomService = new RoomServiceClient(LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
 
 // ── Crée une room LiveKit pour un direct ──────────────────────────────────────
-const createRoom = async (roomName) => {
+const createRoom = async (roomName, { emptyTimeout = 300, maxParticipants = 0, metadata } = {}) => {
   return roomService.createRoom({
     name: roomName,
-    emptyTimeout: 5 * 60,   // ferme la room si vide 5 min (filet de sécurité côté LiveKit)
-    maxParticipants: 0,     // illimité
+    emptyTimeout,
+    maxParticipants,
+    ...(metadata ? { metadata: JSON.stringify(metadata) } : {}),
   });
 };
 
@@ -31,10 +32,22 @@ const endRoom = async (roomName) => {
   }
 };
 
-// ── Génère un token d'accès (créateur = publish, spectateur = subscribe) ─────
-const createRoomToken = async (identity, roomName, { canPublish = false, canSubscribe = true, name } = {}) => {
-  const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, { identity, name });
-  at.addGrant({ roomJoin: true, room: roomName, canPublish, canSubscribe });
+// ── Génère un token d'accès avec TTL et permissions granulaires ───────────────
+const createRoomToken = async (
+  identity,
+  roomName,
+  {
+    canPublish     = false,
+    canSubscribe   = true,
+    canPublishData = canPublish, // spies reçoivent false via canPublish=false
+    name,
+    ttlSeconds,                  // expiration du token en secondes
+  } = {},
+) => {
+  const opts = { identity, name };
+  if (ttlSeconds) opts.ttl = `${ttlSeconds}s`;
+  const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, opts);
+  at.addGrant({ roomJoin: true, room: roomName, canPublish, canSubscribe, canPublishData });
   return at.toJwt();
 };
 

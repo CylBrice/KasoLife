@@ -292,12 +292,12 @@ export default function AdminPrivateShowsPage() {
 
                   {/* Montants */}
                   <div className="flex flex-wrap gap-3 text-xs text-sage-muted">
-                    <span>Payé : <span className="text-cream">{formatFCFA(s.price_xcon_paid || 0)}</span></span>
+                    <span>Payé : <span className="text-cream">{formatFCFA(s.price_xcon || 0)}</span></span>
                     {(s.refund_xcon ?? 0) > 0 && (
                       <span>Remb. : <span className="text-emerald">{formatFCFA(s.refund_xcon)}</span></span>
                     )}
-                    {(s.platform_revenue_xcon ?? 0) > 0 && (
-                      <span>Rev. : <span className="text-gold">{formatFCFA(s.platform_revenue_xcon)}</span></span>
+                    {(s.commission_xcon ?? 0) > 0 && (
+                      <span>Commission : <span className="text-gold">{formatFCFA(s.commission_xcon)}</span></span>
                     )}
                     {s.actual_duration_seconds > 0 && (
                       <span>Durée : {fmtDuration(s.actual_duration_seconds)}</span>

@@ -388,6 +388,57 @@ router.delete('/queue/:id', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /private-shows/queue/position — position du fan dans la file d'un créateur
+router.get('/queue/position', authMiddleware, async (req, res) => {
+  const { entry_id, creator_id } = req.query;
+  if (!entry_id || !creator_id)
+    return res.status(400).json({ error: 'entry_id et creator_id requis' });
+  try {
+    const { data: entry } = await supabase.from('private_show_queue')
+      .select('*').eq('id', entry_id).eq('fan_id', req.user.id).maybeSingle();
+    if (!entry) return res.status(404).json({ error: 'Entrée introuvable' });
+
+    // Si la demande a été acceptée, retourner le show
+    if (entry.status === 'ACCEPTED') {
+      const { data: show } = await supabase.from('private_shows')
+        .select('id').eq('creator_id', creator_id).eq('fan_id', req.user.id)
+        .eq('status', 'ACTIVE').maybeSingle();
+      return res.json({ status: 'ACCEPTED', show_id: show?.id || null });
+    }
+
+    if (['REJECTED','EXPIRED','CANCELLED'].includes(entry.status))
+      return res.json({ status: entry.status });
+
+    // Calculer la position (tri bid DESC, created_at ASC)
+    const { data: ahead } = await supabase.from('private_show_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('creator_id', creator_id)
+      .eq('status', 'WAITING')
+      .or(`bid_xcon.gt.${entry.bid_xcon},and(bid_xcon.eq.${entry.bid_xcon},created_at.lt.${entry.created_at})`);
+
+    const position = (ahead?.length ?? 0) + 1;
+    res.json({ status: entry.status, position, expires_at: entry.expires_at });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /private-shows/queue/:id/status — statut d'une entrée de queue
+router.get('/queue/:id/status', authMiddleware, async (req, res) => {
+  try {
+    const { data: entry } = await supabase.from('private_show_queue')
+      .select('id, status, bid_xcon, expires_at, show_type, package_minutes')
+      .eq('id', req.params.id).eq('fan_id', req.user.id).maybeSingle();
+    if (!entry) return res.status(404).json({ error: 'Entrée introuvable' });
+
+    if (entry.status === 'ACCEPTED') {
+      const { data: show } = await supabase.from('private_shows')
+        .select('id').eq('fan_id', req.user.id).eq('status', 'ACTIVE').maybeSingle();
+      return res.json({ ...entry, show_id: show?.id || null });
+    }
+
+    res.json(entry);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ════════════════════════════════════════════════════════════
 // CRÉATEUR — gérer la queue
 // ════════════════════════════════════════════════════════════
@@ -441,7 +492,13 @@ router.post('/queue/:id/accept', authMiddleware, requireMinRole('influencer'), a
     const showId     = uuidv4();
     const roomName   = `private-show-${showId}`;
 
-    await createRoom(roomName);
+    // PREMIUM : maxParticipants 2 bloque les spies au niveau LiveKit
+    const maxPart = entry.show_type === 'PREMIUM' ? 2 : 100;
+    await createRoom(roomName, {
+      emptyTimeout:    120,   // 2 min — pour private shows le billing est géré côté app
+      maxParticipants: maxPart,
+      metadata: { show_id: showId, show_type: entry.show_type, package_minutes: entry.package_minutes },
+    });
 
     const { data: show, error: showErr } = await supabase.from('private_shows').insert({
       id:              showId,
@@ -566,10 +623,15 @@ router.get('/:id/token', authMiddleware, async (req, res) => {
       return res.status(410).json({ error: 'Show terminé — le créateur ne s\'est pas reconnecté à temps' });
     }
 
+    // TTL = minutes restantes dans le forfait + 10 min de marge
+    const elapsed    = show.started_at ? Math.floor((Date.now() - new Date(show.started_at).getTime()) / 1000) : 0;
+    const remaining  = Math.max(60, show.package_minutes * 60 - elapsed + 600);
+
     const token = await createRoomToken(req.user.id, show.livekit_room, {
-      canPublish:   isCreator || isFan, // spy = false (voir /spy-token)
+      canPublish:   isCreator || isFan,
       canSubscribe: true,
       name:         req.user.pseudo || req.user.id,
+      ttlSeconds:   remaining,
     });
 
     const wsUrl = (process.env.LIVEKIT_URL || '').replace(/^http/, 'ws');
@@ -639,11 +701,14 @@ router.post('/:id/spy', authMiddleware, requireNotWalletFrozen, async (req, res)
       related_user_id: show.creator_id,
     });
 
-    // Token subscriber-only (pas de cam ni micro)
-    const token = await createRoomToken(fanId, show.livekit_room, {
-      canPublish:   false,
-      canSubscribe: true,
-      name: req.user.pseudo || fanId,
+    // Token subscriber-only pour spy (pas de cam, micro, ni data-channel)
+    const spyTtl = Math.max(60, remainingMin * 60 + 120);
+    const token  = await createRoomToken(fanId, show.livekit_room, {
+      canPublish:     false,
+      canPublishData: false,
+      canSubscribe:   true,
+      name:           req.user.pseudo || fanId,
+      ttlSeconds:     spyTtl,
     });
 
     const wsUrl = (process.env.LIVEKIT_URL || '').replace(/^http/, 'ws');
@@ -814,10 +879,13 @@ router.post('/:id/reconnect', authMiddleware, requireMinRole('influencer'), asyn
       reconnect_count: (show.reconnect_count || 0) + 1,
     }).eq('id', show.id);
 
-    // Réémettre le token LiveKit
+    // Réémettre le token LiveKit avec TTL = minutes restantes + 10 min
+    const elapsedSec   = Math.floor((Date.now() - new Date(show.started_at).getTime()) / 1000);
+    const reconnectTtl = Math.max(60, show.package_minutes * 60 - elapsedSec + 600);
     const token = await createRoomToken(req.user.id, show.livekit_room, {
       canPublish: true, canSubscribe: true,
-      name: req.user.pseudo || req.user.id,
+      name:       req.user.pseudo || req.user.id,
+      ttlSeconds: reconnectTtl,
     });
     const wsUrl = (process.env.LIVEKIT_URL || '').replace(/^http/, 'ws');
 
@@ -979,11 +1047,11 @@ router.get('/admin/stats', authMiddleware, requireMinRole('admin'), async (req, 
     const [activeSt, endedSt, totalRevSt] = await Promise.all([
       supabase.from('private_shows').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
       supabase.from('private_shows').select('id', { count: 'exact', head: true }).eq('status', 'ENDED'),
-      supabase.from('private_shows').select('platform_revenue_xcon').eq('status', 'ENDED'),
+      supabase.from('private_shows').select('commission_xcon').eq('status', 'ENDED'),
     ]);
 
     const totalRevenue = (totalRevSt.data || []).reduce(
-      (acc, s) => acc + (s.platform_revenue_xcon || 0), 0,
+      (acc, s) => acc + (s.commission_xcon || 0), 0,
     );
 
     res.json({

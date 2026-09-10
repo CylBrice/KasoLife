@@ -103,7 +103,7 @@
 |---|---|---|
 | 5.1 | Migration 0026 — `private_shows`, `private_show_queue`, `private_show_spies`, `private_show_prices`, platform_config | ✅ Terminé |
 | 5.2 | Backend routes `/private-shows` — CRUD, queue, spy, webhook LiveKit, grâce Redis | ✅ Terminé |
-| 5.3 | LiveKit — tokens par rôle (publisher / subscriber-only), gestion room | ⏳ À faire |
+| 5.3 | LiveKit — tokens par rôle (publisher / subscriber-only), gestion room | ✅ Terminé |
 | 5.4 | Frontend créateur — config prix, panneau queue, session active, flou live public | ✅ Terminé |
 | 5.5 | Frontend fan — demande + enchère, show interface, spy interface, grâce UI | ✅ Terminé |
 | 5.6 | Admin — minimums par tranche/type, logs sessions, remboursements | ✅ Terminé |
