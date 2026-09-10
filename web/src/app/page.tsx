@@ -431,11 +431,27 @@ function HomeFeed() {
             "relative shrink-0 overflow-hidden bg-ink py-4 pt-14 transition-all duration-300",
             collapsed ? "w-14 px-1" : "w-56 px-3"
           )}>
-            {!collapsed && (
-              <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sage-muted">
-                {t("nav.filterByCategory")}
-              </p>
-            )}
+            {/* En-tête sidebar : titre + bouton collapse sur la même ligne */}
+            <div className={cn(
+              "mb-2 flex items-center",
+              collapsed ? "justify-center" : "justify-between px-2"
+            )}>
+              {!collapsed && (
+                <p className="text-xs font-semibold uppercase tracking-wider text-sage-muted">
+                  {t("nav.filterByCategory")}
+                </p>
+              )}
+              <button
+                onClick={() => setCollapsed((v) => !v)}
+                title={collapsed ? "Déplier" : "Réduire"}
+                className="rounded-xl p-1.5 text-sage transition-colors hover:text-cream"
+              >
+                {collapsed
+                  ? <PanelLeftOpen className="h-4 w-4" />
+                  : <PanelLeftClose className="h-4 w-4" />
+                }
+              </button>
+            </div>
 
             <nav className="flex flex-col gap-0.5">
               <SidebarItem
@@ -456,20 +472,6 @@ function HomeFeed() {
                 />
               ))}
             </nav>
-
-            <button
-              onClick={() => setCollapsed((v) => !v)}
-              title={collapsed ? "Déplier" : "Réduire"}
-              className={cn(
-                "mt-4 rounded-xl p-1.5 text-sage transition-colors hover:text-cream",
-                collapsed ? "mx-auto block" : "ml-auto block"
-              )}
-            >
-              {collapsed
-                ? <PanelLeftOpen className="h-4 w-4" />
-                : <PanelLeftClose className="h-4 w-4" />
-              }
-            </button>
           </aside>
 
           {/* Colonne droite : pills de section (au-dessus du feed uniquement) + feed */}
