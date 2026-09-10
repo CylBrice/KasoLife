@@ -29,6 +29,7 @@ export default function CreatorLivePage() {
   const [viewerCount, setViewerCount] = useState(0);
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [title, setTitle] = useState("");
+  const [priceXcon, setPriceXcon] = useState("");
 
   // Aperçu caméra/micro avant de démarrer le direct
   useEffect(() => {
@@ -63,7 +64,8 @@ export default function CreatorLivePage() {
     setStatus("starting");
     setError(null);
     try {
-      const { data } = await api.post("/live/start", { title: title || undefined });
+      const pricePayload = priceXcon.trim() ? { price_xcon: parseInt(priceXcon, 10) } : {};
+      const { data } = await api.post("/live/start", { title: title || undefined, ...pricePayload });
       setStreamId(data.streamId);
 
       const room = new Room();
@@ -169,6 +171,15 @@ export default function CreatorLivePage() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du direct (optionnel)"
               className="flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+            />
+            <input
+              value={priceXcon}
+              onChange={(e) => setPriceXcon(e.target.value)}
+              type="number"
+              min={100}
+              max={200000}
+              placeholder="Prix XCON (vide = gratuit)"
+              className="w-44 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
             />
             <Button onClick={startLive}><Radio className="h-4 w-4" /> Démarrer le direct</Button>
           </>

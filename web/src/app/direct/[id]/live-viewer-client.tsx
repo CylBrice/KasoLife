@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Radio, Users, Send, AlertCircle, Gift, Heart, Star, Gem, Crown } from "lucide-react";
+import { Radio, Users, Send, AlertCircle, Gift, Heart, Star, Gem, Crown, Lock } from "lucide-react";
 import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api, getApiToken } from "@/lib/api";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 
-type Status = "loading" | "live" | "ended" | "error";
+type Status = "loading" | "paywall" | "purchasing" | "live" | "ended" | "error";
 
 interface ChatEntry {
   id: string;
@@ -33,6 +33,8 @@ export default function LiveViewerClient() {
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [paywallPrice, setPaywallPrice] = useState<number | null>(null);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [viewerCount, setViewerCount] = useState(0);
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -56,40 +58,61 @@ export default function LiveViewerClient() {
     wsRef.current = ws;
   }, []);
 
+  const joinStream = useCallback(async (id: string, cancelled: { v: boolean }) => {
+    try {
+      const { data } = await api.get(`/live/${id}/token`);
+      if (cancelled.v) return;
+
+      const room = new Room();
+      roomRef.current = room;
+      room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+        if (track.kind === Track.Kind.Video && videoRef.current) {
+          track.attach(videoRef.current);
+        } else if (track.kind === Track.Kind.Audio) {
+          track.attach();
+        }
+      });
+      await room.connect(data.wsUrl, data.token);
+
+      connectSocket(id);
+      setStatus("live");
+    } catch (err: any) {
+      if (err?.response?.status === 402) {
+        setPaywallPrice(err.response.data?.price ?? null);
+        setStatus("paywall");
+      } else if (err?.response?.status === 410) {
+        setStatus("ended");
+      } else {
+        setError("Impossible de rejoindre ce direct");
+        setStatus("error");
+      }
+    }
+  }, [connectSocket]);
+
+  const handlePurchase = async () => {
+    if (!streamId) return;
+    setPurchaseError(null);
+    setStatus("purchasing");
+    try {
+      await api.post(`/live/${streamId}/purchase`);
+      const cancelled = { v: false };
+      await joinStream(streamId, cancelled);
+    } catch (err: any) {
+      setPurchaseError(err?.response?.data?.error || "Échec de l'achat — réessayez.");
+      setStatus("paywall");
+    }
+  };
+
   useEffect(() => {
     if (!streamId) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { data } = await api.get(`/live/${streamId}/token`);
-        if (cancelled) return;
-
-        const room = new Room();
-        roomRef.current = room;
-        room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-          if (track.kind === Track.Kind.Video && videoRef.current) {
-            track.attach(videoRef.current);
-          } else if (track.kind === Track.Kind.Audio) {
-            track.attach();
-          }
-        });
-        await room.connect(data.wsUrl, data.token);
-
-        connectSocket(streamId);
-        setStatus("live");
-      } catch (err: any) {
-        if (err?.response?.status === 410) setStatus("ended");
-        else { setError("Impossible de rejoindre ce direct"); setStatus("error"); }
-      }
-    })();
-
+    const cancelled = { v: false };
+    joinStream(streamId, cancelled);
     return () => {
-      cancelled = true;
+      cancelled.v = true;
       roomRef.current?.disconnect();
       wsRef.current?.close();
     };
-  }, [streamId, connectSocket]);
+  }, [streamId, joinStream]);
 
   const sendChat = () => {
     const text = chatInput.trim();
@@ -104,8 +127,32 @@ export default function LiveViewerClient() {
     wsRef.current.send(JSON.stringify({ type: "SEND_GIFT", amount_xcon: amount }));
   };
 
-  if (status === "loading") {
-    return <p className="p-8 text-center text-sm text-sage">Connexion au direct…</p>;
+  if (status === "loading" || status === "purchasing") {
+    return <p className="p-8 text-center text-sm text-sage">
+      {status === "purchasing" ? "Traitement du paiement…" : "Connexion au direct…"}
+    </p>;
+  }
+
+  if (status === "paywall") {
+    return (
+      <div className="flex flex-col items-center gap-4 p-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-ink-line bg-ink-raised">
+          <Lock className="h-8 w-8 text-sage" />
+        </div>
+        <div>
+          <p className="font-display text-lg text-cream">Direct payant</p>
+          <p className="mt-1 text-sm text-sage">Ce direct est accessible sur ticket — {paywallPrice?.toLocaleString()} XCON.</p>
+        </div>
+        {purchaseError && (
+          <p className="flex items-center gap-2 rounded-xl border border-brick/30 bg-brick/10 px-3 py-2 text-sm text-brick">
+            <AlertCircle className="h-4 w-4 shrink-0" /> {purchaseError}
+          </p>
+        )}
+        <Button onClick={handlePurchase} className="gap-2">
+          <Lock className="h-4 w-4" /> Acheter un ticket — {paywallPrice?.toLocaleString()} XCON
+        </Button>
+      </div>
+    );
   }
 
   if (status === "ended") {
