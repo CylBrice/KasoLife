@@ -23,3 +23,7 @@ COMMENT ON TABLE live_stream_purchases IS 'Achats de tickets d''accès à un dir
 
 CREATE INDEX IF NOT EXISTS idx_lsp_buyer  ON live_stream_purchases(buyer_id);
 CREATE INDEX IF NOT EXISTS idx_lsp_stream ON live_stream_purchases(live_stream_id);
+
+-- Nouveaux types de transaction pour les directs payants
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'LIVE_PPV_PAYMENT';
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'LIVE_PPV_INCOME';
