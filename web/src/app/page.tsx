@@ -6,6 +6,7 @@ import {
   Zap, Flame, TrendingUp, Sparkles, Rocket,
   ListFilter, Search, X, LayoutGrid,
   User, Wallet, Layers, MessageSquare, Video, Settings, LogOut, ChevronDown, Coins,
+  Radio, Lock, Users,
 } from "lucide-react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -14,10 +15,13 @@ import { Footer } from "@/components/layout/footer";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { DiscoverFeed, type FeedMode } from "@/components/posts/discover-feed";
+import { api } from "@/lib/api";
+
+type ViewMode = FeedMode | "live";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { formatFCFA } from "@/lib/utils";
-import { useT } from "@/i18n/locale-context";
+import { useT, useLocale } from "@/i18n/locale-context";
 import { getCategoryIcon } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
@@ -31,7 +35,160 @@ const FEED_SECTIONS: { mode: FeedMode; label: string; Icon: React.ComponentType<
   { mode: "trending",     label: "Tendances",   Icon: TrendingUp },
   { mode: "followed",     label: "Suivis",      Icon: Zap },
   { mode: "personalized", label: "Pour toi",    Icon: Sparkles },
+  { mode: "all",          label: "Tout",        Icon: LayoutGrid },
 ];
+
+// ── Types live ────────────────────────────────────────────────────────────────
+interface LiveStream {
+  id: string;
+  title: string;
+  started_at: string;
+  price_xcon: number | null;
+  creator: { id: string; pseudo: string; avatar_url: string | null } | null;
+}
+
+// ── Section "En direct" — 6 cards max, intégrée en haut du feed ──────────────
+function LiveSection({ onShowAll }: { onShowAll: () => void }) {
+  const router = useRouter();
+  const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/live").then(({ data }) => {
+      setStreams((data?.streams || []).slice(0, 6));
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (!loading && streams.length === 0) return null;
+
+  return (
+    <div className="border-b border-ink-line pb-4 pt-3">
+      <div className="mb-2 flex items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-brick" />
+          <span className="text-xs font-semibold uppercase tracking-widest text-cream">En direct</span>
+        </div>
+        <button onClick={onShowAll} className="text-[11px] text-sage hover:text-cream transition-colors">
+          Voir tous
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 px-4 sm:grid-cols-3">
+        {loading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="aspect-video animate-pulse rounded-xl bg-ink-raised" />
+            ))
+          : streams.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => router.push(`/direct/${s.id}`)}
+                className="group relative overflow-hidden rounded-xl border border-ink-line bg-ink-raised text-left transition-colors hover:border-brick/40"
+              >
+                <div className="aspect-video w-full bg-gradient-to-br from-brick/20 via-ink-raised to-ink-surface" />
+
+                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-xl bg-brick/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                  LIVE
+                </div>
+
+                {s.price_xcon && (
+                  <div className="absolute right-2 top-2 flex items-center gap-1 rounded-xl bg-ink/80 px-1.5 py-0.5 text-[9px] font-semibold text-gold">
+                    <Lock className="h-2 w-2" />
+                    {s.price_xcon.toLocaleString("fr-FR")} XC
+                  </div>
+                )}
+
+                <div className="p-1.5">
+                  <div className="flex items-center gap-1">
+                    <div className="h-4 w-4 shrink-0 overflow-hidden rounded-full bg-ink-surface">
+                      {s.creator?.avatar_url
+                        ? <img src={s.creator.avatar_url} alt="" className="h-full w-full object-cover" />
+                        : <div className="flex h-full w-full items-center justify-center text-[7px] font-bold text-gold">{s.creator?.pseudo?.[0]?.toUpperCase()}</div>
+                      }
+                    </div>
+                    <span className="truncate text-[10px] font-medium text-cream">@{s.creator?.pseudo}</span>
+                  </div>
+                  {s.title && <p className="mt-0.5 truncate text-[10px] text-sage">{s.title}</p>}
+                </div>
+              </button>
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// ── Grille complète (onglet Livestreams) ─────────────────────────────────────
+function LiveGrid() {
+  const router = useRouter();
+  const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/live").then(({ data }) => {
+      setStreams(data?.streams || []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="aspect-video animate-pulse rounded-xl bg-ink-raised" />
+        ))}
+      </div>
+    );
+  }
+
+  if (streams.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-20 text-center">
+        <Radio className="h-10 w-10 text-sage-muted" />
+        <p className="font-display text-lg text-cream">Aucun direct en cours</p>
+        <p className="text-sm text-sage">Les créateurs ne diffusent pas pour le moment.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
+      {streams.map((s) => (
+        <button
+          key={s.id}
+          onClick={() => router.push(`/direct/${s.id}`)}
+          className="group relative overflow-hidden rounded-xl border border-ink-line bg-ink-raised text-left transition-colors hover:border-brick/40"
+        >
+          <div className="aspect-video w-full bg-gradient-to-br from-brick/20 via-ink-raised to-ink-surface" />
+
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-xl bg-brick/90 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+            EN DIRECT
+          </div>
+
+          {s.price_xcon && (
+            <div className="absolute right-2 top-2 flex items-center gap-1 rounded-xl bg-ink/80 px-2 py-0.5 text-[10px] font-semibold text-gold">
+              <Lock className="h-2.5 w-2.5" />
+              {s.price_xcon.toLocaleString("fr-FR")} XC
+            </div>
+          )}
+
+          <div className="p-2">
+            <div className="flex items-center gap-1.5">
+              <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full bg-ink-surface">
+                {s.creator?.avatar_url
+                  ? <img src={s.creator.avatar_url} alt="" className="h-full w-full object-cover" />
+                  : <div className="flex h-full w-full items-center justify-center text-[8px] font-bold text-gold">{s.creator?.pseudo?.[0]?.toUpperCase()}</div>
+                }
+              </div>
+              <span className="truncate text-xs font-medium text-cream">@{s.creator?.pseudo}</span>
+            </div>
+            {s.title && <p className="mt-1 truncate text-[11px] text-sage">{s.title}</p>}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -43,12 +200,22 @@ export default function HomePage() {
 
 function HomeFeed() {
   const t = useT();
+  const { locale } = useLocale();
   const router = useRouter();
   const { user, logout, wallet } = useAuth();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [feedMode, setFeedMode] = useState<FeedMode>("boosted");
+  const [feedMode, setFeedMode] = useState<ViewMode>("all");
+  const [liveCount, setLiveCount] = useState(0);
+
+  useEffect(() => {
+    api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
+    const interval = setInterval(() => {
+      api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Recherche (debounced)
   const [searchInput, setSearchInput] = useState("");
@@ -66,6 +233,14 @@ function HomeFeed() {
       .then((r) => r.ok ? r.json() : [])
       .then(setCategories)
       .catch(() => setCategories([]));
+  }, []);
+
+  // Déclenchement du mode live depuis la navbar (/?live=1)
+  useEffect(() => {
+    if (searchParams.get("live") === "1") {
+      setFeedMode("live");
+      router.replace("/", { scroll: false });
+    }
   }, []);
 
   const toggleCategory = (slug: string) => {
@@ -91,7 +266,7 @@ function HomeFeed() {
 
   // Quand une recherche est active, les modes/catégories sont ignorés
   const activeCats  = searchQuery ? undefined : (selectedSlugs.length > 0 ? selectedSlugs : undefined);
-  const activeMode  = searchQuery ? "boosted" as FeedMode : feedMode;
+  const activeMode  = searchQuery ? "boosted" as FeedMode : (feedMode === "live" ? "boosted" : feedMode) as FeedMode;
   const feedKey     = searchQuery || `${feedMode}-${selectedSlugs.join(",")}` || "all";
 
   const isCreator = ["influencer", "admin", "super_admin", "root_admin"].includes((user as any)?.role);
@@ -187,6 +362,28 @@ function HomeFeed() {
         "flex items-center justify-center gap-1 overflow-x-auto px-3 py-2",
         "scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       )}>
+        {/* Bouton Livestream — action standalone, même forme que les pills */}
+        <style>{`@keyframes live-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}`}</style>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => { setFeedMode("live"); clearSearch(); }}
+            className="relative flex items-center gap-1.5 overflow-hidden rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-150 bg-gold text-white dark:text-[#0B2545] hover:bg-gold-bright active:bg-gold-dim shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <span
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              style={{ animation: "live-shimmer 2.5s ease-in-out infinite" }}
+              aria-hidden="true"
+            />
+            <Radio className="relative h-3.5 w-3.5 shrink-0" />
+            <span className="relative">Livestreams</span>
+          </button>
+          {/* Point indicateur — vert si live actif, rouge sinon */}
+          <span className={cn(
+            "pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-ink",
+            liveCount > 0 ? "bg-emerald animate-pulse" : "bg-brick"
+          )} />
+        </div>
+
         {FEED_SECTIONS.map(({ mode, label, Icon }) => {
           const active = feedMode === mode && !searchQuery;
           return (
@@ -201,7 +398,7 @@ function HomeFeed() {
               )}
             >
               <Icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-gold" : "text-sage-muted")} />
-              <span>{label}</span>
+              <span>{mode === "all" ? (locale === "en" ? "All contents" : "Tout") : label}</span>
               {active && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-gold/70" />}
             </button>
           );
@@ -362,7 +559,12 @@ function HomeFeed() {
           <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
             <SectionPills />
             <main key={feedKey} className="flex-1 overflow-y-auto animate-in fade-in-0 duration-200">
-              <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} />
+              {feedMode === "live" && !searchQuery
+                ? <LiveGrid />
+                : <>
+                    {!searchQuery && <LiveSection onShowAll={() => setFeedMode("live")} />}
+                    <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} />
+                  </>}
             </main>
           </div>
         </div>
@@ -420,7 +622,7 @@ function HomeFeed() {
                     </p>
                     {selectedSlugs.length > 0 && (
                       <button onClick={clearCategories} className="text-xs text-gold hover:underline">
-                        Tout
+                        {locale === "en" ? "All" : "Tout"}
                       </button>
                     )}
                   </div>
@@ -472,7 +674,12 @@ function HomeFeed() {
         <SectionPills withSearch />
 
         <main key={feedKey} className="animate-in fade-in-0 duration-200">
-          <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} />
+          {feedMode === "live" && !searchQuery
+            ? <LiveGrid />
+            : <>
+                {!searchQuery && <LiveSection onShowAll={() => setFeedMode("live")} />}
+                <DiscoverFeed categories={activeCats} search={searchQuery || undefined} mode={activeMode} />
+              </>}
         </main>
         <Footer />
       </div>

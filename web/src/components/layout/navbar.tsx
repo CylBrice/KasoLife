@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
+import { api } from "@/lib/api";
 import {
   User, Wallet, Coins, MessageSquare, Layers,
   Video, LogOut, Settings, ChevronDown, Compass, Shield, Radio, LayoutDashboard,
@@ -28,6 +29,15 @@ export function Navbar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const [liveCount, setLiveCount] = useState(0);
+
+  useEffect(() => {
+    api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
+    const interval = setInterval(() => {
+      api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
   const [mounted, setMounted] = useState(false);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -86,10 +96,19 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname === "/" ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
-                <Compass className="h-3.5 w-3.5" />
-                Explorer
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => router.push("/?live=1")}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all duration-150 bg-gold text-white dark:text-[#0B2545] hover:bg-gold-bright active:bg-gold-dim shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <Radio className="h-3.5 w-3.5 shrink-0" />
+                  Livestreams
+                </button>
+                <span className={cn(
+                  "pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-ink",
+                  liveCount > 0 ? "bg-emerald animate-pulse" : "bg-brick"
+                )} />
+              </div>
               <Link href="/messages" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/messages") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
                 <MessageSquare className="h-3.5 w-3.5" />
                 Messages

@@ -88,7 +88,7 @@ router.get('/discover', async (req, res) => {
     const pageSize = Math.min(50, Math.max(1, parseInt(limit) || 20));
 
     // ── Modes simplifiés : bypass de l'algorithme de mélange ────────────────
-    const MODES = ['trending', 'popular', 'fresh', 'personalized'];
+    const MODES = ['trending', 'popular', 'fresh', 'personalized', 'all'];
     if (mode && MODES.includes(mode)) {
       const dbOffset = (pageNum - 1) * pageSize;
 
@@ -124,6 +124,9 @@ router.get('/discover', async (req, res) => {
       } else if (mode === 'fresh') {
         const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
         where.push(`p.created_at >= ${addParam(since)}`);
+        orderClause = `p.created_at DESC`;
+
+      } else if (mode === 'all') {
         orderClause = `p.created_at DESC`;
 
       } else if (mode === 'personalized') {

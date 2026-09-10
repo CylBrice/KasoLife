@@ -6,7 +6,7 @@ import { FeedCard } from "@/components/posts/feed-card";
 import { useT } from "@/i18n/locale-context";
 import type { Post } from "@/types";
 
-export type FeedMode = "boosted" | "popular" | "trending" | "followed" | "personalized";
+export type FeedMode = "boosted" | "popular" | "trending" | "followed" | "personalized" | "all";
 
 export function DiscoverFeed({
   categories,
@@ -37,7 +37,7 @@ export function DiscoverFeed({
       } else {
         const params: Record<string, unknown> = { page, limit: 10 };
         if (categoriesKey) params.categories = categoriesKey;
-        if (mode !== "boosted") params.mode = mode;
+        if (mode !== "boosted") params.mode = mode === "all" ? "all" : mode;
         ({ data } = await api.get("/posts/discover", { params }));
       }
       const newPosts: Post[] = data.posts || [];
