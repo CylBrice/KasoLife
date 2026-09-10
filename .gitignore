@@ -8,6 +8,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# LiveKit — contient la clé/secret API, jamais commité (voir livekit.dev.yaml.example)
+livekit.dev.yaml
+
 # Credentials de test locaux — ne jamais commiter
 TEST_CREDENTIALS.md
 

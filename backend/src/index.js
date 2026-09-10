@@ -6,6 +6,7 @@
 'use strict';
 
 const express     = require('express');
+const http        = require('http');
 const cors        = require('cors');
 const helmet      = require('helmet');
 const hpp         = require('hpp');
@@ -83,6 +84,8 @@ const docsRouter          = require('./routes/docs');
 const promoCodesRouter    = require('./routes/promo-codes');
 const broadcastsRouter    = require('./routes/broadcasts');
 const analyticsRouter     = require('./routes/analytics');
+const liveRouter          = require('./routes/live');
+const { attachLiveSocket } = require('./services/liveSocket');
 
 const app  = express();
 const PORT = process.env.PORT || 3003;
@@ -155,6 +158,7 @@ app.use('/docs',          docsRouter);
 app.use('/promo-codes',   promoCodesRouter);
 app.use('/messages/broadcast', broadcastsRouter);
 app.use('/creators/me/analytics', analyticsRouter);
+app.use('/live',          liveRouter);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));
@@ -365,10 +369,43 @@ cron.schedule('* * * * *', async () => {
 
 
 // ============================================================
+// CRON #9 — Réconciliation des directs orphelins (toutes les 5 min)
+// Si LiveKit a fermé une room (emptyTimeout écoulé côté LiveKit) mais que
+// la base la dit toujours LIVE (déconnexion brutale du créateur), on
+// referme côté base pour ne pas laisser un badge "en direct" fantôme.
+// ============================================================
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const { data: liveRows } = await supabase.from('live_streams')
+      .select('id, room_name').eq('status', 'LIVE');
+    if (!liveRows || liveRows.length === 0) return;
+
+    const { listActiveRooms } = require('./services/livekit');
+    const activeRooms = await listActiveRooms();
+    const activeNames = new Set((activeRooms || []).map((r) => r.name));
+
+    let closed = 0;
+    for (const row of liveRows) {
+      if (!activeNames.has(row.room_name)) {
+        await supabase.from('live_streams')
+          .update({ status: 'ENDED', ended_at: new Date().toISOString() })
+          .eq('id', row.id);
+        closed++;
+      }
+    }
+    if (closed > 0) logger.info('CRON#9', `${closed} direct(s) orphelin(s) clôturé(s)`);
+  } catch (e) { captureError('CRON#9-LIVE-RECONCILE', e); }
+});
+
+
+// ============================================================
 // DÉMARRAGE SERVEUR
 // ============================================================
+const server = http.createServer(app);
+attachLiveSocket(server);
+
 if (require.main === module) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     logger.info('SERVER', `🚀 KASOLIFE Backend v1 démarré sur le port ${PORT}`);
     logger.info('SERVER', `Environnement : ${process.env.NODE_ENV || 'development'}`);
     logger.info('SERVER', `Logs : ${LOGS_DIR}`);

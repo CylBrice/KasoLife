@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { QuickFilterPicker } from "@/components/posts/quick-filter-picker";
 
 type MediaType = "TEXT" | "IMAGE" | "VIDEO" | "AUDIO";
 type AccessLevel = "FREE" | "SUBSCRIBERS" | "PPV";
@@ -42,6 +43,7 @@ export function PostEditorDialog({
   const [caption, setCaption] = useState("");
   const [accessLevel, setAccessLevel] = useState<AccessLevel>("FREE");
   const [price, setPrice] = useState("500");
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,10 +54,7 @@ export function PostEditorDialog({
   const [moderationStatus, setModerationStatus] = useState<string | null>(null);
   const [generatingCaption, setGeneratingCaption] = useState(false);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadBlob = async (blob: Blob | File) => {
     const uploadType =
       mediaType === "IMAGE" ? "post_image" : mediaType === "VIDEO" ? "post_video" : "post_audio";
 
@@ -66,7 +65,7 @@ export function PostEditorDialog({
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", blob, blob instanceof File ? blob.name : "image.webp");
       if (caption) formData.append("caption", caption);
       const { data } = await api.post(`/uploads/${uploadType}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -94,6 +93,17 @@ export function PostEditorDialog({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Pour les images : afficher le picker de filtres avant l'upload
+    if (mediaType === "IMAGE") {
+      setPendingImageFile(file);
+      return;
+    }
+    void uploadBlob(file);
   };
 
   const handleGenerateCaption = async () => {
@@ -146,6 +156,20 @@ export function PostEditorDialog({
     VIDEO: "video/mp4,video/quicktime,video/webm",
     AUDIO: "audio/mpeg,audio/mp4,audio/wav,audio/ogg",
   };
+
+  // Écran intermédiaire : picker de filtres pour les images avant upload
+  if (pendingImageFile) {
+    return (
+      <QuickFilterPicker
+        file={pendingImageFile}
+        onConfirm={(blob) => {
+          setPendingImageFile(null);
+          void uploadBlob(blob);
+        }}
+        onCancel={() => setPendingImageFile(null)}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm">

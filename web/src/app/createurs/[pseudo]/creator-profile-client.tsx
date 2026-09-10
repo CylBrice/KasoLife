@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/i18n/locale-context";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
-import { BadgeCheck, Users, FileText } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, Users, FileText, Radio } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryIcon } from "@/lib/categories";
@@ -29,6 +30,8 @@ interface CreatorProfile {
   posts_count: number;
   welcome_message?: string;
   category?: { name: string; slug: string };
+  is_live: boolean;
+  live_stream_id: string | null;
 }
 
 export default function CreatorProfileClient() {
@@ -101,6 +104,14 @@ export default function CreatorProfileClient() {
                 {creator.is_verified_badge && <BadgeCheck className="h-5 w-5 text-gold" />}
               </div>
               <p className="text-sm text-sage">@{creator.pseudo}</p>
+              {creator.is_live && creator.live_stream_id && (
+                <Link
+                  href={`/direct/${creator.live_stream_id}`}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-brick/40 bg-brick/10 px-3 py-1.5 text-sm text-brick hover:bg-brick/20 transition-colors"
+                >
+                  <Radio className="h-3.5 w-3.5" /> EN DIRECT — Regarder
+                </Link>
+              )}
               <div className="mt-2 flex items-center gap-3 text-sm text-sage-muted">
                 {creator.category && Icon && (
                   <Badge variant="default">

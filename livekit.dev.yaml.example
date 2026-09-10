@@ -1,0 +1,14 @@
+# ============================================================
+# KASOLIFE — Config LiveKit
+# Copier en livekit.dev.yaml (jamais commité, voir .gitignore) et générer
+# une vraie clé/secret : node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# En production, régénérer un secret dédié — ne jamais réutiliser celui du dev.
+# ============================================================
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: false
+keys:
+  devkey: REMPLACER_PAR_UN_SECRET_GENERE
