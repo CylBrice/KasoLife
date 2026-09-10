@@ -6,6 +6,7 @@ import {
   Zap, Flame, TrendingUp, Sparkles, Rocket,
   ListFilter, Search, X, LayoutGrid,
   Coins, Radio, Lock, Users,
+  PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -458,12 +459,16 @@ function HomeFeed() {
 
             <button
               onClick={() => setCollapsed((v) => !v)}
+              title={collapsed ? "Déplier" : "Réduire"}
               className={cn(
-                "mt-4 flex items-center gap-2 rounded-xl px-2 py-2 text-xs text-sage-muted transition-colors hover:bg-ink-raised hover:text-cream",
-                collapsed ? "justify-center w-full" : "w-full"
+                "mt-4 rounded-xl p-1.5 text-sage transition-colors hover:text-cream",
+                collapsed ? "mx-auto block" : "ml-auto block"
               )}
             >
-              {collapsed ? "›" : <><span className="text-base leading-none">‹</span><span>Réduire</span></>}
+              {collapsed
+                ? <PanelLeftOpen className="h-4 w-4" />
+                : <PanelLeftClose className="h-4 w-4" />
+              }
             </button>
           </aside>
 
