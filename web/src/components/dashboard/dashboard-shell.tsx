@@ -38,25 +38,30 @@ export function DashboardShell({
   navItems,
   children,
   isSuperAdmin = false,
+  defaultCollapsed = false,
+  storageKey = "kl_admin_collapsed",
 }: {
   navItems: NavItem[];
   children: React.ReactNode;
   isSuperAdmin?: boolean;
+  defaultCollapsed?: boolean;
+  storageKey?: string;
 }) {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, logout } = useAuth();
 
   /* Sidebar collapsible */
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   useEffect(() => {
-    const saved = localStorage.getItem("kl_admin_collapsed") === "true";
-    setCollapsed(saved);
-  }, []);
+    const saved = localStorage.getItem(storageKey);
+    // Si jamais sauvegardé, utiliser defaultCollapsed ; sinon lire localStorage
+    setCollapsed(saved !== null ? saved === "true" : defaultCollapsed);
+  }, [storageKey, defaultCollapsed]);
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
-    localStorage.setItem("kl_admin_collapsed", String(next));
+    localStorage.setItem(storageKey, String(next));
   };
 
   /* Dark mode — persisté dans localStorage */
