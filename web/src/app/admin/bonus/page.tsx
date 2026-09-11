@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA, formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
 
@@ -54,12 +55,9 @@ function NumberField({
         {description && <p className="text-xs text-sage-muted">{description}</p>}
       </div>
       <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-28 rounded-xl border border-ink-line bg-ink-raised px-3 py-1.5 text-right font-mono text-sm text-cream focus:border-gold focus:outline-none"
-        />
+        <div className="w-28">
+          <AmountInput value={value} onChange={onChange} min={0} step={100} />
+        </div>
         {suffix && <span className="text-xs text-sage">{suffix}</span>}
       </div>
     </div>

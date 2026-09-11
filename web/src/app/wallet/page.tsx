@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA, formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useT } from "@/i18n/locale-context";
@@ -154,14 +155,7 @@ function DepositForm({ onDone }: { onDone: () => void }) {
       <CardHeader><CardTitle>{t("wallet.deposit")}</CardTitle></CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <Input
-            label={t("wallet.depositLabel")}
-            type="number"
-            min={500}
-            required
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+          <AmountInput label={t("wallet.depositLabel")} value={Number(amount) || 0} onChange={(v) => setAmount(String(v))} min={500} step={100} />
           {error && <p className="text-sm text-brick">{error}</p>}
           <Button type="submit" disabled={loading}>{loading ? "..." : t("wallet.depositContinue")}</Button>
         </form>
@@ -211,14 +205,7 @@ function WithdrawForm({ onDone }: { onDone: () => void }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <Input
-              label={t("wallet.withdrawLabel")}
-              type="number"
-              min={500}
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+            <AmountInput label={t("wallet.withdrawLabel")} value={Number(amount) || 0} onChange={(v) => setAmount(String(v))} min={500} step={100} />
             {error && <p className="text-sm text-brick">{error}</p>}
             <Button type="submit" disabled={loading}>{loading ? "..." : t("wallet.withdraw")}</Button>
           </form>
