@@ -192,12 +192,9 @@ export default function CreateurCustomRequestsPage() {
 
               {counterFor === req.id && (
                 <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={counterPrice}
-                    onChange={e => setCounterPrice(Number(e.target.value))}
-                    className="w-40 rounded-xl border border-ink-line bg-ink-raised px-3 py-1.5 text-sm text-cream focus:border-gold focus:outline-none"
-                  />
+                  <div className="w-40">
+                    <AmountInput value={counterPrice} onChange={setCounterPrice} min={100} step={100} />
+                  </div>
                   <Button size="sm" onClick={() => sendCounter(req.id)} disabled={acting === req.id}>
                     Envoyer la contre-offre
                   </Button>

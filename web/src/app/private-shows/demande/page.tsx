@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { formatFCFA, cn } from "@/lib/utils";
 import { api } from "@/lib/api";

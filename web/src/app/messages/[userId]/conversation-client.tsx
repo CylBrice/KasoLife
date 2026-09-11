@@ -7,6 +7,7 @@ import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 import Image from "next/image";
 import { Send, Lock, Gift, ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA, formatRelativeDate, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
