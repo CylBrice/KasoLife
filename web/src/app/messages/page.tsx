@@ -10,12 +10,14 @@ import { formatRelativeDate, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
+import { useUnreadMessages } from "@/contexts/unread-messages-context";
 import type { Conversation } from "@/types";
 
 export default function MessagesPage() {
   const t = useT();
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { refresh: refreshUnread } = useUnreadMessages();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
 
@@ -27,7 +29,7 @@ export default function MessagesPage() {
     if (user) {
       api.get("/messages/conversations")
         .then(({ data }) => setConversations(data || []))
-        .finally(() => setLoadingConvs(false));
+        .finally(() => { setLoadingConvs(false); refreshUnread(); });
     }
   }, [user]);
 
@@ -49,7 +51,7 @@ export default function MessagesPage() {
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-1">
-            {conversations.map(({ user: other, last_message }) => {
+            {conversations.map(({ user: other, last_message, has_unread }) => {
               const isMine = last_message.sender_id === user.id;
               const locked = !isMine && last_message.price_xcon > 0 && !last_message.is_paid;
               return (
@@ -66,20 +68,30 @@ export default function MessagesPage() {
                         {other.pseudo?.[0]?.toUpperCase()}
                       </div>
                     )}
+                    {has_unread && (
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-brick border-2 border-ink" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-cream">@{other.pseudo}</p>
-                    <p className={cn("truncate text-sm", locked ? "text-gold-bright" : "text-sage")}>
+                    <p className={cn("truncate text-sm font-medium", has_unread ? "text-cream" : "text-cream/80")}>
+                      @{other.pseudo}
+                    </p>
+                    <p className={cn("truncate text-sm", locked ? "text-gold-bright" : has_unread ? "text-cream/70 font-medium" : "text-sage")}>
                       {locked
-                        ? "🔒 Message exclusif"
+                        ? "Message exclusif"
                         : isMine
                           ? `Vous : ${last_message.content || (last_message.media_url ? t("messages.media") : "")}`
                           : (last_message.content || (last_message.media_url ? t("messages.media") : ""))}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-sage-muted">
-                    {formatRelativeDate(last_message.created_at)}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-xs text-sage-muted">
+                      {formatRelativeDate(last_message.created_at)}
+                    </span>
+                    {has_unread && (
+                      <span className="h-2.5 w-2.5 rounded-full bg-brick" />
+                    )}
+                  </div>
                 </Link>
               );
             })}

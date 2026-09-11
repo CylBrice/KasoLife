@@ -77,13 +77,13 @@ export default function ProfilPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-2xl px-4 pb-24 pt-0 md:pb-12">
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-0 md:pb-12">
 
         {/* ── HERO : bannière + avatar ─────────────────────────────── */}
         <div className="relative -mx-4 md:mx-0">
-          <div className="relative aspect-[4/1] w-full overflow-hidden bg-gradient-to-br from-gold/20 via-ink-raised to-emerald/20 md:rounded-2xl">
+          <div className="relative aspect-[5/1] w-full overflow-hidden bg-gradient-to-br from-gold/20 via-ink-raised to-emerald/20 md:rounded-2xl">
             {u.banner_url && (
-              <Image src={u.banner_url} alt="" fill className="object-cover" sizes="768px" />
+              <Image src={u.banner_url} alt="" fill className="object-cover" sizes="896px" />
             )}
           </div>
           <div className="absolute -bottom-10 left-4 md:left-0">
@@ -133,6 +133,16 @@ export default function ProfilPage() {
 
           {/* Stat tiles */}
           <div className={`mt-4 grid gap-3 ${isCreator ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+            <Link href="/mes-achats" className="group">
+              <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
+                <ShoppingBag className="h-5 w-5 shrink-0 text-emerald" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-base font-medium tabular text-cream">—</p>
+                  <p className="text-xs text-sage-muted">{isEn ? "My purchases" : "Mes achats"}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </Link>
             <Link href="/wallet" className="group">
               <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
                 <Coins className="h-5 w-5 shrink-0 text-gold" />
@@ -140,7 +150,7 @@ export default function ProfilPage() {
                   <p className="truncate font-mono text-base font-medium tabular text-cream">
                     {formatFCFA(wallet?.balance_xcon ?? 0)}
                   </p>
-                  <p className="text-xs text-sage-muted">{isEn ? "Wallet" : "Wallet"}</p>
+                  <p className="text-xs text-sage-muted">{isEn ? "Wallet" : "Portefeuille"}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
@@ -151,16 +161,6 @@ export default function ProfilPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-mono text-base font-medium tabular text-cream">{activeSubsCount}</p>
                   <p className="text-xs text-sage-muted">{isEn ? "Subscriptions" : "Abonnements"}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
-              </div>
-            </Link>
-            <Link href="/mes-achats" className="group">
-              <div className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-surface px-4 py-3 transition-colors hover:border-gold/40 hover:bg-ink-raised">
-                <ShoppingBag className="h-5 w-5 shrink-0 text-emerald" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-cream">{isEn ? "My purchases" : "Mes achats"}</p>
-                  <p className="text-xs text-sage-muted">{isEn ? "Content" : "Contenus"}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-sage-muted opacity-0 transition-opacity group-hover:opacity-100" />
               </div>

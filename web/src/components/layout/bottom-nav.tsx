@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Compass, Layers, MessageSquare, Wallet, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/locale-context";
+import { useUnreadMessages } from "@/contexts/unread-messages-context";
 
 const ITEMS = [
   { href: "/",            key: "nav.discover",      icon: Compass },
@@ -19,6 +20,7 @@ const HIDDEN_ROUTES = ["/connexion", "/inscription", "/admin", "/createur"];
 export function BottomNav() {
   const pathname = usePathname();
   const t = useT();
+  const { unreadCount } = useUnreadMessages();
 
   const hidden = HIDDEN_ROUTES.some((r) => pathname.startsWith(r));
   if (hidden) return null;
@@ -28,16 +30,24 @@ export function BottomNav() {
       <div className="flex h-16 items-center">
         {ITEMS.map(({ href, key, icon: Icon }) => {
           const active = pathname === href;
+          const isMessages = href === "/messages";
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-1 text-xs",
+                "relative flex flex-1 flex-col items-center justify-center gap-1 py-1 text-xs",
                 active ? "text-gold" : "text-sage-muted"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <div className="relative">
+                <Icon className="h-5 w-5" />
+                {isMessages && unreadCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brick px-1 text-[10px] font-bold text-white border-2 border-ink">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </div>
               {t(key)}
             </Link>
           );

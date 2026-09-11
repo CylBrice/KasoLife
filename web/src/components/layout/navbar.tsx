@@ -10,6 +10,7 @@ import { UserDropdown } from "./user-dropdown";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useT } from "@/i18n/locale-context";
+import { useUnreadMessages } from "@/contexts/unread-messages-context";
 import { api } from "@/lib/api";
 import {
   Coins, MessageSquare, Layers,
@@ -27,6 +28,7 @@ export function Navbar() {
   const { user, wallet, loading } = useAuth();
 
   const [liveCount, setLiveCount] = useState(0);
+  const { unreadCount } = useUnreadMessages();
 
   useEffect(() => {
     api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
@@ -75,9 +77,14 @@ export function Navbar() {
                   liveCount > 0 ? "bg-emerald animate-pulse" : "bg-brick"
                 )} />
               </div>
-              <Link href="/messages" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/messages") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
+              <Link href="/messages" className={cn("relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/messages") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>
                 <MessageSquare className="h-3.5 w-3.5" />
                 Messages
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brick px-1 text-[10px] font-bold text-white border-2 border-ink">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Link>
               {isCreator ? (
                 <Link href="/createur" className={cn("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm transition-colors", pathname.startsWith("/createur") ? "bg-gold/10 text-gold font-medium" : "text-sage hover:bg-ink-raised hover:text-cream")}>

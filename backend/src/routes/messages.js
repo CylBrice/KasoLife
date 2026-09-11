@@ -16,12 +16,24 @@ const { moderateText, triageReport, detectDistress, translateText } = require('.
 
 const router = express.Router();
 
+// ── GET /messages/unread-count — nombre de messages non lus (pour badge navbar)
+router.get('/unread-count', authMiddleware, async (req, res) => {
+  try {
+    const { count, error } = await supabase.from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('receiver_id', req.user.id)
+      .eq('is_read', false);
+    if (error) throw error;
+    res.json({ count: count ?? 0 });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
 // ── GET /messages/conversations — liste des conversations de l'utilisateur
 router.get('/conversations', authMiddleware, async (req, res) => {
   try {
     // Récupère le dernier message de chaque conversation (via messages où l'user est sender ou receiver)
     const { data, error } = await supabase.from('messages')
-      .select('id, sender_id, receiver_id, content, media_url, price_xcon, is_paid, created_at')
+      .select('id, sender_id, receiver_id, content, media_url, price_xcon, is_paid, is_read, created_at')
       .or(`sender_id.eq.${req.user.id},receiver_id.eq.${req.user.id}`)
       .order('created_at', { ascending: false })
       .limit(200);
@@ -41,10 +53,12 @@ router.get('/conversations', authMiddleware, async (req, res) => {
       .select('id, pseudo, avatar_url, role').in('id', otherIds);
     const usersMap = new Map((users || []).map(u => [u.id, u]));
 
-    const conversations = otherIds.map(id => ({
-      user: usersMap.get(id),
-      last_message: conversationsMap.get(id),
-    })).sort((a, b) => new Date(b.last_message.created_at) - new Date(a.last_message.created_at));
+    const conversations = otherIds.map(id => {
+      const lastMsg = conversationsMap.get(id);
+      // has_unread : dernier message reçu de cet interlocuteur non encore lu
+      const has_unread = lastMsg.receiver_id === req.user.id && !lastMsg.is_read;
+      return { user: usersMap.get(id), last_message: lastMsg, has_unread };
+    }).sort((a, b) => new Date(b.last_message.created_at) - new Date(a.last_message.created_at));
 
     res.json(conversations);
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
@@ -77,6 +91,13 @@ router.get('/:userId', authMiddleware, async (req, res) => {
       }
       return { ...msg, locked: false, view_once_expired: false };
     });
+
+    // Marquer comme lus tous les messages reçus de cet interlocuteur
+    await supabase.from('messages')
+      .update({ is_read: true })
+      .eq('receiver_id', req.user.id)
+      .eq('sender_id', userId)
+      .eq('is_read', false);
 
     res.json(serialized.reverse());
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }

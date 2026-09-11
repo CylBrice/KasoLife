@@ -113,8 +113,10 @@ export interface Conversation {
     media_url?: string;
     price_xcon: number;
     is_paid: boolean;
+    is_read: boolean;
     created_at: string;
   };
+  has_unread: boolean;
 }
 
 export interface Message {

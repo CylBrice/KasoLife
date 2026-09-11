@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { LocaleProvider } from "@/i18n/locale-context";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { UnreadMessagesProvider } from "@/contexts/unread-messages-context";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
@@ -117,9 +118,11 @@ export default function RootLayout({
         <ThemeProvider>
           <LocaleProvider>
             <AuthProvider>
-              <Navbar />
-              {children}
-              <BottomNav />
+              <UnreadMessagesProvider>
+                <Navbar />
+                {children}
+                <BottomNav />
+              </UnreadMessagesProvider>
             </AuthProvider>
           </LocaleProvider>
         </ThemeProvider>
