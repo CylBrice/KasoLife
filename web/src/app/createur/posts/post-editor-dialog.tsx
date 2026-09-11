@@ -5,6 +5,7 @@ import { useT } from "@/i18n/locale-context";
 import { useState, useRef } from "react";
 import { X, Upload, Image as ImageIcon, Video, Music, Type, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";

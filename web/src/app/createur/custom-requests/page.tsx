@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { MessageSquarePlus, Check, X, ArrowRightLeft, Upload, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA, formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
 

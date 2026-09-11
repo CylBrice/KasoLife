@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubTabs } from "@/components/admin/sub-tabs";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/ui/amount-input";
 import { PillToggle } from "@/components/ui/pill-toggle";
 import { fmtNum, formatFCFA } from "@/lib/utils";
 import { api } from "@/lib/api";

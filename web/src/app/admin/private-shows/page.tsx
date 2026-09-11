@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { SubTabs } from "@/components/admin/sub-tabs";
 import { api } from "@/lib/api";
 import { formatFCFA, cn } from "@/lib/utils";
@@ -73,12 +74,7 @@ function ConfigRow({ configKey, value, label, unit, onSave }: {
       <p className="text-sm text-cream min-w-0 truncate">{label}</p>
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center gap-1">
-          <input
-            type="number"
-            value={display}
-            onChange={(e) => setEdit(e.target.value)}
-            className="w-24 rounded-xl border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-cream focus:outline-none focus:ring-1 focus:ring-gold/40"
-          />
+          <AmountInput value={Number(display) || 0} onChange={(v) => setEdit(String(v))} min={0} step={50} />
           {unit && <span className="text-xs text-sage-muted">{unit}</span>}
         </div>
         {dirty && (
