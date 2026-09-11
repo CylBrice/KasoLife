@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
 import { LiveChatTabs } from "@/components/live/chat-tabs";
+import { CreatorInfoTabs } from "@/components/live/creator-info-tabs";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
@@ -34,6 +35,8 @@ export default function CreatorLivePage() {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [viewers, setViewers] = useState<Array<{ id: string; pseudo: string; gender?: string }>>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
+  const [creatorData, setCreatorData] = useState<any>(null);
+  const [albums, setAlbums] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [priceXcon, setPriceXcon] = useState("");
   const [showToyOverlay, setShowToyOverlay] = useState(true);
@@ -71,6 +74,24 @@ export default function CreatorLivePage() {
       console.error("Erreur loadViewers:", err);
     } finally {
       setLoadingViewers(false);
+    }
+  }, []);
+
+  const loadCreatorData = useCallback(async (id: string) => {
+    try {
+      const { data } = await api.get(`/creators/me`);
+      setCreatorData(data);
+    } catch (err) {
+      console.error("Erreur loadCreatorData:", err);
+    }
+  }, []);
+
+  const loadAlbums = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/albums/creator/me`);
+      setAlbums(data || []);
+    } catch (err) {
+      console.error("Erreur loadAlbums:", err);
     }
   }, []);
 
@@ -205,10 +226,12 @@ export default function CreatorLivePage() {
   useEffect(() => {
     if (status === "live" && streamId) {
       loadGoal();
+      loadCreatorData(streamId);
+      loadAlbums();
       const interval = setInterval(() => loadGoal(), 2000);
       return () => clearInterval(interval);
     }
-  }, [status, streamId]);
+  }, [status, streamId, loadCreatorData, loadAlbums]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -248,15 +271,25 @@ export default function CreatorLivePage() {
         />
       </div>
 
-      {/* Toy Queue - Bottom Left */}
+      {/* Bottom Section - Toy Queue + Creator Info */}
       {status === "live" && (
-        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
-          <ToyOverlay
-            visible={showToyOverlay}
-            onToggle={toggleOverlay}
-            tips={toyTips}
-            role="creator"
-          />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Toy Queue - Left */}
+          <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
+            <ToyOverlay
+              visible={showToyOverlay}
+              onToggle={toggleOverlay}
+              tips={toyTips}
+              role="creator"
+            />
+          </div>
+
+          {/* Creator Info Tabs - Right */}
+          {creatorData && (
+            <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden">
+              <CreatorInfoTabs creator={creatorData} albums={albums} />
+            </div>
+          )}
         </div>
       )}
 
