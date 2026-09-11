@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AmountInput } from "@/components/ui/amount-input";
 import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
+import { LiveChatTabs } from "@/components/live/chat-tabs";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
