@@ -5,6 +5,7 @@ import { Radio, Users, Send, Square, AlertCircle, Gift } from "lucide-react";
 import { Room, RoomEvent, createLocalTracks, type LocalTrack } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AmountInput } from "@/components/ui/amount-input";
 import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
 import { api, getApiToken } from "@/lib/api";
@@ -37,7 +38,7 @@ export default function CreatorLivePage() {
   const [activeGoal, setActiveGoal] = useState<any>(null);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
-  const [goalAmount, setGoalAmount] = useState("5000");
+  const [goalAmount, setGoalAmount] = useState(5000);
   const [loadingGoal, setLoadingGoal] = useState(false);
 
   // Aperçu caméra/micro avant de démarrer le direct
@@ -295,16 +296,13 @@ export default function CreatorLivePage() {
                 maxLength={300}
                 className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
               />
-              <div>
-                <label className="text-xs font-medium text-sage mb-1 block">Montant (min 1000 XAF)</label>
-                <input
-                  type="number"
-                  value={goalAmount}
-                  onChange={(e) => setGoalAmount(e.target.value)}
-                  min={1000}
-                  className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream focus:outline-none"
-                />
-              </div>
+              <AmountInput
+                label="Montant (min 1000 XAF)"
+                value={goalAmount}
+                onChange={setGoalAmount}
+                min={1000}
+                step={100}
+              />
               <div className="flex gap-2">
                 <Button
                   onClick={createGoal}

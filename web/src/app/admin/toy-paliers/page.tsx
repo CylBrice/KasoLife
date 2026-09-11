@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Save, Loader2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AmountInput } from "@/components/ui/amount-input";
 import { api } from "@/lib/api";
 
 interface Palier {
@@ -134,28 +135,13 @@ export default function AdminToyPaliersPage() {
                 <tr key={p.palier} className="border-b border-ink-line hover:bg-ink-raised/50">
                   <td className="px-4 py-3 text-cream font-medium">{p.palier}</td>
                   <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      value={p.min}
-                      onChange={(e) => updatePalier(idx, "min", e.target.value)}
-                      className="w-24 rounded-lg border border-ink-line bg-ink-surface px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
-                    />
+                    <AmountInput value={p.min} onChange={(v) => updatePalier(idx, "min", String(v))} min={1} max={999999} step={1} />
                   </td>
                   <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      value={p.max}
-                      onChange={(e) => updatePalier(idx, "max", e.target.value)}
-                      className="w-24 rounded-lg border border-ink-line bg-ink-surface px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
-                    />
+                    <AmountInput value={p.max} onChange={(v) => updatePalier(idx, "max", String(v))} min={1} max={999999} step={1} />
                   </td>
                   <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      value={p.duration_s}
-                      onChange={(e) => updatePalier(idx, "duration_s", e.target.value)}
-                      className="w-24 rounded-lg border border-ink-line bg-ink-surface px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
-                    />
+                    <AmountInput value={p.duration_s} onChange={(v) => updatePalier(idx, "duration_s", String(v))} min={1} max={3600} step={5} />
                   </td>
                   <td className="px-4 py-3">
                     <input

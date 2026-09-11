@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Camera, Plus, Trash2, Eye, EyeOff, AlertTriangle, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA, formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
 
@@ -156,15 +157,7 @@ export default function CreateurSnapshotsPage() {
             </div>
           </div>
           {accessLevel === "PPV" && (
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Prix (XAF)</label>
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </div>
+            <AmountInput label="Prix (XAF)" value={price} onChange={setPrice} min={100} step={100} />
           )}
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Annuler</Button>

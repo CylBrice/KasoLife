@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Zap, ZapOff, Loader2, AlertTriangle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
@@ -224,30 +225,10 @@ export default function CreateurJouetsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Intensité minimum (%)</label>
-              <input type="number" min={1} max={99} value={intensityMin}
-                onChange={e => setIntensityMin(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Intensité maximum (%)</label>
-              <input type="number" min={1} max={100} value={intensityMax}
-                onChange={e => setIntensityMax(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Tip minimum (XAF)</label>
-              <input type="number" min={100} value={tipMin}
-                onChange={e => setTipMin(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Durée vibration (ms)</label>
-              <input type="number" min={500} max={10000} step={500} value={durationMs}
-                onChange={e => setDurationMs(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none" />
-            </div>
+            <AmountInput label="Intensité minimum (%)" value={intensityMin} onChange={setIntensityMin} min={1} max={99} step={1} />
+            <AmountInput label="Intensité maximum (%)" value={intensityMax} onChange={setIntensityMax} min={1} max={100} step={1} />
+            <AmountInput label="Tip minimum (XAF)" value={tipMin} onChange={setTipMin} min={100} step={50} />
+            <AmountInput label="Durée vibration (ms)" value={durationMs} onChange={setDurationMs} min={500} max={10000} step={500} />
           </div>
         </div>
       )}

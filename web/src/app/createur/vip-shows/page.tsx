@@ -7,6 +7,7 @@ import { Crown, Users, Clock, Play, Square, Loader2, AlertTriangle } from "lucid
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { formatFCFA } from "@/lib/utils";
 import { api } from "@/lib/api";
 
@@ -107,36 +108,9 @@ export default function CreateurVipShowsPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Prix accès (XAF)</label>
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Fans min.</label>
-              <input
-                type="number"
-                min={2}
-                value={minFans}
-                onChange={(e) => setMinFans(Math.max(2, Number(e.target.value)))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-sage mb-1">Grace (min)</label>
-              <input
-                type="number"
-                min={1}
-                max={30}
-                value={graceMinutes}
-                onChange={(e) => setGraceMinutes(Number(e.target.value))}
-                className="w-full rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </div>
+            <AmountInput label="Prix accès (XAF)" value={price} onChange={setPrice} min={100} step={100} />
+            <AmountInput label="Fans min." value={minFans} onChange={setMinFans} min={2} max={50} step={1} />
+            <AmountInput label="Grace (min)" value={graceMinutes} onChange={setGraceMinutes} min={1} max={30} step={1} />
           </div>
 
           <div className="rounded-xl border border-ink-line bg-ink-raised p-3 text-xs text-sage-muted">
