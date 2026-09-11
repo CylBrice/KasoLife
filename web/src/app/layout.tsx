@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/theme-context";
 import { UnreadMessagesProvider } from "@/contexts/unread-messages-context";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { ScrollToTopButton } from "@/components/layout/scroll-to-top-button";
 
 // Applique la classe .dark AVANT l'hydratation React pour éviter un flash
 // du mauvais thème au chargement (lit la préférence sauvegardée, sinon la
@@ -122,6 +123,7 @@ export default function RootLayout({
                 <Navbar />
                 {children}
                 <BottomNav />
+                <ScrollToTopButton />
               </UnreadMessagesProvider>
             </AuthProvider>
           </LocaleProvider>
