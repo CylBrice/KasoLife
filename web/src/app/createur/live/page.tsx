@@ -249,14 +249,13 @@ export default function CreatorLivePage() {
               placeholder="Titre du direct (optionnel)"
               className="flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
             />
-            <input
-              value={priceXcon}
-              onChange={(e) => setPriceXcon(e.target.value)}
-              type="number"
+            <AmountInput
+              value={priceXcon ? Number(priceXcon) : 0}
+              onChange={(v) => setPriceXcon(v > 0 ? String(v) : "")}
               min={100}
               max={200000}
-              placeholder="Prix XCON (vide = gratuit)"
-              className="w-44 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+              step={100}
+              label="Prix direct"
             />
             <Button onClick={startLive}><Radio className="h-4 w-4" /> Démarrer le direct</Button>
           </>
