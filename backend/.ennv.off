@@ -1,0 +1,78 @@
+# ============================================================
+# KASOLIFE — Variables d'environnement Backend
+# Copier ce fichier en .env et remplir les valeurs
+# IMPORTANT : ne jamais committer .env sur GitHub
+# ============================================================
+
+# ── Supabase ─────────────────────────────────────────────────────────────────
+SUPABASE_URL=https://cycxdbmedeoewxxttpwk.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Y3hkYm1lZGVvZXd4eHR0cHdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTQ1MzU0NywiZXhwIjoyMDk3MDI5NTQ3fQ.F2jJJeUpyxE2f04mKYS6W-2O_bhI8Bx38BFSX1thijY  # Clé service_role (Settings → API)
+
+# ── Sécurité JWT & Chiffrement ────────────────────────────────────────────────
+# Générer avec : node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_SECRET=7a2b9f8e1c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z
+# Générer avec : node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ENCRYPTION_KEY=7e497cae390a746a29dbaa39dda338add385d43efb976f7ba6e24722cdb5724e
+
+# ── CinetPay (zone UEMOA/CEMAC) ────────────────────────────────────────────────
+CINETPAY_API_KEY=votre_api_key_cinetpay
+CINETPAY_SITE_ID=votre_site_id_cinetpay
+CINETPAY_SECRET_KEY=votre_secret_key_cinetpay
+CINETPAY_NOTIFY_URL=https://votre-backend.onrender.com/webhook/cinetpay
+
+# ── Campay (Cameroun — MTN/Orange) ─────────────────────────────────────────────
+CAMPAY_USERNAME=votre_username_campay
+CAMPAY_PASSWORD=votre_password_campay
+CAMPAY_ENV=PROD   # PROD | TEST
+
+# ── Fapshi (Cameroun) ──────────────────────────────────────────────────────────
+FAPSHI_API_KEY=votre_api_key_fapshi
+FAPSHI_API_USER=votre_api_user_fapshi
+FAPSHI_ENV=live   # live | sandbox
+
+# ── Base de données VPS ───────────────────────────────────────────────────────
+DATABASE_URL=postgresql://postgres:KasoLife2026!SecureDB123XYZ456@62.171.155.184:5433/kasolife
+
+# ── URLs ──────────────────────────────────────────────────────────────────────
+BACKEND_URL=http://localhost:3003
+FRONTEND_URL=http://localhost:3004
+ALLOWED_ORIGINS=http://localhost:3004
+
+# ── Serveur ───────────────────────────────────────────────────────────────────
+PORT=3003
+NODE_ENV=development   # development | production
+
+# ── Monitoring Sentry (optionnel) ─────────────────────────────────────────────
+SENTRY_DSN=
+
+# ── Versioning API ────────────────────────────────────────────────────────────
+API_VERSION=v1
+
+# ── Didit KYC (obligatoire pour devenir créateur) ─────────────────────────────
+DIDIT_API_KEY=<votre-cle-api-didit>
+DIDIT_CLIENT_ID=<votre-client-id-didit>
+DIDIT_WEBHOOK_SECRET=<votre-secret-webhook-didit>
+
+# ── Support ───────────────────────────────────────────────────────────────────
+SUPPORT_EMAIL=support@kasolife.com
+SUPPORT_WHATSAPP=+237600000000
+
+# ── Email (SMTP) ───────────────────────────────────────────────────────────────
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=noreply@kasolife.com
+
+# ── SMS ────────────────────────────────────────────────────────────────────────
+SMS_API_KEY=
+SMS_SENDER_ID=KasoLife
+
+# ── STORAGE: Cloudflare R2 (avatars) ────────────────────────────────────────
+CLOUDFLARE_R2_ENDPOINT=https://095fdd838eca10bfc3ed6efaf34214e9.r2.cloudflarestorage.com
+CLOUDFLARE_R2_ACCESS_KEY_ID=1fb9a4f5cf2df8bfc7a8004ec7b19da6
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=9eaba5d437476494cff9ab9878678666d1352c05f977a80ca6e7c095ec3db01f
+CLOUDFLARE_R2_BUCKET=kasolife-storage
+# TODO: activer "Public access" sur le bucket kasolife-storage dans Cloudflare
+# puis mettre ici l'URL pub-*.r2.dev générée (ou domaine custom)
+CLOUDFLARE_R2_PUBLIC_URL=

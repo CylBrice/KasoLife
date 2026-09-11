@@ -1236,4 +1236,86 @@ router.post('/bonus/pay/:creatorId', requireMinRole('super_admin'), async (req, 
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ════════════════════════════════════════════════════════════════════════════════
+// TOY PALIERS (PLATFORM CONFIG)
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ── GET /admin/toy-paliers — liste paliers courants ──────────────
+router.get('/toy-paliers', async (req, res) => {
+  try {
+    const { data: versions, error } = await supabase
+      .from('toy_paliers_versions')
+      .select('version, paliers_json, created_at')
+      .order('version', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    res.json({
+      current_version: versions?.[0]?.version || 1,
+      paliers: versions?.[0]?.paliers_json || [],
+      history: versions || [],
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /admin/toy-paliers — met à jour les paliers (crée nouvelle version) ──
+router.post('/toy-paliers', async (req, res) => {
+  try {
+    const { paliers } = req.body;
+
+    if (!Array.isArray(paliers) || paliers.length === 0) {
+      return res.status(400).json({ error: 'Paliers invalides : array non-vide requis' });
+    }
+
+    // Valider structure chaque palier
+    for (const p of paliers) {
+      if (!Number.isInteger(p.palier) || !Number.isInteger(p.min) || !Number.isInteger(p.max) ||
+          !Number.isInteger(p.duration_s) || !Number.isInteger(p.intensity_min) || !Number.isInteger(p.intensity_max)) {
+        return res.status(400).json({ error: 'Structure palier invalide : tous les champs doivent être des entiers' });
+      }
+      if (p.min < 1 || p.min > p.max) {
+        return res.status(400).json({ error: `Palier ${p.palier} : min doit être entre 1 et max` });
+      }
+      if (p.intensity_min < 0 || p.intensity_max > 100 || p.intensity_min > p.intensity_max) {
+        return res.status(400).json({ error: `Palier ${p.palier} : intensité doit être 0-100` });
+      }
+    }
+
+    // Récupérer la version courante
+    const { data: latest } = await supabase
+      .from('toy_paliers_versions')
+      .select('version')
+      .order('version', { ascending: false })
+      .limit(1)
+      .single();
+
+    const newVersion = (latest?.version || 0) + 1;
+
+    // Insérer nouvelle version
+    const { error: insertErr } = await supabase
+      .from('toy_paliers_versions')
+      .insert({ version: newVersion, paliers_json: paliers });
+
+    if (insertErr) throw insertErr;
+
+    // Invalider le cache Redis
+    const { invalidateCache } = require('../services/toyConfigService');
+    await invalidateCache();
+
+    // Audit log
+    await supabase.from('admin_actions').insert({
+      id: uuidv4(), admin_id: req.user.id, action: 'TOY_PALIERS_UPDATE',
+      target_type: 'platform', target_id: 'toy_paliers',
+      details: JSON.stringify({ version: newVersion, palier_count: paliers.length }),
+    });
+
+    res.json({
+      message: 'Paliers mis à jour avec succès',
+      version: newVersion,
+      paliers: paliers,
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

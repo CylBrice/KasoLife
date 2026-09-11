@@ -188,4 +188,4 @@ const attachLiveSocket = (server) => {
   });
 };
 
-module.exports = { attachLiveSocket, getRoomViewerCount, notifyStreamEnded, sendToUser };
+module.exports = { attachLiveSocket, getRoomViewerCount, notifyStreamEnded, sendToUser, broadcast };

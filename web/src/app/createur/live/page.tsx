@@ -5,6 +5,8 @@ import { Radio, Users, Send, Square, AlertCircle, Gift } from "lucide-react";
 import { Room, RoomEvent, createLocalTracks, type LocalTrack } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ToyOverlay } from "@/components/live/toy-overlay";
+import { GoalOverlay } from "@/components/live/goal-overlay";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
@@ -30,6 +32,13 @@ export default function CreatorLivePage() {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [title, setTitle] = useState("");
   const [priceXcon, setPriceXcon] = useState("");
+  const [showToyOverlay, setShowToyOverlay] = useState(true);
+  const [toyTips, setToyTips] = useState<Array<{ id: string; username: string; amount: number; palier: number; duration_s: number; timestamp: number }>>([]);
+  const [activeGoal, setActiveGoal] = useState<any>(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalAmount, setGoalAmount] = useState("5000");
+  const [loadingGoal, setLoadingGoal] = useState(false);
 
   // Aperçu caméra/micro avant de démarrer le direct
   useEffect(() => {
@@ -53,8 +62,13 @@ export default function CreatorLivePage() {
         if (msg.type === "VIEWER_COUNT") setViewerCount(msg.count);
         if (msg.type === "CHAT_MESSAGE")
           setMessages((m) => [...m, { id: crypto.randomUUID(), pseudo: msg.pseudo, text: msg.text, kind: "chat" }]);
-        if (msg.type === "GIFT_RECEIVED")
+        if (msg.type === "GIFT_RECEIVED") {
           setMessages((m) => [...m, { id: crypto.randomUUID(), pseudo: msg.pseudo, amount_xcon: msg.amount_xcon, kind: "gift" }]);
+          setToyTips((t) => [
+            { id: crypto.randomUUID(), username: msg.pseudo, amount: msg.amount_xcon, palier: msg.palier || 0, duration_s: msg.duration_seconds || 0, timestamp: Date.now() },
+            ...t.slice(0, 9),
+          ]);
+        }
       } catch {}
     };
     wsRef.current = ws;
@@ -103,6 +117,68 @@ export default function CreatorLivePage() {
     wsRef.current.send(JSON.stringify({ type: "CHAT_MESSAGE", text }));
     setChatInput("");
   };
+
+  // Persistance préférence overlay
+  useEffect(() => {
+    const saved = localStorage.getItem("kasolife_toy_overlay_hidden");
+    if (saved === "true") setShowToyOverlay(false);
+  }, []);
+
+  const toggleOverlay = () => {
+    setShowToyOverlay((prev) => {
+      localStorage.setItem("kasolife_toy_overlay_hidden", String(!prev));
+      return !prev;
+    });
+  };
+
+  const loadGoal = async () => {
+    if (!streamId) return;
+    try {
+      const { data } = await api.get(`/stream-goals/stream/${streamId}`);
+      setActiveGoal(data.goal);
+    } catch {}
+  };
+
+  const createGoal = async () => {
+    if (!streamId || !goalTitle.trim()) return;
+    setLoadingGoal(true);
+    try {
+      const { data } = await api.post("/stream-goals", {
+        stream_id: streamId,
+        title: goalTitle,
+        target_amount_xcon: parseInt(goalAmount, 10),
+      });
+      setActiveGoal(data.goal);
+      setShowGoalModal(false);
+      setGoalTitle("");
+      setGoalAmount("5000");
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Erreur création goal");
+    } finally {
+      setLoadingGoal(false);
+    }
+  };
+
+  const deleteGoal = async () => {
+    if (!activeGoal) return;
+    setLoadingGoal(true);
+    try {
+      await api.delete(`/stream-goals/${activeGoal.id}`);
+      setActiveGoal(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Erreur suppression goal");
+    } finally {
+      setLoadingGoal(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "live" && streamId) {
+      loadGoal();
+      const interval = setInterval(() => loadGoal(), 2000);
+      return () => clearInterval(interval);
+    }
+  }, [status, streamId]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -193,6 +269,93 @@ export default function CreatorLivePage() {
           <p className="text-sm text-sage">Direct terminé.</p>
         )}
       </div>
+
+      {/* Goal Overlay */}
+      {activeGoal && status === "live" && (
+        <GoalOverlay
+          title={activeGoal.title}
+          current={activeGoal.current_amount_xcon}
+          target={activeGoal.target_amount_xcon}
+          isCompleted={activeGoal.status === "COMPLETED"}
+          role="creator"
+        />
+      )}
+
+      {/* Goal Modal */}
+      {showGoalModal && status === "live" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="font-display text-lg text-cream">Créer un objectif</h3>
+              <input
+                type="text"
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+                placeholder="Ex: Take off my panties and..."
+                maxLength={300}
+                className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+              />
+              <div>
+                <label className="text-xs font-medium text-sage mb-1 block">Montant (min 1000 XAF)</label>
+                <input
+                  type="number"
+                  value={goalAmount}
+                  onChange={(e) => setGoalAmount(e.target.value)}
+                  min={1000}
+                  className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={createGoal}
+                  disabled={loadingGoal || !goalTitle.trim()}
+                  className="flex-1"
+                >
+                  Créer
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowGoalModal(false)}
+                  disabled={loadingGoal}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Create Goal Button */}
+      {status === "live" && !activeGoal && (
+        <div className="flex gap-2 justify-center">
+          <Button onClick={() => setShowGoalModal(true)} variant="outline">
+            + Créer un objectif
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Goal Button */}
+      {activeGoal && status === "live" && activeGoal.can_delete && (
+        <div className="flex gap-2 justify-center">
+          <Button
+            onClick={deleteGoal}
+            disabled={loadingGoal}
+            variant="outline"
+            className="border-brick/40 text-brick"
+          >
+            Supprimer l'objectif
+          </Button>
+        </div>
+      )}
+
+      <ToyOverlay
+        visible={showToyOverlay}
+        onToggle={toggleOverlay}
+        tips={toyTips}
+        role="creator"
+      />
     </div>
   );
 }

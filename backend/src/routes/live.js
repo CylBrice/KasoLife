@@ -12,6 +12,8 @@ const supabase = require('../config/supabase');
 const { authMiddleware, requireMinRole, requireNotWalletFrozen, logAdminContentView } = require('../middleware/auth');
 const { createRoom, endRoom, createRoomToken } = require('../services/livekit');
 const { notifyStreamEnded } = require('../services/liveSocket');
+const { cleanupStream } = require('../services/streamCleanupService');
+const { finalizeStreamPayments } = require('../services/streamFinalizationService');
 const { PPV_PRICE_MIN, PPV_PRICE_MAX } = require('../config/constants');
 const configService = require('../services/configService');
 
@@ -180,6 +182,20 @@ router.post('/:id/end', authMiddleware, async (req, res) => {
       .update({ status: 'ENDED', ended_at: new Date().toISOString() })
       .eq('id', stream.id);
     notifyStreamEnded(stream.id);
+
+    // Finalisation et nettoyage asynchrones — ne bloquent pas la réponse
+    setImmediate(async () => {
+      try {
+        await finalizeStreamPayments(stream.id);
+      } catch (err) {
+        console.error(`[Live] Failed to finalize stream ${stream.id}:`, err.message);
+      }
+      try {
+        await cleanupStream(stream.id);
+      } catch (err) {
+        console.error(`[Live] Failed to cleanup stream ${stream.id}:`, err.message);
+      }
+    });
 
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }

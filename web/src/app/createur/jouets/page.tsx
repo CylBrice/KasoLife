@@ -37,20 +37,65 @@ export default function CreateurJouetsPage() {
   const [tipMin, setTipMin]             = useState(500);
   const [durationMs, setDurationMs]     = useState(3000);
 
-  // ── Connexion WebSocket live pour recevoir les commandes ──
+  // ── Connexion WebSocket pour recevoir les commandes TOY_VIBRATE ──
   useEffect(() => {
     if (!session?.active || !user) return;
 
     const token = localStorage.getItem("kasolife_token") || sessionStorage.getItem("kasolife_token");
     if (!token) return;
 
-    // On se connecte au WS live stream (utilise le flux existant)
-    // Le serveur enverra des events TOY_VIBRATE
-    // Pour une session standalone (hors live) on utilise un WS dédié si disponible
-    // Pour l'instant, le dispatch passe par le WS du live stream actif.
-    // Si le créateur n'est pas en live, les tips sont quand même enregistrés en DB
-    // mais la vibration n'est déclenchée que si le WS est connecté.
+    // Récupère le live stream actif du créateur s'il existe
+    const getActiveLiveStream = async () => {
+      try {
+        const { data: streams } = await api.get("/live");
+        const active = streams?.streams?.find((s: any) => s.creator?.id === user.id);
+        if (!active) return null;
+        return active.id;
+      } catch {
+        return null;
+      }
+    };
 
+    (async () => {
+      const streamId = await getActiveLiveStream();
+      if (!streamId) {
+        console.log("[Toy] Pas de live stream actif — vibrations activées au test manuel uniquement");
+        return;
+      }
+
+      const wsBase = (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3003").replace(/\/$/, "");
+      const ws = new WebSocket(`${wsBase}/live/ws?streamId=${streamId}&token=${token}`);
+
+      ws.onopen = () => {
+        console.log("[Toy] WebSocket connecté au live stream");
+      };
+
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (msg.type === "TOY_VIBRATE") {
+            setLastTip({ amount: msg.amount_xcon, intensity: msg.intensity });
+            triggerVibration(msg.intensity, msg.duration_seconds * 1000);
+          }
+        } catch {}
+      };
+
+      ws.onerror = () => {
+        console.warn("[Toy] Erreur WebSocket — les vibrations manuelles restent disponibles");
+      };
+
+      ws.onclose = () => {
+        console.log("[Toy] WebSocket fermé");
+      };
+
+      wsRef.current = ws;
+    })();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, [session?.active, user]);
 
   // ── Connexion Buttplug.io via Intiface Central (WebSocket local) ──

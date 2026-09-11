@@ -5,6 +5,8 @@ import { Radio, Users, Send, AlertCircle, Gift, Heart, Star, Gem, Crown, Lock } 
 import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ToyOverlay } from "@/components/live/toy-overlay";
+import { GoalOverlay } from "@/components/live/goal-overlay";
 import { api, getApiToken } from "@/lib/api";
 import { useDynamicSegment } from "@/lib/use-dynamic-segment";
 
@@ -25,6 +27,16 @@ const GIFT_TIERS = [
   { amount: 10000, label: "Couronne", icon: Crown },
 ];
 
+const DEFAULT_TOY_PALIERS = [
+  { palier: 1, min: 1, max: 9, duration_s: 2 },
+  { palier: 2, min: 10, max: 24, duration_s: 5 },
+  { palier: 3, min: 25, max: 99, duration_s: 10 },
+  { palier: 4, min: 100, max: 499, duration_s: 40 },
+  { palier: 5, min: 500, max: 899, duration_s: 160 },
+  { palier: 6, min: 900, max: 1299, duration_s: 380 },
+  { palier: 7, min: 1300, max: 999999, duration_s: 600 },
+];
+
 export default function LiveViewerClient() {
   const streamId = useDynamicSegment(1);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -39,6 +51,10 @@ export default function LiveViewerClient() {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [giftError, setGiftError] = useState<string | null>(null);
+  const [showToyOverlay, setShowToyOverlay] = useState(true);
+  const [paliers, setPaliers] = useState<Array<{ palier: number; min: number; max: number; duration_s: number }>>([]);
+  const [lastTips, setLastTips] = useState<Array<{ id: string; username: string; amount: number; palier: number; duration_s: number; timestamp: number }>>([]);
+  const [activeGoal, setActiveGoal] = useState<any>(null);
 
   const connectSocket = useCallback((id: string) => {
     const wsBase = (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3003").replace(/\/$/, "");
@@ -49,8 +65,13 @@ export default function LiveViewerClient() {
         if (msg.type === "VIEWER_COUNT") setViewerCount(msg.count);
         if (msg.type === "CHAT_MESSAGE")
           setMessages((m) => [...m, { id: crypto.randomUUID(), pseudo: msg.pseudo, text: msg.text, kind: "chat" }]);
-        if (msg.type === "GIFT_RECEIVED")
+        if (msg.type === "GIFT_RECEIVED") {
           setMessages((m) => [...m, { id: crypto.randomUUID(), pseudo: msg.pseudo, amount_xcon: msg.amount_xcon, kind: "gift" }]);
+          setLastTips((t) => [
+            { id: crypto.randomUUID(), username: msg.pseudo, amount: msg.amount_xcon, palier: 0, duration_s: 0, timestamp: Date.now() },
+            ...t.slice(0, 4),
+          ]);
+        }
         if (msg.type === "GIFT_ERROR") setGiftError(msg.error);
         if (msg.type === "STREAM_ENDED") setStatus("ended");
       } catch {}
@@ -104,11 +125,28 @@ export default function LiveViewerClient() {
   };
 
   useEffect(() => {
+    // Charger les paliers et préférences
+    const saved = localStorage.getItem("kasolife_toy_overlay_hidden");
+    if (saved === "true") setShowToyOverlay(false);
+    setPaliers(DEFAULT_TOY_PALIERS);
+  }, []);
+
+  const loadGoal = async (streamId: string) => {
+    try {
+      const { data } = await api.get(`/stream-goals/stream/${streamId}`);
+      setActiveGoal(data.goal);
+    } catch {}
+  };
+
+  useEffect(() => {
     if (!streamId) return;
     const cancelled = { v: false };
     joinStream(streamId, cancelled);
+    loadGoal(streamId);
+    const interval = setInterval(() => loadGoal(streamId), 2000);
     return () => {
       cancelled.v = true;
+      clearInterval(interval);
       roomRef.current?.disconnect();
       wsRef.current?.close();
     };
@@ -125,6 +163,13 @@ export default function LiveViewerClient() {
     setGiftError(null);
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     wsRef.current.send(JSON.stringify({ type: "SEND_GIFT", amount_xcon: amount }));
+  };
+
+  const toggleOverlay = () => {
+    setShowToyOverlay((prev) => {
+      localStorage.setItem("kasolife_toy_overlay_hidden", String(!prev));
+      return !prev;
+    });
   };
 
   if (status === "loading" || status === "purchasing") {
@@ -233,6 +278,28 @@ export default function LiveViewerClient() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Goal Overlay */}
+      {activeGoal && status === "live" && (
+        <GoalOverlay
+          title={activeGoal.title}
+          current={activeGoal.current_amount_xcon}
+          target={activeGoal.target_amount_xcon}
+          lastTipper={lastTips[0] ? { username: lastTips[0].username, amount: lastTips[0].amount } : undefined}
+          topTipper={lastTips[0] ? { username: lastTips[0].username, amount: lastTips[0].amount } : undefined}
+          isCompleted={activeGoal.status === "COMPLETED"}
+          role="fan"
+        />
+      )}
+
+      <ToyOverlay
+        visible={showToyOverlay}
+        onToggle={toggleOverlay}
+        tips={lastTips}
+        role="fan"
+        paliers={paliers}
+        onTipClick={sendGift}
+      />
     </div>
   );
 }

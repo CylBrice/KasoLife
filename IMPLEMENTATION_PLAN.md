@@ -110,6 +110,60 @@
 
 ---
 
+## PHASE 6 — Overlay Lovense interactif + Paliers imposés plateforme
+
+> Fusion gifts + tips jouet. Paliers plateforme (anti-abus). Overlay activé par défaut, toggle par utilisateur.
+> Nettoyage données éphémères (chat, queue) à fin de stream. Persistance DB pour sessions jouet.
+
+### Décisions architecturales
+
+- **Paliers imposés par plateforme** — ADMIN configure une seule fois, tous les créateurs utilisent les mêmes seuils (évite les abus)
+- **Fusion gifts + tips jouet** — un seul système : fan envoie tip → débite wallet + vibre si jouet actif
+- **Overlay activé par défaut, toggle par utilisateur** — fans et créateurs peuvent masquer via localStorage
+- **Stockage sessions jouet en DB** — remplace Map mémoire pour persistance au redémarrage serveur
+- **Nettoyage éphémère à fin de stream** — messages chat + file d'attente jouets supprimés, transactions/tips conservés en audit trail
+- **Redis pour queue temps réel** — ordre FIFO garanti, métadonnées en DB pour historique
+
+| Étape | Description | Statut |
+|---|---|---|
+| 6.1 | Migration 025 — `toy_sessions`, `toy_paliers_versions`, paliers plateforme dans `platform_config` | ✅ Terminé |
+| 6.2 | Migration 028 — `toy_tip_queue`, `user_overlay_preferences`, `toy_tip_history` (audit) | ✅ Terminé |
+| 6.3 | Backend : ToyConfigService (récupère paliers depuis DB + cache) | ✅ Terminé |
+| 6.4 | Backend : fusionner `/toy-control/tip` avec système gifts (broadcast + vibration) | ✅ Terminé |
+| 6.5 | Backend : job nettoyage stream (Redis queue + messages chat à fin de stream) | ✅ Terminé |
+| 6.6 | Backend API : endpoints CRUD paliers admin (`POST /admin/toy-paliers`) | ✅ Terminé |
+| 6.7 | Fix WebSocket créateur jouets — connecter et recevoir `TOY_VIBRATE` | ✅ Terminé |
+| 6.8 | Overlay créateur — affichage queue + derniers tippers + toggle sur `createur/live/page.tsx` | ✅ Terminé |
+| 6.9 | Overlay fan — grille paliers + boutons tip rapide + toggle sur `direct/[id]/live-viewer-client.tsx` | ✅ Terminé |
+| 6.10 | Admin panel — gestion paliers (CRUD, historique versions, tests) | ✅ Terminé |
+
+---
+
+## PHASE 6b — Stream Goals & Finalization (BONUS)
+
+> Défis créateur pendant un live. Fans tippent vers l'objectif. Finalization atomique 80/20.
+> Architecture ledger pour performance (N tips = 1 paiement final).
+
+### Décisions architecturales validées
+
+- **Un seul goal actif** — créateur peut en créer plusieurs séquentiellement pendant le stream
+- **Ledger buffer** — accumule TOUS les tips d'un stream, finalisation à fin du stream (80% créateur, 20% plateforme)
+- **Édition/Suppression** — locked dès qu'un tip reçu (can_edit/can_delete flags)
+- **Completion animation** — pulse + "Objectif atteint!" 5 secondes
+- **Last & Top Tipper** — affichage sur overlay créateur + fan
+
+| Étape | Description | Statut |
+|---|---|---|
+| 6b.1 | Migration 029 — `stream_goals`, `stream_ledger`, `stream_finalization_log`, `stream_tip_stats` | ✅ Terminé |
+| 6b.2 | Service StreamFinalizationService (atomique 80/20 + audit trail) | ✅ Terminé |
+| 6b.3 | Routes CRUD goals (`POST`, `PATCH`, `DELETE`, `GET`, `POST /tip`) | ✅ Terminé |
+| 6b.4 | Intégration live.js — appel finalizeStreamPayments à END | ✅ Terminé |
+| 6b.5 | Composant GoalOverlay (barre progress + texte + tippers) | ✅ Terminé |
+| 6b.6 | Modal création goal + gestion sur `createur/live/page.tsx` | ✅ Terminé |
+| 6b.7 | Affichage goal + polling sur `direct/[id]/live-viewer-client.tsx` | ✅ Terminé |
+
+---
+
 ## Migrations SQL prévues
 
 | Numéro | Description | Statut |
@@ -123,8 +177,11 @@
 | `0022` | VIP Shows | ✅ Terminé |
 | `0023` | Custom requests | ✅ Terminé |
 | `0024` | Snapshots payants | ✅ Terminé |
-| `0025` | Toy control sessions (jouets interactifs) | ⏳ À faire |
-| `0026` | Private Shows (vidéo LiveKit) — sessions, queue enchère, spy, prix créateur | ✅ Terminé |
+| `025` | Toy control sessions : `toy_sessions`, `toy_paliers_versions`, paliers plateforme | ⏳ À faire |
+| `026` | Private Shows (vidéo LiveKit) — sessions, queue enchère, spy, prix créateur | ✅ Terminé |
+| `027` | Messages unread (unread count) | ✅ Terminé |
+| `028` | Toy queue & overlay prefs : `toy_tip_queue`, `user_overlay_preferences`, `toy_tip_history` | ✅ Terminé |
+| `029` | Stream goals & ledger : `stream_goals`, `stream_ledger`, `stream_finalization_log`, `stream_tip_stats` | ✅ Terminé |
 
 ---
 
