@@ -21,6 +21,9 @@ interface CreatorProfile {
   avatar_url?: string;
   banner_url?: string;
   bio?: string;
+  birth_date?: string;
+  gender?: "M" | "F";
+  member_since?: string;
   is_verified_badge: boolean;
   is_subscribed: boolean;
   is_own_profile: boolean;
@@ -104,6 +107,26 @@ export default function CreatorProfileClient() {
                 {creator.is_verified_badge && <BadgeCheck className="h-5 w-5 text-gold" />}
               </div>
               <p className="text-sm text-sage">@{creator.pseudo}</p>
+
+              {/* Age, Gender, Member Since */}
+              <div className="mt-1 flex items-center gap-2 text-xs text-sage-muted flex-wrap">
+                {creator.birth_date && (
+                  <span>
+                    {Math.floor((new Date().getTime() - new Date(creator.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} ans
+                  </span>
+                )}
+                {creator.gender && (
+                  <span>
+                    {creator.gender === "M" ? "♂ M" : creator.gender === "F" ? "♀ F" : "•"}
+                  </span>
+                )}
+                {creator.member_since && (
+                  <span>
+                    Membre depuis {new Date(creator.member_since).toLocaleDateString("fr-FR")}
+                  </span>
+                )}
+              </div>
+
               {creator.is_live && creator.live_stream_id && (
                 <Link
                   href={`/direct/${creator.live_stream_id}`}
