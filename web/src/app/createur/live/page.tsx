@@ -32,6 +32,8 @@ export default function CreatorLivePage() {
   const [streamId, setStreamId] = useState<string | null>(null);
   const [viewerCount, setViewerCount] = useState(0);
   const [messages, setMessages] = useState<ChatEntry[]>([]);
+  const [viewers, setViewers] = useState<Array<{ id: string; pseudo: string; gender?: string }>>([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
   const [title, setTitle] = useState("");
   const [priceXcon, setPriceXcon] = useState("");
   const [showToyOverlay, setShowToyOverlay] = useState(true);
@@ -53,6 +55,23 @@ export default function CreatorLivePage() {
       })
       .catch(() => setError("Accès à la caméra/micro refusé — autorisez-les pour démarrer un direct."));
     return () => stream?.getTracks().forEach((t) => t.stop());
+  }, []);
+
+  const loadViewers = useCallback(() => {
+    if (!roomRef.current) return;
+    setLoadingViewers(true);
+    try {
+      const participants = Array.from(roomRef.current.remoteParticipants.values()).map((p) => ({
+        id: p.identity,
+        pseudo: p.name || p.identity,
+        gender: undefined,
+      }));
+      setViewers(participants);
+    } catch (err) {
+      console.error("Erreur loadViewers:", err);
+    } finally {
+      setLoadingViewers(false);
+    }
   }, []);
 
   const connectSocket = useCallback((id: string) => {
@@ -119,6 +138,15 @@ export default function CreatorLivePage() {
     wsRef.current.send(JSON.stringify({ type: "CHAT_MESSAGE", text }));
     setChatInput("");
   };
+
+  // Cleanup quand le live se termine
+  useEffect(() => {
+    if (status === "ended") {
+      setViewers([]);
+      setMessages([]);
+      setToyTips([]);
+    }
+  }, [status]);
 
   // Persistance préférence overlay
   useEffect(() => {
@@ -206,40 +234,31 @@ export default function CreatorLivePage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="overflow-hidden rounded-2xl border border-ink-line bg-ink-raised">
+        <div className="overflow-hidden rounded-2xl border border-ink-line bg-ink-raised relative">
           <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full bg-black object-cover" />
         </div>
 
-        <Card className="flex flex-col">
-          <CardContent className="flex flex-1 flex-col gap-2 p-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-sage-muted">Chat en direct</p>
-            <div className="flex-1 space-y-1.5 overflow-y-auto text-sm" style={{ maxHeight: 320 }}>
-              {messages.length === 0 && <p className="text-sage-muted">Les messages et cadeaux apparaîtront ici.</p>}
-              {messages.map((m) => (
-                <p key={m.id} className={m.kind === "gift" ? "text-gold-bright" : "text-cream"}>
-                  {m.kind === "gift" ? (
-                    <span className="inline-flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> {m.pseudo} a envoyé {m.amount_xcon} XCON</span>
-                  ) : (
-                    <><span className="font-semibold">{m.pseudo}</span> — {m.text}</>
-                  )}
-                </p>
-              ))}
-            </div>
-            {status === "live" && (
-              <div className="flex gap-2 pt-2">
-                <input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                  placeholder="Votre message…"
-                  className="flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
-                />
-                <Button size="icon" onClick={sendChat}><Send className="h-4 w-4" /></Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <LiveChatTabs
+          messages={messages}
+          viewers={viewers}
+          onSendChat={sendChat}
+          isSendingChat={false}
+          onRefreshUsers={loadViewers}
+          isLoadingUsers={loadingViewers}
+        />
       </div>
+
+      {/* Toy Queue - Bottom Left */}
+      {status === "live" && (
+        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
+          <ToyOverlay
+            visible={showToyOverlay}
+            onToggle={toggleOverlay}
+            tips={toyTips}
+            role="creator"
+          />
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         {status === "idle" || status === "error" ? (
@@ -347,13 +366,6 @@ export default function CreatorLivePage() {
           </Button>
         </div>
       )}
-
-      <ToyOverlay
-        visible={showToyOverlay}
-        onToggle={toggleOverlay}
-        tips={toyTips}
-        role="creator"
-      />
     </div>
   );
 }
