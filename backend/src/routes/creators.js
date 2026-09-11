@@ -19,6 +19,42 @@ const router = express.Router();
 // ── Helper : décrypte le nom utilisateur en toute sécurité
 const safeDecrypt = (val) => { try { return decrypt(val); } catch { return val; } };
 
+// ── GET /creators/me — profil du créateur connecté (infos complètes)
+router.get('/me', authMiddleware, requireMinRole('influencer'), async (req, res) => {
+  try {
+    const { data: user, error: userError } = await supabase.from('users')
+      .select('id, pseudo, avatar_url, banner_url, bio, birth_date, gender, created_at')
+      .eq('id', req.user.id).single();
+    if (userError) throw userError;
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    const { data: profile, error: profileError } = await supabase.from('creator_profiles')
+      .select('display_name, category:categories(id, name, slug), subscription_price_xcon, is_verified_badge, subscribers_count, posts_count, is_accepting_subs, welcome_message')
+      .eq('user_id', req.user.id).single();
+    if (profileError) throw profileError;
+    if (!profile) return res.status(404).json({ error: 'Profil créateur introuvable' });
+
+    res.json({
+      id: user.id,
+      pseudo: user.pseudo,
+      avatar_url: user.avatar_url,
+      banner_url: user.banner_url,
+      bio: user.bio,
+      birth_date: user.birth_date,
+      gender: user.gender,
+      member_since: user.created_at,
+      display_name: profile.display_name,
+      category: profile.category,
+      subscription_price_xcon: profile.subscription_price_xcon,
+      is_verified_badge: profile.is_verified_badge,
+      subscribers_count: profile.subscribers_count,
+      posts_count: profile.posts_count,
+      is_accepting_subs: profile.is_accepting_subs,
+      welcome_message: profile.welcome_message,
+    });
+  } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
 // ── GET /creators/categories — liste des catégories actives (public)
 router.get('/categories', async (req, res) => {
   try {
@@ -108,7 +144,7 @@ router.get('/:pseudo', async (req, res) => {
     const { pseudo } = req.params;
 
     const { data: user } = await supabase.from('users')
-      .select('id, pseudo, avatar_url, banner_url, bio, role, created_at')
+      .select('id, pseudo, avatar_url, banner_url, bio, birth_date, gender, role, created_at')
       .ilike('pseudo', pseudo).single();
     if (!user || !['influencer','admin','super_admin','root_admin'].includes(user.role))
       return res.status(404).json({ error: 'Créateur introuvable' });
@@ -142,6 +178,8 @@ router.get('/:pseudo', async (req, res) => {
       avatar_url: user.avatar_url,
       banner_url: user.banner_url,
       bio: user.bio,
+      birth_date: user.birth_date,
+      gender: user.gender,
       member_since: user.created_at,
       display_name: profile.display_name,
       category: profile.category,

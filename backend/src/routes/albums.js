@@ -68,6 +68,27 @@ router.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── GET /albums/creator/me — albums du créateur connecté (publiés ou non)
+router.get('/creator/me', authMiddleware, requireMinRole('influencer'), async (req, res) => {
+  try {
+    const { type, page = 1, limit = 20 } = req.query;
+    const pageSize = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const offset   = (Math.max(1, parseInt(page) || 1) - 1) * pageSize;
+
+    let query = supabase.from('albums')
+      .select('id, title, description, type, cover_url, price_xcon, access_level, items_count, is_published, created_at')
+      .eq('creator_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (type && ['PHOTO', 'VIDEO'].includes(type)) query = query.eq('type', type);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── GET /albums/:albumId — détail album + items (si accès)
 router.get('/:albumId', async (req, res) => {
   try {
