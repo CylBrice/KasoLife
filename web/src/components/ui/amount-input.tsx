@@ -43,15 +43,15 @@ export function AmountInput({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && <label className="text-sm font-medium text-cream">{label}</label>}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
-          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-teal/40 dark:bg-teal/10 dark:hover:bg-teal/20 dark:hover:text-teal"
           aria-label="Diminuer"
         >
-          <Minus size={16} className="text-brick" />
+          <Minus size={16} className="text-brick dark:text-teal" />
         </button>
 
         <input
@@ -63,22 +63,22 @@ export function AmountInput({
           max={max}
           step={step}
           placeholder={placeholder}
-          className="w-20 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-center text-sm text-cream placeholder:text-sage-muted focus:outline-none focus:ring-2 focus:ring-brick/50 disabled:opacity-50"
+          className="w-24 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-center text-sm font-mono text-cream placeholder:text-sage-muted focus:outline-none focus:ring-2 focus:ring-brick/50 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none dark:focus:ring-teal/50"
         />
 
         <button
           type="button"
           onClick={handleIncrement}
           disabled={disabled || value >= max}
-          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-teal/40 dark:bg-teal/10 dark:hover:bg-teal/20 dark:hover:text-teal"
           aria-label="Augmenter"
         >
-          <Plus size={16} className="text-brick" />
+          <Plus size={16} className="text-brick dark:text-teal" />
         </button>
       </div>
       {max && (
-        <p className="text-xs text-sage-muted">
-          {min} - {max}
+        <p className="text-xs text-sage-muted text-center font-mono">
+          {min.toLocaleString('fr-FR')} - {max.toLocaleString('fr-FR')}
         </p>
       )}
     </div>
