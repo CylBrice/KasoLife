@@ -42,7 +42,7 @@ export function AmountInput({
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      {label && <label className="text-sm font-medium text-cream">{label}</label>}
+      {label && <label className="text-sm font-medium text-cream text-center">{label}</label>}
       <div className="flex items-center justify-center gap-2">
         <button
           type="button"
