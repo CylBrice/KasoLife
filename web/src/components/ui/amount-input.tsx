@@ -48,7 +48,7 @@ export function AmountInput({
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
-          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-teal/40 dark:bg-teal/10 dark:hover:bg-teal/20 dark:hover:text-teal"
+          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all dark:border-teal/50 dark:bg-teal/20 dark:hover:bg-teal/30"
           aria-label="Diminuer"
         >
           <Minus size={16} className="text-brick dark:text-teal" />
@@ -70,7 +70,7 @@ export function AmountInput({
           type="button"
           onClick={handleIncrement}
           disabled={disabled || value >= max}
-          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-teal/40 dark:bg-teal/10 dark:hover:bg-teal/20 dark:hover:text-teal"
+          className="rounded-xl border border-brick/40 bg-brick/10 p-2 hover:bg-brick/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all dark:border-teal/50 dark:bg-teal/20 dark:hover:bg-teal/30"
           aria-label="Augmenter"
         >
           <Plus size={16} className="text-brick dark:text-teal" />
