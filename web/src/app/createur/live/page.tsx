@@ -36,6 +36,7 @@ export default function CreatorLivePage() {
   const [viewers, setViewers] = useState<Array<{ id: string; pseudo: string; gender?: string }>>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
   const [creatorData, setCreatorData] = useState<any>(null);
+  const [creatorDataError, setCreatorDataError] = useState<string | null>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [priceXcon, setPriceXcon] = useState("");
@@ -77,13 +78,15 @@ export default function CreatorLivePage() {
     }
   }, []);
 
-  const loadCreatorData = useCallback(async (id: string) => {
+  const loadCreatorData = useCallback(async (_id: string) => {
     try {
+      setCreatorDataError(null);
       const { data } = await api.get(`/creators/me`);
-      console.log("✅ Creator data loaded:", data);
       setCreatorData(data);
-    } catch (err) {
-      console.error("❌ Erreur loadCreatorData:", err);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || "Erreur chargement profil";
+      setCreatorDataError(msg);
+      console.error("❌ Erreur loadCreatorData:", err?.response?.status, msg);
     }
   }, []);
 
@@ -337,6 +340,17 @@ export default function CreatorLivePage() {
         <div className="min-h-[300px] rounded-2xl border border-ink-line overflow-hidden bg-ink-raised">
           {creatorData ? (
             <CreatorInfoTabs creator={creatorData} albums={albums} />
+          ) : creatorDataError ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-2 px-4">
+              <AlertCircle className="h-6 w-6 text-brick/60" />
+              <p className="text-sm text-brick text-center">{creatorDataError}</p>
+              <button
+                onClick={() => loadCreatorData("")}
+                className="text-xs text-gold hover:underline mt-1"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full min-h-[300px]">
               <p className="text-sm text-sage">Chargement des infos créateur...</p>

@@ -129,9 +129,12 @@ router.get('/actions', async (req, res) => {
 // ── GET /admin/config — toutes les clés platform_config
 router.get('/config', requireMinRole('super_admin'), async (req, res) => {
   try {
+    const { limit = 200, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 200, 500);
     const { data, error } = await supabase.from('platform_config')
       .select('key, value, description, updated_at, updated_by')
-      .order('key');
+      .order('key')
+      .range(Number(offset), Number(offset) + safeLmt - 1);
     if (error) throw error;
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -261,10 +264,13 @@ router.post('/watermark/decode', requireMinRole('admin'), uploadSingle.single('f
 // ── GET /admin/admins — liste de tous les admins, super_admins, root_admin
 router.get('/admins', requireMinRole('super_admin'), async (req, res) => {
   try {
+    const { limit = 100, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 100, 500);
     const { data, error } = await supabase.from('users')
       .select('id, pseudo, name, role, is_active, kyc_status, created_at, last_active')
       .in('role', ['admin', 'super_admin', 'root_admin'])
-      .order('role').order('created_at');
+      .order('role').order('created_at')
+      .range(Number(offset), Number(offset) + safeLmt - 1);
     if (error) throw error;
 
     // Nombre d'actions admin par utilisateur (derniers 30j)
@@ -556,11 +562,13 @@ router.post('/users/:id/promote', async (req, res) => {
 
 router.get('/creator-applications', async (req, res) => {
   try {
-    const { status = 'PENDING' } = req.query;
+    const { status = 'PENDING', limit = 100, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 100, 500);
     const { data, error } = await supabase.from('creator_applications')
       .select('*, user:users(pseudo, kyc_status, created_at), category:categories(name, slug)')
       .eq('status', status)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .range(Number(offset), Number(offset) + safeLmt - 1);
     if (error) throw error;
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -652,12 +660,13 @@ router.post('/creator-applications/:id/reject', async (req, res) => {
 
 router.get('/reports', async (req, res) => {
   try {
-    const { status = 'PENDING', target_type } = req.query;
+    const { status = 'PENDING', target_type, limit = 100, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 100, 500);
     let q = supabase.from('content_reports')
       .select('*, reporter:users!content_reports_reporter_id_fkey(pseudo)')
       .eq('status', status);
     if (target_type) q = q.eq('target_type', target_type);
-    const { data, error } = await q.order('created_at', { ascending: true });
+    const { data, error } = await q.order('created_at', { ascending: true }).range(Number(offset), Number(offset) + safeLmt - 1);
     if (error) throw error;
 
     // Tri par sévérité IA décroissante (CRITICAL > HIGH > MEDIUM > LOW > non trié),
