@@ -398,7 +398,7 @@ router.post('/logout-all', authMiddleware, async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user } = await supabase.from('users')
-      .select('id, phone, pseudo, name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status, birth_date, gender, twofa_enabled, twofa_method, pseudo_changes_count')
+      .select('id, phone, pseudo, name, display_name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status, birth_date, gender, twofa_enabled, twofa_method, pseudo_changes_count')
       .eq('id', req.user.id).single();
     const { data: wallet } = await supabase.from('wallets')
       .select('balance_xcon, pending_balance_xcon, total_deposited, total_withdrawn, total_earned')
@@ -505,11 +505,17 @@ router.put('/name', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-// ── PUT /auth/profile — bio, avatar, bannière (utilisateur ou créateur)
+// ── PUT /auth/profile — bio, avatar, bannière, display_name (tous utilisateurs)
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { bio, avatar_url, banner_url, language } = req.body;
+    const { bio, avatar_url, banner_url, language, display_name } = req.body;
     const updates = {};
+    if (display_name !== undefined) {
+      const cleanName = sanitizeHtmlTitle(String(display_name)).trim();
+      if (cleanName.length < 2 || cleanName.length > 100)
+        return res.status(400).json({ error: 'Le nom d\'affichage doit contenir entre 2 et 100 caractères' });
+      updates.display_name = cleanName;
+    }
     if (bio !== undefined) {
       const cleanBio = sanitizeHtmlTitle(String(bio));
       if (cleanBio.length > 500) return res.status(400).json({ error: 'Bio trop longue (max 500 caractères)' });

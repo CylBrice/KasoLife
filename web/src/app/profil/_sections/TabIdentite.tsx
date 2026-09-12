@@ -67,7 +67,7 @@ export function TabIdentite() {
   const nameMsg = useMsg();
   const [nameSaving, setNameSaving] = useState(false);
 
-  const [lifeurName, setLifeurName] = useState((user as any)?.creator_profile?.display_name || "");
+  const [lifeurName, setLifeurName] = useState((user as any)?.display_name || (user as any)?.creator_profile?.display_name || "");
   const lifeurNameMsg = useMsg();
   const [lifeurNameSaving, setLifeurNameSaving] = useState(false);
 
@@ -199,7 +199,7 @@ export function TabIdentite() {
     }
     setLifeurNameSaving(true);
     try {
-      await api.put("/creators/me", { display_name: sanitized });
+      await api.put("/auth/profile", { display_name: sanitized });
       await refresh();
       lifeurNameMsg.show(isEn ? "Name updated." : "Nom mis à jour.", "success");
     } catch (err) { lifeurNameMsg.show(errText(err), "error"); }

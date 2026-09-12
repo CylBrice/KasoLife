@@ -8,6 +8,8 @@ import axios from "axios";
 let _token: string | null = null;
 // Promise partagée pour éviter d'envoyer plusieurs requêtes refresh simultanément
 let _refreshing: Promise<string | null> | null = null;
+// Bloque tout nouveau refresh après un échec — réarmé par setApiToken (nouveau login)
+let _refreshFailed = false;
 
 export const AUTH_UNAUTHORIZED_EVENT = "kasolife:unauthorized";
 
@@ -28,7 +30,7 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status !== 401 || original._retry) return Promise.reject(error);
+    if (error.response?.status !== 401 || original._retry || _refreshFailed) return Promise.reject(error);
     original._retry = true;
 
     if (!_refreshing) {
@@ -46,6 +48,7 @@ api.interceptors.response.use(
 
     if (!newToken) {
       _token = null;
+      _refreshFailed = true;
       if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
       return Promise.reject(error);
     }
@@ -56,6 +59,6 @@ api.interceptors.response.use(
   }
 );
 
-export function setApiToken(token: string) { _token = token; }
+export function setApiToken(token: string) { _token = token; _refreshFailed = false; }
 export function clearApiToken() { _token = null; }
 export function getApiToken(): string | null { return _token; }
