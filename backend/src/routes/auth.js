@@ -57,6 +57,7 @@ const generateTokens = async (userId, userAgent, ip, role = 'user') => {
       .eq('user_id', userId).eq('revoked', false)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: true })
+      .limit(MAX_ACTIVE_SESSIONS + 10)
       .then(({ data: sessions }) => {
         if (sessions && sessions.length >= MAX_ACTIVE_SESSIONS) {
           const toRevoke = sessions.slice(0, sessions.length - MAX_ACTIVE_SESSIONS + 1);
@@ -89,7 +90,8 @@ const registerPhoneAsMobileMoney = async (userId, phone) => {
 const reconcileMobileMoneyOnPhoneChange = async (userId, oldPhone, newPhone) => {
   try {
     const { data: rows } = await supabase.from('user_mobile_money')
-      .select('id, operator, phone, is_default, created_at').eq('user_id', userId);
+      .select('id, operator, phone, is_default, created_at').eq('user_id', userId)
+      .limit(MOBILE_MONEY_MAX_TOTAL + 1);
     const list = (rows || []).map(r => {
       let plain = null; try { plain = decrypt(r.phone); } catch {}
       return { ...r, plain };
@@ -630,11 +632,15 @@ router.post('/email/confirm', authMiddleware, async (req, res) => {
 // ── GET /auth/sessions — Liste des sessions actives
 router.get('/sessions', authMiddleware, async (req, res) => {
   try {
+    const { limit = 50, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 50, 100);
+    const safeOfs = Math.max(Number(offset) || 0, 0);
     const { data, error } = await supabase.from('refresh_tokens')
       .select('id, user_agent, ip_address, device_hash, created_at, expires_at')
       .eq('user_id', req.user.id).eq('revoked', false)
       .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(safeOfs, safeOfs + safeLmt - 1);
     if (error) throw error;
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: 'Erreur interne' }); }
