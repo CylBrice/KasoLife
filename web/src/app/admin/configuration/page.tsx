@@ -316,9 +316,9 @@ function ConfigItem({
           <button
             onClick={() => onChange(entry.key, current === "true" ? "false" : "true")}
             role="switch" aria-checked={current === "true"}
-            className={`relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 ${current === "true" ? "bg-gold" : "bg-toggle-off"}`}
+            className={`relative h-7 w-12 shrink-0 cursor-pointer overflow-hidden rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 ${current === "true" ? "bg-gold" : "bg-toggle-off"}`}
           >
-            <span className={`absolute top-1 h-5 w-5 rounded-full shadow-md transition-transform ${current === "true" ? "translate-x-6 bg-white" : "translate-x-1 bg-cream dark:bg-ink-raised"}`} />
+            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${current === "true" ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         ) : (
           <input
