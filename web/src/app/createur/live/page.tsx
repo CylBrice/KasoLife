@@ -6,6 +6,7 @@ import { Room, RoomEvent, createLocalTracks, type LocalTrack } from "livekit-cli
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AmountInput } from "@/components/ui/amount-input";
+import { StreamPriceInput, isStreamPriceInvalid } from "@/components/live/stream-price-input";
 import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
 import { LiveChatTabs } from "@/components/live/chat-tabs";
@@ -39,7 +40,7 @@ export default function CreatorLivePage() {
   const [creatorDataError, setCreatorDataError] = useState<string | null>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [title, setTitle] = useState("");
-  const [priceXcon, setPriceXcon] = useState("");
+  const [priceXcon, setPriceXcon] = useState(0);
   const [showToyOverlay, setShowToyOverlay] = useState(true);
   const [toyTips, setToyTips] = useState<Array<{ id: string; username: string; amount: number; palier: number; duration_s: number; timestamp: number }>>([]);
   const [activeGoal, setActiveGoal] = useState<any>(null);
@@ -124,7 +125,7 @@ export default function CreatorLivePage() {
     setStatus("starting");
     setError(null);
     try {
-      const pricePayload = priceXcon.trim() ? { price_xcon: parseInt(priceXcon, 10) } : {};
+      const pricePayload = priceXcon > 0 ? { price_xcon: priceXcon } : {};
       const { data } = await api.post("/live/start", { title: title || undefined, ...pricePayload });
       setStreamId(data.streamId);
 
@@ -201,12 +202,12 @@ export default function CreatorLivePage() {
       const { data } = await api.post("/stream-goals", {
         stream_id: streamId,
         title: goalTitle,
-        target_amount_xcon: parseInt(goalAmount, 10),
+        target_amount_xcon: goalAmount,
       });
       setActiveGoal(data.goal);
       setShowGoalModal(false);
       setGoalTitle("");
-      setGoalAmount("5000");
+      setGoalAmount(5000);
     } catch (err: any) {
       setError(err?.response?.data?.error || "Erreur création goal");
     } finally {
@@ -237,7 +238,7 @@ export default function CreatorLivePage() {
   useEffect(() => {
     if (status === "live" && streamId) {
       loadGoal();
-      const interval = setInterval(() => loadGoal(), 2000);
+      const interval = setInterval(() => loadGoal(), 5000); // Réduit de 2s → 5s (60% moins de requêtes)
       return () => clearInterval(interval);
     }
   }, [status, streamId]);
@@ -289,17 +290,19 @@ export default function CreatorLivePage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du direct (optionnel)"
-              className="flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
             />
-            <AmountInput
-              value={priceXcon ? Number(priceXcon) : 0}
-              onChange={(v) => setPriceXcon(v > 0 ? String(v) : "")}
-              min={100}
-              max={200000}
-              step={100}
-              label="Prix direct"
+            <StreamPriceInput
+              value={priceXcon}
+              onChange={setPriceXcon}
             />
-            <Button onClick={startLive}><Radio className="h-4 w-4" /> Démarrer le direct</Button>
+            <Button
+              onClick={startLive}
+              disabled={isStreamPriceInvalid(priceXcon)}
+              title={isStreamPriceInvalid(priceXcon) ? "Corrigez le prix avant de démarrer" : undefined}
+            >
+              <Radio className="h-4 w-4" /> Démarrer le direct
+            </Button>
           </>
         ) : status === "starting" ? (
           <Button disabled>Connexion en cours…</Button>

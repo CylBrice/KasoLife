@@ -143,7 +143,7 @@ export default function LiveViewerClient() {
     const cancelled = { v: false };
     joinStream(streamId, cancelled);
     loadGoal(streamId);
-    const interval = setInterval(() => loadGoal(streamId), 2000);
+    const interval = setInterval(() => loadGoal(streamId), 5000); // Réduit de 2s → 5s (60% moins de requêtes)
     return () => {
       cancelled.v = true;
       clearInterval(interval);
