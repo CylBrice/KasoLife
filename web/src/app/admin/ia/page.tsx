@@ -109,7 +109,7 @@ export default function AdminIAPage() {
                     aria-checked={entry.enabled}
                     className={cn(
                       "relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 disabled:opacity-50",
-                      entry.enabled ? "bg-emerald" : "bg-ink-line"
+                      entry.enabled ? "bg-gold" : "bg-toggle-off"
                     )}
                   >
                     <span

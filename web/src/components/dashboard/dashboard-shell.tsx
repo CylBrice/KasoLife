@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
-import { Crown, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, SlidersHorizontal, User, Flag, FileText, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Crown, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, User, Flag, FileText, ArrowLeftRight, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
@@ -214,12 +214,6 @@ export function DashboardShell({
                 className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
                 <Home className="h-4 w-4" />
               </Link>
-              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
-                <Link href="/admin" title="Admin Dashboard"
-                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  <SlidersHorizontal className="h-4 w-4" />
-                </Link>
-              )}
               <button onClick={logout} title="Déconnexion"
                 className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-brick/10 hover:text-brick transition-colors">
                 <LogOut className="h-4 w-4" />
@@ -228,29 +222,33 @@ export function DashboardShell({
           ) : (
             /* Mode étendu */
             <div className="space-y-0.5">
-              {/* Ligne 1 : icônes thème + langue, centrées */}
-              <div className="flex items-center justify-center gap-3 px-2 py-2">
-                <ThemeToggle />
-                <LanguageSwitcher />
+              {/* Ligne 1 : avatar + thème + langue */}
+              <div className="flex items-center gap-2 px-2 py-2">
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.pseudo ?? ""}
+                    className="h-8 w-8 shrink-0 rounded-xl object-cover border border-ink-line/60"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-ink-line/60 bg-ink-raised text-xs font-bold text-sage uppercase">
+                    {(user?.pseudo ?? "?")[0]}
+                  </div>
+                )}
+                <div className="flex flex-1 items-center justify-end gap-2">
+                  <ThemeToggle />
+                  <LanguageSwitcher />
+                </div>
               </div>
 
               <div className="mx-1 my-1 h-px bg-ink-line/40" />
 
-              {/* Ligne 2 : Retour au site */}
+              {/* Retour au site */}
               <Link href="/"
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
                 <Home className="h-4 w-4 shrink-0" />
                 Retour au site
               </Link>
-
-              {/* Ligne 3 : Admin Dashboard (si admin) */}
-              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
-                <Link href="/admin"
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  <SlidersHorizontal className="h-4 w-4 shrink-0" />
-                  Admin Dashboard
-                </Link>
-              )}
 
               <div className="mx-1 my-1 h-px bg-ink-line/40" />
 

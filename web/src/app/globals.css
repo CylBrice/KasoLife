@@ -24,6 +24,7 @@
     --c-emerald: 15 148 136;      /* #0F9488 */
     --c-emerald-bright: 20 184 166; /* #14B8A6 */
     --c-brick: 220 38 38;         /* #DC2626 */
+    --c-toggle-off: 180 180 190;  /* gris neutre état OFF toggle */
   }
 
   /* ── Mode sombre — même rôle par couleur, contraste inversé ── */
@@ -32,9 +33,9 @@
     --c-ink-surface: 18 32 46;    /* #12202E */
     --c-ink-raised: 27 46 64;     /* #1B2E40 */
     --c-ink-line: 42 63 84;       /* #2A3F54 */
-    --c-gold: 20 184 166;         /* #14B8A6 — tous les boutons passent au teal en sombre */
-    --c-gold-dim: 15 148 136;     /* #0F9488 */
-    --c-gold-bright: 94 234 212;  /* #5EEAD4 */
+    --c-gold: 232 121 155;        /* #E8799B — rose brand, adapté sombre */
+    --c-gold-dim: 194 74 99;      /* #C24A63 */
+    --c-gold-bright: 248 157 187; /* #F89DBB */
     --c-coral: 91 149 221;        /* #5B95DD */
     --c-coral-dim: 59 120 196;    /* #3B78C4 */
     --c-sage: 159 180 206;        /* #9FB4CE */
@@ -43,6 +44,7 @@
     --c-emerald: 20 184 166;      /* #14B8A6 */
     --c-emerald-bright: 94 234 212; /* #5EEAD4 */
     --c-brick: 248 113 113;       /* #F87171 */
+    --c-toggle-off: 71 85 105;    /* gris neutre état OFF toggle (dark) */
   }
 
   html {
