@@ -199,7 +199,7 @@ export function TabIdentite() {
     }
     setLifeurNameSaving(true);
     try {
-      await api.put("/creators/profile", { display_name: sanitized });
+      await api.put("/creators/me", { display_name: sanitized });
       await refresh();
       lifeurNameMsg.show(isEn ? "Name updated." : "Nom mis à jour.", "success");
     } catch (err) { lifeurNameMsg.show(errText(err), "error"); }
