@@ -277,26 +277,24 @@ export default function CreatorLivePage() {
       </div>
 
       {/* Bottom Section - Toy Queue + Creator Info */}
-      {status === "live" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Toy Queue - Left */}
-          <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
-            <ToyOverlay
-              visible={showToyOverlay}
-              onToggle={toggleOverlay}
-              tips={toyTips}
-              role="creator"
-            />
-          </div>
-
-          {/* Creator Info Tabs - Right */}
-          {creatorData && (
-            <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden">
-              <CreatorInfoTabs creator={creatorData} albums={albums} />
-            </div>
-          )}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Toy Queue - Left */}
+        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
+          <ToyOverlay
+            visible={showToyOverlay}
+            onToggle={toggleOverlay}
+            tips={toyTips}
+            role="creator"
+          />
         </div>
-      )}
+
+        {/* Creator Info Tabs - Right */}
+        {creatorData && (
+          <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden">
+            <CreatorInfoTabs creator={creatorData} albums={albums} />
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center gap-3">
         {status === "idle" || status === "error" ? (
