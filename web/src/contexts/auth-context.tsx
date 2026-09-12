@@ -20,10 +20,10 @@ interface AuthContextType {
 export interface RegisterPayload {
   phone: string;
   pseudo: string;
-  name: string;
   password: string;
   country_iso: string;
-  birth_date: string;
+  name?: string;
+  birth_date?: string;
   ref?: string;
 }
 

@@ -45,6 +45,17 @@ psql "$(grep DATABASE_URL backend/.env | cut -d= -f2-)" -f backend/migrations/XX
 
 ---
 
+# 🚨 RÈGLE 0 - DESIGN SYSTEM MODALS / POPUPS : TOUJOURS UTILISER `@/components/ui/modal.tsx`
+
+⛔ **INTERDICTION de créer des popups ou modals custom inline**
+- ❌ **JAMAIS** `<div className="fixed inset-0 z-50 ...">` ou équivalent en dehors du composant `Modal`
+- ✅ Utiliser **exclusivement** `Modal` de `@/components/ui/modal.tsx` pour toute boîte de dialogue, confirmation, ou formulaire modal
+- ✅ Pour les tooltips informatifs inline (non-bloquants), les `InfoPopup` locaux avec `position: absolute` sont acceptés
+- Cette règle s'applique à toutes les pages, tous les composants, tous les layouts
+- **Exception unique :** Goal modal dans `createur/live/page.tsx` → à migrer vers `<Modal>` lors du prochain refactor
+
+---
+
 # 🚨 RÈGLE 0A - BORDER-RADIUS DES BOUTONS : `rounded-xl` UNIQUEMENT
 
 ⛔ **TOUS les boutons du site utilisent `rounded-xl` — sans exception**

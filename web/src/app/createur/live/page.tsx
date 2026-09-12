@@ -11,6 +11,7 @@ import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
 import { LiveChatTabs } from "@/components/live/chat-tabs";
 import { CreatorInfoTabs } from "@/components/live/creator-info-tabs";
+import { MediaControls } from "@/components/live/media-controls";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
@@ -49,17 +50,13 @@ export default function CreatorLivePage() {
   const [goalAmount, setGoalAmount] = useState(5000);
   const [loadingGoal, setLoadingGoal] = useState(false);
 
-  // Aperçu caméra/micro avant de démarrer le direct
+  // Nettoyage des pistes médias au démontage
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ audio: true, video: true })
-      .then((s) => {
-        stream = s;
-        if (videoRef.current) videoRef.current.srcObject = s;
-      })
-      .catch(() => setError("Accès à la caméra/micro refusé — autorisez-les pour démarrer un direct."));
-    return () => stream?.getTracks().forEach((t) => t.stop());
+    return () => {
+      if (videoRef.current?.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      }
+    };
   }, []);
 
   const loadViewers = useCallback(() => {
@@ -292,6 +289,7 @@ export default function CreatorLivePage() {
               placeholder="Titre du direct (optionnel)"
               className="min-w-0 flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
             />
+            <MediaControls videoRef={videoRef} />
             <StreamPriceInput
               value={priceXcon}
               onChange={setPriceXcon}

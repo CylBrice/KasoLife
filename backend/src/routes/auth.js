@@ -146,12 +146,8 @@ router.post('/register', registerLimit, async (req, res) => {
     const { phone, pseudo, name, password, country_iso, language = 'fr',
             birth_date, ref } = req.body;
 
-    if (!phone || !pseudo || !name || !password)
-      return res.status(400).json({ error: 'Champs requis manquants (phone, pseudo, name, password)' });
-    if (!country_iso)
-      return res.status(400).json({ error: 'Le pays de résidence est obligatoire' });
-    if (!birth_date)
-      return res.status(400).json({ error: 'La date de naissance est obligatoire' });
+    if (!phone || !pseudo || !password)
+      return res.status(400).json({ error: 'Champs requis manquants (phone, pseudo, password)' });
     if (password.length < 8)
       return res.status(400).json({ error: 'Mot de passe trop court (min 8 caractères)' });
     if (!isValidPseudo(pseudo))
@@ -159,12 +155,14 @@ router.post('/register', registerLimit, async (req, res) => {
     if (!isValidE164(phone))
       return res.status(400).json({ error: 'Format de numéro invalide — utilisez le format international (ex: +237690000000)' });
 
-    // Vérification de majorité — obligatoire pour toute la plateforme
-    const dob = new Date(birth_date);
-    if (isNaN(dob.getTime()))
-      return res.status(400).json({ error: 'Date de naissance invalide' });
-    if ((Date.now() - dob.getTime()) / 86400000 < 365.25 * 18)
-      return res.status(400).json({ error: 'Vous devez avoir au moins 18 ans pour vous inscrire' });
+    // Vérification de majorité — uniquement si la date est fournie
+    if (birth_date) {
+      const dob = new Date(birth_date);
+      if (isNaN(dob.getTime()))
+        return res.status(400).json({ error: 'Date de naissance invalide' });
+      if ((Date.now() - dob.getTime()) / 86400000 < 365.25 * 18)
+        return res.status(400).json({ error: 'Vous devez avoir au moins 18 ans pour vous inscrire' });
+    }
 
     const { data: existingPhone } = await supabase.from('users').select('id').eq('phone', encryptDeterministic(phone)).single();
     if (existingPhone) return res.status(409).json({ error: 'Numéro déjà utilisé' });
@@ -199,11 +197,12 @@ router.post('/register', registerLimit, async (req, res) => {
     // phone : chiffrement déterministe (recherche par égalité)
     // name / birth_date : chiffrement aléatoire (jamais recherchés par égalité)
     const phoneEncrypted = encryptDeterministic(phone);
-    const nameEncrypted  = encrypt(name);
+    const nameEncrypted  = name ? encrypt(name) : null;
 
     const { error: userError } = await supabase.from('users').insert({
       id: userId, phone: phoneEncrypted, pseudo, name: nameEncrypted, password_hash,
-      country_iso: country_iso.toUpperCase(), language, birth_date,
+      country_iso: country_iso ? country_iso.toUpperCase() : 'CM', language,
+      ...(birth_date ? { birth_date } : {}),
       kyc_status: 'PENDING', referred_by: parrainId, role: 'user',
     });
     if (userError) throw userError;
