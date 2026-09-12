@@ -38,7 +38,7 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
   const [showPwdConfirm, setShowPwdConfirm] = useState(false);
   const [signupCountry, setSignupCountry] = useState("CM");
   const [signupForm, setSignupForm] = useState({
-    phone: "", pseudo: "", password: "", passwordConfirm: "",
+    phone: "", pseudo: "", password: "", passwordConfirm: "", promoCode: "",
   });
 
   const switchTab = (next: Tab) => {
@@ -81,7 +81,7 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
         pseudo: signupForm.pseudo,
         password: signupForm.password,
         country_iso: signupCountry,
-        ref: referralCode,
+        ref: signupForm.promoCode.trim() || referralCode || undefined,
       });
       router.push("/");
     } catch (err: any) {
@@ -221,6 +221,18 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
                   aria-label={showPwdConfirm ? t("common.close") : t("auth.passwordConfirm")}>
                   {showPwdConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+
+              {/* Code promo (optionnel) */}
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  label={t("auth.promoCode")}
+                  placeholder={t("auth.promoCodePlaceholder")}
+                  value={signupForm.promoCode}
+                  onChange={(e) => update("promoCode", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                />
+                <p className="text-xs text-sage-muted px-0.5">{t("auth.promoCodeHint")}</p>
               </div>
 
               <Button type="submit" size="lg" disabled={loading} className="mt-2 gap-2">

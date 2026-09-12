@@ -1,3 +1,27 @@
+# 🚨 RÈGLE 00B - MODÈLE KASOLIFE : RÔLES ET DROITS
+
+## Tout utilisateur peut être Lifeur
+- ✅ **N'importe quel user** peut publier du contenu, le rendre payant, diffuser en live
+- ❌ **JAMAIS** conditionner publication / monétisation / live au rôle `influencer`
+
+## Ce qui distingue un `influencer` d'un user classique
+- ✅ **Seul le rôle `influencer`** donne accès à la gestion des **codes promotionnels**
+- Tous les autres droits (contenu, live, monétisation) sont ouverts à tous les users
+
+---
+
+# 🚨 RÈGLE 00A - TERMINOLOGIE KASOLIFE : LIFEUR / LIFEUSE
+
+⛔ **INTERDICTION d'utiliser "Créateur" / "Créatrice" pour désigner les créateurs de contenu KasoLife**
+- ❌ **JAMAIS** "Créateur de contenu", "Créatrice de contenu" dans l'UI, les messages, les labels, les routes, les emails ou la documentation
+- ✅ **TOUJOURS** utiliser **Lifeur** (masculin) et **Lifeuse** (féminin)
+- ✅ Pluriel : **Lifeurs** / **Lifeuses** / **Lifeurs·euses** (inclusif)
+- ✅ En anglais : **Lifer** (singulier), **Lifers** (pluriel)
+- Cette règle s'applique à **toutes les surfaces** : UI frontend, messages backend, emails, notifications push, documentation, commentaires de code visibles par l'utilisateur
+- **Exception unique :** les noms de rôles en base de données (`influencer`) et les routes API internes restent inchangés pour ne pas casser le schéma existant
+
+---
+
 # 🖥️ ACCÈS SERVEUR VPS — INFOS DE CONNEXION
 
 **Serveur de production KasoLife**

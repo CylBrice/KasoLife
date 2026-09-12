@@ -5,12 +5,20 @@ import Link from "next/link";
 import {
   Camera, UserCircle, BadgeCheck, ShieldCheck, ShieldAlert,
   ShieldQuestion, ChevronRight, Loader2, AlertTriangle, Trash2,
-  Mars, Venus,
+  Mars, Venus, ImageIcon, Info,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLocale } from "@/i18n/locale-context";
 import { api } from "@/lib/api";
+import { HtmlTitleInput, sanitizeHtmlTitle } from "@/components/ui/html-title-input";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalActions } from "@/components/ui/modal";
+import { ImageCropper, type CropResult } from "@/components/ui/image-cropper";
+
+// Formats acceptés — alignés avec le backend KasoLife
+const ACCEPTED_MIME = "image/jpeg,image/png,image/webp,image/avif,image/gif";
+const ACCEPTED_LABEL = ".jpg, .png, .webp, .avif, .gif — max 5 Mo";
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 type Msg = { text: string; type: "success" | "error" } | null;
 
@@ -26,7 +34,8 @@ function useMsg() {
 function Toast({ msg }: { msg: Msg }) {
   if (!msg) return null;
   return (
-    <p className={`mt-2 text-sm font-medium ${msg.type === "success" ? "text-emerald-bright" : "text-brick"}`}>
+    <p className={`mt-2 flex items-center gap-1.5 text-sm font-medium ${msg.type === "success" ? "text-emerald-bright" : "text-brick"}`}>
+      {msg.type === "error" && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
       {msg.text}
     </p>
   );
@@ -40,15 +49,27 @@ export function TabIdentite() {
   const avatarRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
+  // Crop state
+  const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null);
+  const [bannerCropSrc, setBannerCropSrc] = useState<string | null>(null);
+
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [bannerLoading, setBannerLoading] = useState(false);
   const avatarMsg = useMsg();
   const bannerMsg = useMsg();
 
+  // Confirmation suppression
+  const [deleteTarget, setDeleteTarget] = useState<"avatar" | "banner" | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
   const nameMsg = useMsg();
   const [nameSaving, setNameSaving] = useState(false);
+
+  const [lifeurName, setLifeurName] = useState((user as any)?.creator_profile?.display_name || "");
+  const lifeurNameMsg = useMsg();
+  const [lifeurNameSaving, setLifeurNameSaving] = useState(false);
 
   const [newPseudo, setNewPseudo] = useState("");
   const pseudoMsg = useMsg();
@@ -72,36 +93,89 @@ export function TabIdentite() {
   const errText = (err: unknown) =>
     (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (isEn ? "Error" : "Erreur");
 
-  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  // ── Validation taille fichier ────────────────────────────────
+  const validateFile = (file: File, showFn: (t: string, tp: "success" | "error") => void): boolean => {
+    if (file.size > MAX_FILE_SIZE) {
+      showFn(isEn ? "File too large (max 5 MB)" : "Fichier trop volumineux (max 5 Mo)", "error");
+      return false;
+    }
+    return true;
+  };
+
+  // ── Avatar : sélection → crop ────────────────────────────────
+  const handleAvatarFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!validateFile(file, avatarMsg.show)) return;
+    const url = URL.createObjectURL(file);
+    setAvatarCropSrc(url);
+    if (avatarRef.current) avatarRef.current.value = "";
+  };
+
+  const handleAvatarCropConfirm = async (result: CropResult) => {
+    setAvatarCropSrc(null);
     setAvatarLoading(true);
+    avatarMsg.show("", "success"); // reset
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", result.blob, "avatar.webp");
       await api.post("/uploads/avatar", fd, { headers: { "Content-Type": "multipart/form-data" } });
       await refresh();
       avatarMsg.show(isEn ? "Photo updated." : "Photo mise à jour.", "success");
     } catch (err) {
       avatarMsg.show(errText(err), "error");
-    } finally { setAvatarLoading(false); if (avatarRef.current) avatarRef.current.value = ""; }
+    } finally {
+      setAvatarLoading(false);
+    }
   };
 
-  const handleBannerChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  // ── Bannière : sélection → crop ──────────────────────────────
+  const handleBannerFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!validateFile(file, bannerMsg.show)) return;
+    const url = URL.createObjectURL(file);
+    setBannerCropSrc(url);
+    if (bannerRef.current) bannerRef.current.value = "";
+  };
+
+  const handleBannerCropConfirm = async (result: CropResult) => {
+    setBannerCropSrc(null);
     setBannerLoading(true);
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", result.blob, "banner.webp");
       await api.post("/uploads/banner", fd, { headers: { "Content-Type": "multipart/form-data" } });
       await refresh();
       bannerMsg.show(isEn ? "Banner updated." : "Bannière mise à jour.", "success");
     } catch (err) {
       bannerMsg.show(errText(err), "error");
-    } finally { setBannerLoading(false); if (bannerRef.current) bannerRef.current.value = ""; }
+    } finally {
+      setBannerLoading(false);
+    }
   };
 
+  // ── Suppression avatar / bannière ────────────────────────────
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/uploads/${deleteTarget}`);
+      await refresh();
+      setDeleteTarget(null);
+      (deleteTarget === "avatar" ? avatarMsg : bannerMsg).show(
+        isEn ? "Deleted." : "Supprimé.",
+        "success",
+      );
+    } catch (err) {
+      (deleteTarget === "avatar" ? avatarMsg : bannerMsg).show(errText(err), "error");
+      setDeleteTarget(null);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // ── Formulaires identité ─────────────────────────────────────
   const handleSaveName = async (e: FormEvent) => {
     e.preventDefault();
     if (!prenom.trim() || !nom.trim()) return;
@@ -115,9 +189,41 @@ export function TabIdentite() {
     finally { setNameSaving(false); }
   };
 
+  const handleSaveLifeurName = async (e: FormEvent) => {
+    e.preventDefault();
+    const sanitized = sanitizeHtmlTitle(lifeurName.trim());
+    if (!sanitized) return;
+    if (sanitized.length > 100) {
+      lifeurNameMsg.show(isEn ? "Max 100 characters." : "100 caractères maximum.", "error");
+      return;
+    }
+    setLifeurNameSaving(true);
+    try {
+      await api.put("/creators/profile", { display_name: sanitized });
+      await refresh();
+      lifeurNameMsg.show(isEn ? "Name updated." : "Nom mis à jour.", "success");
+    } catch (err) { lifeurNameMsg.show(errText(err), "error"); }
+    finally { setLifeurNameSaving(false); }
+  };
+
+  const PSEUDO_MAX = 5;
+  const EXEMPT_ROLES = ["super_admin", "root_admin"];
+  const pseudoChangesCount = (u.pseudo_changes_count ?? 0) as number;
+  const isExempt = EXEMPT_ROLES.includes(u.role);
+  const pseudoChangesRemaining = isExempt ? null : PSEUDO_MAX - pseudoChangesCount;
+  const pseudoLimitReached = !isExempt && pseudoChangesRemaining !== null && pseudoChangesRemaining <= 0;
+
+  const [showPseudoWarning, setShowPseudoWarning] = useState(false);
+
   const handleSavePseudo = async (e: FormEvent) => {
     e.preventDefault();
     if (!newPseudo.trim()) return;
+    // Afficher popup si dernier changement restant
+    if (!isExempt && pseudoChangesRemaining === 1 && !showPseudoWarning) {
+      setShowPseudoWarning(true);
+      return;
+    }
+    setShowPseudoWarning(false);
     setPseudoSaving(true);
     try {
       await api.put("/auth/pseudo", { pseudo: newPseudo.trim() });
@@ -132,7 +238,7 @@ export function TabIdentite() {
     e.preventDefault();
     setBioSaving(true);
     try {
-      await api.put("/auth/profile", { bio });
+      await api.put("/auth/profile", { bio: sanitizeHtmlTitle(bio) });
       await refresh();
       bioMsg.show(isEn ? "Bio updated." : "Bio mise à jour.", "success");
     } catch (err) { bioMsg.show(errText(err), "error"); }
@@ -186,14 +292,37 @@ export function TabIdentite() {
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-2">
-            <input ref={avatarRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
+          <div className="flex flex-row flex-wrap gap-2">
+            <input
+              ref={avatarRef}
+              type="file"
+              accept={ACCEPTED_MIME}
+              className="hidden"
+              onChange={handleAvatarFileSelect}
+            />
             <Button size="sm" variant="secondary" onClick={() => avatarRef.current?.click()} disabled={avatarLoading}>
               {avatarLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-              {user.avatar_url ? (isEn ? "Change photo" : "Changer la photo") : (isEn ? "Add photo" : "Ajouter une photo")}
+              {user.avatar_url
+                ? (isEn ? "Change photo" : "Changer la photo")
+                : (isEn ? "Add photo" : "Ajouter une photo")}
             </Button>
+            {user.avatar_url && (
+              <button
+                type="button"
+                onClick={() => setDeleteTarget("avatar")}
+                disabled={avatarLoading}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-800/60 bg-rose-800/80 px-3 h-9 text-sm font-medium text-white transition-colors hover:bg-rose-900 disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isEn ? "Remove photo" : "Supprimer la photo"}
+              </button>
+            )}
           </div>
         </div>
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-sage-muted">
+          <ImageIcon className="h-3 w-3 shrink-0" />
+          {ACCEPTED_LABEL}
+        </p>
         <Toast msg={avatarMsg.msg} />
       </div>
 
@@ -203,16 +332,41 @@ export function TabIdentite() {
           <Camera className="h-5 w-5 text-gold" />
           {isEn ? "Banner" : "Bannière"}
         </h2>
-        <div className="relative aspect-[4/1] w-full overflow-hidden rounded-xl bg-gradient-to-br from-gold/20 via-ink-raised to-emerald/20">
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-gold/20 via-ink-raised to-emerald/20">
           {u.banner_url && (
             <Image src={u.banner_url} alt="Bannière" fill className="object-cover" sizes="600px" />
           )}
         </div>
-        <input ref={bannerRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleBannerChange} />
-        <Button size="sm" variant="secondary" className="mt-3" onClick={() => bannerRef.current?.click()} disabled={bannerLoading}>
-          {bannerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {u.banner_url ? (isEn ? "Change banner" : "Changer la bannière") : (isEn ? "Add banner" : "Ajouter une bannière")}
-        </Button>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            ref={bannerRef}
+            type="file"
+            accept={ACCEPTED_MIME}
+            className="hidden"
+            onChange={handleBannerFileSelect}
+          />
+          <Button size="sm" variant="secondary" onClick={() => bannerRef.current?.click()} disabled={bannerLoading}>
+            {bannerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {u.banner_url
+              ? (isEn ? "Change banner" : "Changer la bannière")
+              : (isEn ? "Add banner" : "Ajouter une bannière")}
+          </Button>
+          {u.banner_url && (
+            <button
+              type="button"
+              onClick={() => setDeleteTarget("banner")}
+              disabled={bannerLoading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-800/60 bg-rose-800/80 px-3 h-9 text-sm font-medium text-white transition-colors hover:bg-rose-900 disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isEn ? "Remove banner" : "Supprimer la bannière"}
+            </button>
+          )}
+        </div>
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-sage-muted">
+          <ImageIcon className="h-3 w-3 shrink-0" />
+          {ACCEPTED_LABEL}
+        </p>
         <Toast msg={bannerMsg.msg} />
       </div>
 
@@ -284,7 +438,13 @@ export function TabIdentite() {
 
         {/* Nom complet */}
         <form onSubmit={handleSaveName} className="mb-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sage-muted">{isEn ? "Full name" : "Nom complet"}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sage-muted">{isEn ? "Full name" : "Nom complet"}</p>
+            <span className="flex items-center gap-1 rounded-lg bg-ink-raised px-2 py-0.5 text-[10px] text-sage-muted">
+              <ShieldCheck className="h-3 w-3 shrink-0 text-gold" />
+              {isEn ? "Private — never visible publicly" : "Privé — jamais visible publiquement"}
+            </span>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-sage">{isEn ? "First name" : "Prénom"}</label>
@@ -312,22 +472,128 @@ export function TabIdentite() {
           <Toast msg={nameMsg.msg} />
         </form>
 
+        {/* Nom Lifeur(se) — visible pour tous les utilisateurs */}
+        <form onSubmit={handleSaveLifeurName} className="mb-5 space-y-3 border-t border-ink-line pt-5">
+            <div className="space-y-0.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-sage-muted">
+                {isEn ? "Lifer name" : "Nom Lifeur(se)"}
+              </p>
+              <p className="text-xs text-sage">
+                {isEn
+                  ? "Your public name displayed on your profile and to your subscribers. Supports HTML for styling, animations and emojis."
+                  : "Votre nom public affiché sur votre profil et auprès de vos abonnés. Supporte le HTML pour la mise en forme, les animations et les emojis."}
+              </p>
+            </div>
+
+            <HtmlTitleInput
+              value={lifeurName}
+              onChange={setLifeurName}
+              maxLength={100}
+              placeholder={isEn ? "✨ My Name ✨" : "✨ Mon Nom ✨"}
+            />
+
+            <div className="flex justify-end">
+              <Button size="sm" type="submit" disabled={lifeurNameSaving || !sanitizeHtmlTitle(lifeurName).trim()}>
+                {lifeurNameSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isEn ? "Update" : "Mettre à jour"}
+              </Button>
+            </div>
+            <Toast msg={lifeurNameMsg.msg} />
+          </form>
+
         {/* Pseudo */}
         <form onSubmit={handleSavePseudo} className="mb-5 space-y-3 border-t border-ink-line pt-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sage-muted">{isEn ? "Nickname" : "Pseudonyme"}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sage-muted">{isEn ? "Nickname" : "Pseudonyme"}</p>
+            {/* Décompte changements restants */}
+            {!isExempt && (
+              <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                pseudoLimitReached
+                  ? "bg-brick/15 text-brick"
+                  : pseudoChangesRemaining === 1
+                    ? "bg-amber-500/15 text-amber-400"
+                    : "bg-ink-raised text-sage-muted"
+              }`}>
+                <Info className="h-3 w-3 shrink-0" />
+                {pseudoLimitReached
+                  ? (isEn ? "0 changes left" : "0 changement restant")
+                  : isEn
+                    ? `${pseudoChangesRemaining}/${PSEUDO_MAX} changes left`
+                    : `${pseudoChangesRemaining}/${PSEUDO_MAX} changements restants`}
+              </span>
+            )}
+          </div>
+
+          {/* Règles de validation visibles */}
+          <p className="text-xs text-sage-muted">
+            {isEn
+              ? "3–20 characters: letters, numbers and underscore (_) only"
+              : "3 à 20 caractères : lettres, chiffres et underscore (_) uniquement"}
+          </p>
+
           <div className="flex gap-2">
             <input
-              className="h-10 flex-1 rounded-xl border border-ink-line bg-ink-raised px-3 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              value={newPseudo} onChange={(e) => setNewPseudo(e.target.value)}
+              className="h-10 flex-1 rounded-xl border border-ink-line bg-ink-raised px-3 text-sm text-cream placeholder:text-sage-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold disabled:opacity-50"
+              value={newPseudo}
+              onChange={(e) => setNewPseudo(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
               placeholder={user.pseudo ? `@${user.pseudo}` : "@monpseudo"}
+              maxLength={20}
+              disabled={pseudoLimitReached}
             />
-            <Button size="sm" type="submit" disabled={pseudoSaving || !newPseudo.trim()}>
+            <Button size="sm" type="submit" disabled={pseudoSaving || !newPseudo.trim() || pseudoLimitReached}>
               {pseudoSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isEn ? "Change" : "Changer"}
             </Button>
           </div>
+
+          {/* Alerte limite atteinte */}
+          {pseudoLimitReached && (
+            <p className="flex items-center gap-1.5 text-xs text-brick">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {isEn
+                ? `You have used all ${PSEUDO_MAX} lifetime pseudo changes. Contact support if needed.`
+                : `Vous avez utilisé vos ${PSEUDO_MAX} changements de pseudo autorisés à vie. Contactez le support si nécessaire.`}
+            </p>
+          )}
+
           <Toast msg={pseudoMsg.msg} />
         </form>
+
+        {/* Popup confirmation dernier changement */}
+        <Modal
+          open={showPseudoWarning}
+          onClose={() => setShowPseudoWarning(false)}
+          title={isEn ? "⚠️ Last pseudo change" : "⚠️ Dernier changement de pseudo"}
+          size="sm"
+        >
+          <p className="text-sm text-sage">
+            {isEn
+              ? `This is your last allowed pseudo change (${PSEUDO_MAX}/${PSEUDO_MAX}). Once confirmed, you will no longer be able to change your username. Are you sure?`
+              : `C'est votre dernier changement de pseudo autorisé (${PSEUDO_MAX}/${PSEUDO_MAX}). Une fois confirmé, vous ne pourrez plus changer votre identifiant. Êtes-vous sûr(e) ?`}
+          </p>
+          <ModalActions>
+            <Button variant="ghost" size="sm" onClick={() => setShowPseudoWarning(false)}>
+              {isEn ? "Cancel" : "Annuler"}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={pseudoSaving}
+              onClick={() => {
+                // Relancer le submit en bypassant le guard (warning déjà affiché)
+                setPseudoSaving(true);
+                api.put("/auth/pseudo", { pseudo: newPseudo.trim() })
+                  .then(() => refresh())
+                  .then(() => { setNewPseudo(""); pseudoMsg.show(isEn ? "Nickname updated." : "Pseudo mis à jour.", "success"); })
+                  .catch((err: any) => pseudoMsg.show(errText(err), "error"))
+                  .finally(() => { setPseudoSaving(false); setShowPseudoWarning(false); });
+              }}
+            >
+              {pseudoSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isEn ? "Confirm — last change" : "Confirmer — dernier changement"}
+            </Button>
+          </ModalActions>
+        </Modal>
 
         {/* Bio */}
         <form onSubmit={handleSaveBio} className="mb-5 space-y-3 border-t border-ink-line pt-5">
@@ -400,6 +666,49 @@ export function TabIdentite() {
           <Toast msg={genderMsg.msg} />
         </form>
       </div>
+
+      {/* ── Croppers ─────────────────────────────────────────────── */}
+      {avatarCropSrc && (
+        <ImageCropper
+          imageSrc={avatarCropSrc}
+          ratio="square"
+          onCancel={() => { setAvatarCropSrc(null); URL.revokeObjectURL(avatarCropSrc); }}
+          onConfirm={handleAvatarCropConfirm}
+        />
+      )}
+      {bannerCropSrc && (
+        <ImageCropper
+          imageSrc={bannerCropSrc}
+          ratio="banner"
+          onCancel={() => { setBannerCropSrc(null); URL.revokeObjectURL(bannerCropSrc); }}
+          onConfirm={handleBannerCropConfirm}
+        />
+      )}
+
+      {/* ── Modale confirmation suppression ─────────────────────── */}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title={deleteTarget === "avatar"
+          ? (isEn ? "Remove profile photo?" : "Supprimer la photo de profil ?")
+          : (isEn ? "Remove banner?" : "Supprimer la bannière ?")}
+        size="sm"
+      >
+        <p className="text-sm text-sage">
+          {isEn
+            ? "This action cannot be undone."
+            : "Cette action est irréversible."}
+        </p>
+        <ModalActions>
+          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>
+            {isEn ? "Cancel" : "Annuler"}
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleteLoading}>
+            {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {isEn ? "Delete" : "Supprimer"}
+          </Button>
+        </ModalActions>
+      </Modal>
     </div>
   );
 }

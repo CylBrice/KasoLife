@@ -16,6 +16,7 @@ const { cleanupStream } = require('../services/streamCleanupService');
 const { finalizeStreamPayments } = require('../services/streamFinalizationService');
 const { PPV_PRICE_MIN, PPV_PRICE_MAX } = require('../config/constants');
 const configService = require('../services/configService');
+const { sanitizeHtmlTitle } = require('../services/htmlSanitizer');
 
 const router = express.Router();
 
@@ -65,7 +66,7 @@ router.post('/start', startLimit, authMiddleware, requireMinRole('influencer'), 
 
     const { data: stream, error } = await supabase.from('live_streams').insert({
       id: uuidv4(), creator_id: req.user.id, room_name: roomName,
-      title: title ? String(title).slice(0, 120) : null,
+      title: title ? sanitizeHtmlTitle(String(title)).slice(0, 300) || null : null,
       status: 'LIVE',
       price_xcon: priceXcon,
     }).select().single();

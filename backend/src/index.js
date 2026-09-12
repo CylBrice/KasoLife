@@ -211,31 +211,78 @@ const notifySuperAdminAlert = async (title, body, data = {}) => {
 
 
 // ============================================================
-// CRON #1 — Renouvellement automatique des abonnements (toutes les heures)
+// CRON A — Opérations temps réel (toutes les 5 minutes)
+// • Publication des posts programmés (tolérance ±5 min acceptable)
+// • Réconciliation des directs LiveKit orphelins
 // ============================================================
 const SUBSCRIPTION_PERIOD_DAYS = 30;
+cron.schedule('*/5 * * * *', async () => {
+  const now = new Date().toISOString();
+
+  // ── A1 : Posts programmés ──────────────────────────────────
+  try {
+    const { data: scheduled } = await supabase.from('posts')
+      .select('id').eq('is_published', false)
+      .not('scheduled_at', 'is', null)
+      .lte('scheduled_at', now);
+
+    if (scheduled && scheduled.length > 0) {
+      for (const post of scheduled) {
+        await supabase.from('posts').update({ is_published: true, updated_at: now }).eq('id', post.id);
+      }
+      logger.info('CRON-A', `${scheduled.length} post(s) programmé(s) publié(s)`);
+    }
+  } catch (e) { captureError('CRON-A-POSTS', e); }
+
+  // ── A2 : Directs LiveKit orphelins ─────────────────────────
+  try {
+    const { data: liveRows } = await supabase.from('live_streams')
+      .select('id, room_name').eq('status', 'LIVE');
+    if (liveRows && liveRows.length > 0) {
+      const { listActiveRooms } = require('./services/livekit');
+      const activeRooms = await listActiveRooms();
+      const activeNames = new Set((activeRooms || []).map((r) => r.name));
+      let closed = 0;
+      for (const row of liveRows) {
+        if (!activeNames.has(row.room_name)) {
+          await supabase.from('live_streams')
+            .update({ status: 'ENDED', ended_at: now }).eq('id', row.id);
+          closed++;
+        }
+      }
+      if (closed > 0) logger.info('CRON-A', `${closed} direct(s) orphelin(s) clôturé(s)`);
+    }
+  } catch (e) { captureError('CRON-A-LIVE', e); }
+});
+
+
+// ============================================================
+// CRON B — Opérations horaires (toutes les heures)
+// • Renouvellement automatique des abonnements
+// • Surveillance de solvabilité
+// • Détection de fraude (heures paires seulement = toutes les 2h)
+// ============================================================
 cron.schedule('0 * * * *', async () => {
+  const now = new Date().toISOString();
+  const hour = new Date().getUTCHours();
+
+  // ── B1 : Renouvellement des abonnements ────────────────────
   try {
     const configService = require('./services/configService');
-    const now = new Date().toISOString();
-
+    const subscriptionRate = await configService.getCommissionRate('subscription');
     const { data: dueSubs } = await supabase.from('subscriptions')
       .select('id, fan_id, creator_id, price_xcon')
       .eq('status', 'ACTIVE').eq('auto_renew', true)
       .lte('current_period_end', now);
-
-    const subscriptionRate = await configService.getCommissionRate('subscription');
 
     for (const sub of dueSubs || []) {
       try {
         const price = sub.price_xcon;
         const commission = Math.round(price * subscriptionRate);
         const creatorShare = price - commission;
-
         const { data: newBalance, error: debitErr } = await supabase.rpc('debit_wallet', {
           p_user_id: sub.fan_id, p_amount: price,
         });
-
         if (debitErr) {
           await supabase.from('subscriptions').update({ status: 'PAST_DUE', updated_at: now }).eq('id', sub.id);
           await supabase.from('notifications').insert({
@@ -245,186 +292,103 @@ cron.schedule('0 * * * *', async () => {
           });
           continue;
         }
-
         const newPeriodEnd = new Date(Date.now() + SUBSCRIPTION_PERIOD_DAYS * 24 * 3600000).toISOString();
-        await supabase.from('subscriptions').update({
-          current_period_end: newPeriodEnd, updated_at: now,
-        }).eq('id', sub.id);
-
+        await supabase.from('subscriptions').update({ current_period_end: newPeriodEnd, updated_at: now }).eq('id', sub.id);
         await supabase.rpc('credit_pending_balance', { p_user_id: sub.creator_id, p_amount: creatorShare });
-
         await supabase.from('transactions').insert([
-          {
-            id: uuidv4(), user_id: sub.fan_id, type: 'SUBSCRIPTION_PAYMENT', amount_xcon: -price,
-            balance_after: newBalance, description: 'Renouvellement abonnement', related_user_id: sub.creator_id,
-          },
-          {
-            id: uuidv4(), user_id: sub.creator_id, type: 'SUBSCRIPTION_INCOME', amount_xcon: creatorShare,
-            balance_after: 0, description: 'Renouvellement abonné', related_user_id: sub.fan_id,
-          },
+          { id: uuidv4(), user_id: sub.fan_id, type: 'SUBSCRIPTION_PAYMENT', amount_xcon: -price, balance_after: newBalance, description: 'Renouvellement abonnement', related_user_id: sub.creator_id },
+          { id: uuidv4(), user_id: sub.creator_id, type: 'SUBSCRIPTION_INCOME', amount_xcon: creatorShare, balance_after: 0, description: 'Renouvellement abonné', related_user_id: sub.fan_id },
         ]);
-
         await supabase.from('platform_revenue').insert({
           id: uuidv4(), source_type: 'COMMISSION_ABONNEMENT', amount_xcon: commission,
           reference_id: sub.id, user_id: sub.creator_id,
         });
-      } catch (e) { captureError('CRON#1-SUB-RENEWAL-ITEM', e); }
+      } catch (e) { captureError('CRON-B-SUB-ITEM', e); }
     }
-    if ((dueSubs || []).length > 0) logger.info('CRON#1', `${dueSubs.length} abonnement(s) traité(s)`);
-  } catch (e) { captureError('CRON#1-SUB-RENEWAL', e); }
-});
+    if ((dueSubs || []).length > 0) logger.info('CRON-B', `${dueSubs.length} abonnement(s) renouvelé(s)`);
+  } catch (e) { captureError('CRON-B-SUBS', e); }
 
-
-// ============================================================
-// CRON #2 — Expiration définitive des abonnements PAST_DUE > 3 jours
-// ============================================================
-cron.schedule('0 */6 * * *', async () => {
-  try {
-    const cutoff = new Date(Date.now() - 3 * 24 * 3600000).toISOString();
-    const { data: expired } = await supabase.from('subscriptions')
-      .select('id, creator_id').eq('status', 'PAST_DUE').lte('updated_at', cutoff);
-
-    for (const sub of expired || []) {
-      await supabase.from('subscriptions').update({ status: 'EXPIRED', updated_at: new Date().toISOString() }).eq('id', sub.id);
-      await supabase.rpc('increment_subscribers_count', { p_creator_id: sub.creator_id, p_delta: -1 });
-    }
-    if ((expired || []).length > 0) logger.info('CRON#2', `${expired.length} abonnement(s) expiré(s)`);
-  } catch (e) { captureError('CRON#2-SUB-EXPIRY', e); }
-});
-
-
-// ============================================================
-// CRON #3 — Nettoyage des tokens expirés (quotidien, 01h00)
-// ============================================================
-cron.schedule('0 1 * * *', async () => {
-  try {
-    const now = new Date().toISOString();
-    await supabase.from('refresh_tokens').delete().lt('expires_at', now);
-    await supabase.from('password_reset_tokens').delete().lt('expires_at', now);
-    await supabase.from('phone_verification_tokens').delete().lt('expires_at', now);
-    await supabase.from('email_verification_tokens').delete().lt('expires_at', now);
-    logger.info('CRON#3', 'Nettoyage des tokens expirés effectué');
-  } catch (e) { captureError('CRON#3-CLEAN-TOKENS', e); }
-});
-
-
-// ============================================================
-// CRON #4 — Nettoyage des notifications anciennes (> 30 jours)
-// ============================================================
-cron.schedule('30 1 * * *', async () => {
-  try {
-    const cutoff = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
-    await supabase.from('notifications').delete().lt('created_at', cutoff).eq('is_read', true);
-    logger.info('CRON#4', 'Nettoyage notifications effectué');
-  } catch (e) { captureError('CRON#4-CLEAN-NOTIFS', e); }
-});
-
-
-// ============================================================
-// CRON #5 — Surveillance solvabilité (toutes les heures)
-// ============================================================
-cron.schedule('0 * * * *', async () => {
+  // ── B2 : Surveillance solvabilité ─────────────────────────
   try {
     const { data: wallets } = await supabase.from('wallets').select('balance_xcon, pending_balance_xcon, total_deposited');
-    const totalBalances = (wallets || []).reduce((s, w) => s + (w.balance_xcon || 0) + (w.pending_balance_xcon || 0), 0);
+    const totalBalances  = (wallets || []).reduce((s, w) => s + (w.balance_xcon || 0) + (w.pending_balance_xcon || 0), 0);
     const totalDeposited = (wallets || []).reduce((s, w) => s + (w.total_deposited || 0), 0);
-    const solvencyRatio = totalBalances > 0 ? Math.round((totalDeposited / totalBalances) * 100) : 100;
-
+    const solvencyRatio  = totalBalances > 0 ? Math.round((totalDeposited / totalBalances) * 100) : 100;
     const { data: solvRed } = await supabase.from('platform_config').select('value').eq('key', 'SOLVENCY_RED').single();
     const threshold = solvRed ? Number(solvRed.value) : 90;
-
     if (solvencyRatio < threshold) {
       logger.crit('SOLVENCY', `Ratio solvabilité CRITIQUE : ${solvencyRatio}% (seuil: ${threshold}%)`);
-      await notifySuperAdminAlert(
-        '🔴 Solvabilité critique !',
+      await notifySuperAdminAlert('🔴 Solvabilité critique !',
         `Ratio : ${solvencyRatio}% — seuil rouge : ${threshold}%. Vérifiez le dashboard immédiatement.`,
-        { type: 'SOLVENCY_ALERT', ratio: solvencyRatio }
-      );
+        { type: 'SOLVENCY_ALERT', ratio: solvencyRatio });
     }
-  } catch (e) { captureError('CRON-SOLVENCY-ALERT', e); }
+  } catch (e) { captureError('CRON-B-SOLVENCY', e); }
+
 });
 
 
 // ============================================================
-// CRON #6 — Rotation des fichiers logs (> 31 jours)
-// ============================================================
-cron.schedule('0 4 * * *', async () => {
-  try {
-    const files = fs.readdirSync(LOGS_DIR).filter(f => f.startsWith('log_') && f.endsWith('.txt'));
-    const cutoff = Date.now() - 31 * 24 * 3600 * 1000;
-    let deleted = 0;
-    for (const file of files) {
-      const filePath = path.join(LOGS_DIR, file);
-      const stat = fs.statSync(filePath);
-      if (stat.mtimeMs < cutoff) { fs.unlinkSync(filePath); deleted++; }
-    }
-    if (deleted > 0) logger.info('CRON-LOGS', `Rotation : ${deleted} fichier(s) log supprimé(s)`);
-  } catch (e) { captureError('CRON-LOGS-ROTATION', e); }
-});
-
-
-// ============================================================
-// CRON #7 — Détection de fraude (anomalies transactionnelles)
-// Toutes les 30 minutes — désactivable via AI_FRAUD_DETECTION_ENABLED
+// CRON D — Détection de fraude (toutes les 30 minutes)
+// Désactivable via AI_FRAUD_DETECTION_ENABLED
 // ============================================================
 cron.schedule('*/30 * * * *', async () => {
   try {
     const { runFraudDetection } = require('./services/fraudDetection');
     const result = await runFraudDetection();
-    if (!result.skipped) logger.info('CRON#7', 'Détection de fraude exécutée');
-  } catch (e) { captureError('CRON#7-FRAUD-DETECTION', e); }
+    if (!result.skipped) logger.info('CRON-D', 'Détection de fraude exécutée');
+  } catch (e) { captureError('CRON-D-FRAUD', e); }
 });
 
 
 // ============================================================
-// CRON #8 — Publication automatique des posts programmés (toutes les minutes)
+// CRON C — Maintenance nocturne (quotidien à 02h00)
+// • Expiration définitive des abonnements PAST_DUE > 3 jours
+// • Nettoyage des tokens expirés
+// • Nettoyage des notifications lues > 30 jours
+// • Rotation des fichiers logs > 31 jours
 // ============================================================
-cron.schedule('* * * * *', async () => {
+cron.schedule('0 2 * * *', async () => {
+  const now = new Date().toISOString();
+
+  // ── C1 : Abonnements PAST_DUE → EXPIRED ───────────────────
   try {
-    const now = new Date().toISOString();
-    const { data: scheduled } = await supabase.from('posts')
-      .select('id, creator_id').eq('is_published', false)
-      .lte('scheduled_at', now);
-
-    if (!scheduled || scheduled.length === 0) return;
-
-    for (const post of scheduled) {
-      await supabase.from('posts')
-        .update({ is_published: true, updated_at: now })
-        .eq('id', post.id);
+    const cutoff = new Date(Date.now() - 3 * 24 * 3600000).toISOString();
+    const { data: expired } = await supabase.from('subscriptions')
+      .select('id, creator_id').eq('status', 'PAST_DUE').lte('updated_at', cutoff);
+    for (const sub of expired || []) {
+      await supabase.from('subscriptions').update({ status: 'EXPIRED', updated_at: now }).eq('id', sub.id);
+      await supabase.rpc('increment_subscribers_count', { p_creator_id: sub.creator_id, p_delta: -1 });
     }
-    logger.info('CRON#8', `${scheduled.length} post(s) programmé(s) publié(s)`);
-  } catch (e) { captureError('CRON#8-PUBLISH-SCHEDULED', e); }
-});
+    if ((expired || []).length > 0) logger.info('CRON-C', `${expired.length} abonnement(s) expiré(s)`);
+  } catch (e) { captureError('CRON-C-SUB-EXPIRY', e); }
 
-
-// ============================================================
-// CRON #9 — Réconciliation des directs orphelins (toutes les 5 min)
-// Si LiveKit a fermé une room (emptyTimeout écoulé côté LiveKit) mais que
-// la base la dit toujours LIVE (déconnexion brutale du créateur), on
-// referme côté base pour ne pas laisser un badge "en direct" fantôme.
-// ============================================================
-cron.schedule('*/5 * * * *', async () => {
+  // ── C2 : Tokens expirés ────────────────────────────────────
   try {
-    const { data: liveRows } = await supabase.from('live_streams')
-      .select('id, room_name').eq('status', 'LIVE');
-    if (!liveRows || liveRows.length === 0) return;
+    await supabase.from('refresh_tokens').delete().lt('expires_at', now);
+    await supabase.from('password_reset_tokens').delete().lt('expires_at', now);
+    await supabase.from('phone_verification_tokens').delete().lt('expires_at', now);
+    await supabase.from('email_verification_tokens').delete().lt('expires_at', now);
+    logger.info('CRON-C', 'Tokens expirés nettoyés');
+  } catch (e) { captureError('CRON-C-TOKENS', e); }
 
-    const { listActiveRooms } = require('./services/livekit');
-    const activeRooms = await listActiveRooms();
-    const activeNames = new Set((activeRooms || []).map((r) => r.name));
+  // ── C3 : Notifications lues > 30 jours ────────────────────
+  try {
+    const notifCutoff = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
+    await supabase.from('notifications').delete().lt('created_at', notifCutoff).eq('is_read', true);
+    logger.info('CRON-C', 'Notifications anciennes nettoyées');
+  } catch (e) { captureError('CRON-C-NOTIFS', e); }
 
-    let closed = 0;
-    for (const row of liveRows) {
-      if (!activeNames.has(row.room_name)) {
-        await supabase.from('live_streams')
-          .update({ status: 'ENDED', ended_at: new Date().toISOString() })
-          .eq('id', row.id);
-        closed++;
-      }
+  // ── C4 : Rotation des logs > 31 jours ─────────────────────
+  try {
+    const files = fs.readdirSync(LOGS_DIR).filter(f => f.startsWith('log_') && f.endsWith('.txt'));
+    const logCutoff = Date.now() - 31 * 24 * 3600 * 1000;
+    let deleted = 0;
+    for (const file of files) {
+      const filePath = path.join(LOGS_DIR, file);
+      if (fs.statSync(filePath).mtimeMs < logCutoff) { fs.unlinkSync(filePath); deleted++; }
     }
-    if (closed > 0) logger.info('CRON#9', `${closed} direct(s) orphelin(s) clôturé(s)`);
-  } catch (e) { captureError('CRON#9-LIVE-RECONCILE', e); }
+    if (deleted > 0) logger.info('CRON-C', `Rotation logs : ${deleted} fichier(s) supprimé(s)`);
+  } catch (e) { captureError('CRON-C-LOGS', e); }
 });
 
 

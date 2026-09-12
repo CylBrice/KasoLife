@@ -13,11 +13,12 @@ const { v4: uuidv4 } = require('uuid');
 const supabase  = require('../config/supabase');
 const redis     = require('../lib/redis');
 const { authMiddleware } = require('../middleware/auth');
+const { sanitizeHtmlTitle } = require('../services/htmlSanitizer');
 const { encrypt, decrypt, encryptDeterministic } = require('../services/encryption');
 const { generateOTP, sendPasswordResetOTP, sendSMS, sendEmailOTP } = require('../services/sms');
 const { sendEmail, templates } = require('../services/email');
 const {
-  isValidE164, isValidPseudo, PSEUDO_ERROR_MSG, EMAIL_OTP_EXPIRY_MIN,
+  isValidE164, isValidPseudo, PSEUDO_ERROR_MSG, PSEUDO_MAX_CHANGES, EMAIL_OTP_EXPIRY_MIN,
   ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY_MS,
   SESSION_SOFT_EXPIRY_MS, SESSION_HARD_EXPIRY_MS, MAX_ACTIVE_SESSIONS,
   detectMobileOperator, MOBILE_MONEY_MAX_PER_OPERATOR, MOBILE_MONEY_MAX_TOTAL,
@@ -396,7 +397,7 @@ router.post('/logout-all', authMiddleware, async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user } = await supabase.from('users')
-      .select('id, phone, pseudo, name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status, birth_date, gender, twofa_enabled, twofa_method')
+      .select('id, phone, pseudo, name, country_iso, language, role, avatar_url, banner_url, bio, created_at, email, email_confirmed, email_notifs, kyc_status, birth_date, gender, twofa_enabled, twofa_method, pseudo_changes_count')
       .eq('id', req.user.id).single();
     const { data: wallet } = await supabase.from('wallets')
       .select('balance_xcon, pending_balance_xcon, total_deposited, total_withdrawn, total_earned')
@@ -438,16 +439,45 @@ router.get('/me', authMiddleware, async (req, res) => {
 });
 
 // ── PUT /auth/pseudo
+const EXEMPT_PSEUDO_LIMIT_ROLES = ['super_admin', 'root_admin'];
 router.put('/pseudo', authMiddleware, async (req, res) => {
   try {
     const { pseudo } = req.body;
     if (!pseudo) return res.status(400).json({ error: 'Pseudo requis' });
     if (!isValidPseudo(pseudo)) return res.status(400).json({ error: PSEUDO_ERROR_MSG });
+
+    const isExempt = EXEMPT_PSEUDO_LIMIT_ROLES.includes(req.user.role);
+
+    // Récupérer le compteur actuel
+    const { data: current } = await supabase.from('users')
+      .select('pseudo, pseudo_changes_count').eq('id', req.user.id).single();
+
+    const changesCount = current?.pseudo_changes_count ?? 0;
+
+    if (!isExempt && changesCount >= PSEUDO_MAX_CHANGES) {
+      return res.status(403).json({
+        error: `Limite atteinte — vous avez utilisé vos ${PSEUDO_MAX_CHANGES} changements de pseudo autorisés à vie.`,
+        pseudo_changes_count: changesCount,
+        pseudo_changes_remaining: 0,
+      });
+    }
+
+    // Vérifier disponibilité
     const { data: existing } = await supabase.from('users')
       .select('id').ilike('pseudo', pseudo).neq('id', req.user.id).single();
     if (existing) return res.status(409).json({ error: 'Ce pseudonyme est déjà pris' });
-    await supabase.from('users').update({ pseudo }).eq('id', req.user.id);
-    res.json({ message: 'Pseudonyme mis à jour', pseudo });
+
+    const newCount = isExempt ? changesCount : changesCount + 1;
+    await supabase.from('users')
+      .update({ pseudo, pseudo_changes_count: newCount })
+      .eq('id', req.user.id);
+
+    res.json({
+      message: 'Pseudonyme mis à jour',
+      pseudo,
+      pseudo_changes_count: newCount,
+      pseudo_changes_remaining: isExempt ? null : PSEUDO_MAX_CHANGES - newCount,
+    });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
@@ -479,8 +509,9 @@ router.put('/profile', authMiddleware, async (req, res) => {
     const { bio, avatar_url, banner_url, language } = req.body;
     const updates = {};
     if (bio !== undefined) {
-      if (bio.length > 500) return res.status(400).json({ error: 'Bio trop longue (max 500 caractères)' });
-      updates.bio = bio;
+      const cleanBio = sanitizeHtmlTitle(String(bio));
+      if (cleanBio.length > 500) return res.status(400).json({ error: 'Bio trop longue (max 500 caractères)' });
+      updates.bio = cleanBio;
     }
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
     if (banner_url !== undefined) updates.banner_url = banner_url;

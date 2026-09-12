@@ -12,6 +12,7 @@ import { GoalOverlay } from "@/components/live/goal-overlay";
 import { LiveChatTabs } from "@/components/live/chat-tabs";
 import { CreatorInfoTabs } from "@/components/live/creator-info-tabs";
 import { MediaControls } from "@/components/live/media-controls";
+import { HtmlTitleInput, sanitizeHtmlTitle } from "@/components/ui/html-title-input";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
@@ -123,7 +124,7 @@ export default function CreatorLivePage() {
     setError(null);
     try {
       const pricePayload = priceXcon > 0 ? { price_xcon: priceXcon } : {};
-      const { data } = await api.post("/live/start", { title: title || undefined, ...pricePayload });
+      const { data } = await api.post("/live/start", { title: sanitizeHtmlTitle(title) || undefined, ...pricePayload });
       setStreamId(data.streamId);
 
       const room = new Room();
@@ -198,7 +199,7 @@ export default function CreatorLivePage() {
     try {
       const { data } = await api.post("/stream-goals", {
         stream_id: streamId,
-        title: goalTitle,
+        title: sanitizeHtmlTitle(goalTitle),
         target_amount_xcon: goalAmount,
       });
       setActiveGoal(data.goal);
@@ -283,11 +284,11 @@ export default function CreatorLivePage() {
       <div className="flex items-center gap-3">
         {status === "idle" || status === "error" ? (
           <>
-            <input
+            <HtmlTitleInput
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre du direct (optionnel)"
-              className="min-w-0 flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+              onChange={setTitle}
+              placeholder="Titre du direct — HTML accepté : <b>gras</b>, <marquee>défilement</marquee>, <span style=&quot;color:red&quot;>couleur</span>…"
+              maxLength={300}
             />
             <MediaControls videoRef={videoRef} />
             <StreamPriceInput
@@ -366,13 +367,11 @@ export default function CreatorLivePage() {
           <Card className="w-full max-w-md">
             <CardContent className="pt-6 space-y-4">
               <h3 className="font-display text-lg text-cream">Créer un objectif</h3>
-              <input
-                type="text"
+              <HtmlTitleInput
                 value={goalTitle}
-                onChange={(e) => setGoalTitle(e.target.value)}
-                placeholder="Ex: Take off my panties and..."
+                onChange={setGoalTitle}
+                placeholder="Titre du défi — HTML accepté : <b>gras</b>, <span style=&quot;color:gold&quot;>couleur</span>…"
                 maxLength={300}
-                className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
               />
               <AmountInput
                 label="Montant (min 1000 XAF)"
