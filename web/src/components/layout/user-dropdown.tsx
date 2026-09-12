@@ -96,11 +96,11 @@ export function UserDropdown() {
               <DropItem icon={<Cast size={15} />}  label="Streamcast"       onClick={() => navTo("/createur/live")} active={pathname === "/createur/live"} />
             )}
             {isCreator && (
-              <DropItem icon={<Video size={15} />} label="Espace Créateur"  onClick={() => navTo("/createur")}      active={pathname.startsWith("/createur") && pathname !== "/createur/live"} />
+              <DropItem icon={<Video size={15} />} label="Studio Création"  onClick={() => navTo("/createur")}      active={pathname.startsWith("/createur") && pathname !== "/createur/live"} />
             )}
 
             <DropItem icon={<Layers size={15} />}      label={t("nav.subscriptions")} onClick={() => navTo("/abonnements")}  active={pathname === "/abonnements"} />
-            <DropItem icon={<ShoppingBag size={15} />} label="Mes achats"              onClick={() => navTo("/mes-achats")}   active={pathname === "/mes-achats"} />
+            <DropItem icon={<ShoppingBag size={15} />} label="Achats"                   onClick={() => navTo("/mes-achats")}   active={pathname === "/mes-achats"} />
             <DropItem icon={<Wallet size={15} />}      label={t("nav.wallet")}         onClick={() => navTo("/wallet")}       active={pathname === "/wallet"} />
 
             {isAdmin && (
