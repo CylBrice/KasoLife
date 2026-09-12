@@ -91,33 +91,13 @@ services:
       livekit:
         condition: service_started
     environment:
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://kasolife.com,https://www.kasolife.com}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      CLOUDFLARE_R2_ENDPOINT: ${CLOUDFLARE_R2_ENDPOINT:-}
-      CLOUDFLARE_R2_ACCESS_KEY_ID: ${CLOUDFLARE_R2_ACCESS_KEY_ID:-}
-      CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}
-      CLOUDFLARE_R2_BUCKET: ${CLOUDFLARE_R2_BUCKET:-}
-      CLOUDFLARE_R2_PUBLIC_URL: ${CLOUDFLARE_R2_PUBLIC_URL:-}
-      BACKEND_URL: ${BACKEND_URL:-https://api.kasolife.com}
+      # URLs internes Docker — ne peuvent pas venir du .env car elles utilisent les noms de services
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasolife}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      FRONTEND_URL: ${FRONTEND_URL:-https://www.kasolife.com}
-      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       KLANDO_KEYGEN_URL: http://klando-keygen-kasolife:3102
       LIVEKIT_URL: http://livekit:7880
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       NODE_ENV: production
       PORT: 3003
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      PH_EMAIL_RELAY_URL: ${PH_EMAIL_RELAY_URL:-}
-      PH_EMAIL_RELAY_SECRET: ${PH_EMAIL_RELAY_SECRET:-}
-      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "3003:3003"
     healthcheck:
