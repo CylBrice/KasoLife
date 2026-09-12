@@ -222,8 +222,8 @@ export function DashboardShell({
           ) : (
             /* Mode étendu */
             <div className="space-y-0.5">
-              {/* Ligne 1 : avatar + thème + langue */}
-              <div className="flex items-center gap-2 px-2 py-2">
+              {/* Ligne 1 : avatar + pseudo */}
+              <div className="flex items-center gap-2.5 px-3 py-2">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url}
@@ -235,10 +235,13 @@ export function DashboardShell({
                     {(user?.pseudo ?? "?")[0]}
                   </div>
                 )}
-                <div className="flex flex-1 items-center justify-end gap-2">
-                  <ThemeToggle />
-                  <LanguageSwitcher />
-                </div>
+                <span className="truncate text-sm font-medium text-cream">@{user?.pseudo}</span>
+              </div>
+
+              {/* Ligne 2 : thème + langue */}
+              <div className="flex items-center justify-center gap-3 px-2 pb-2">
+                <ThemeToggle />
+                <LanguageSwitcher />
               </div>
 
               <div className="mx-1 my-1 h-px bg-ink-line/40" />
