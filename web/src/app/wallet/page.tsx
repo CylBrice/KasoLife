@@ -12,6 +12,7 @@ import { formatFCFA, formatRelativeDate } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useT } from "@/i18n/locale-context";
 import { useAuth } from "@/contexts/auth-context";
+import { TabPaiements } from "@/app/profil/_sections/TabPaiements";
 
 interface Transaction {
   id: string;
@@ -21,7 +22,28 @@ interface Transaction {
   created_at: string;
 }
 
-// TX_LABELS remplacé par t("wallet.tx.*") dans le JSX
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
+
+function QuickAmounts({ onSelect, selected }: { onSelect: (v: number) => void; selected: number }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-2">
+      {QUICK_AMOUNTS.map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onSelect(v)}
+          className={`rounded-xl border px-3 py-1.5 font-display text-sm font-medium transition-colors ${
+            selected === v
+              ? "border-gold bg-gold/10 text-gold"
+              : "border-ink-line bg-ink-raised text-sage hover:border-gold/50 hover:text-cream"
+          }`}
+        >
+          {v.toLocaleString("fr-FR")}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function WalletPage() {
   const t = useT();
@@ -81,10 +103,15 @@ export default function WalletPage() {
           <WithdrawForm onDone={() => { setMode("none"); refresh(); }} />
         )}
 
+        <h2 className="mt-6 font-display text-lg font-medium text-cream">Mobile Money</h2>
+        <div className="mt-2">
+          <TabPaiements />
+        </div>
+
         <h2 className="mt-6 font-display text-lg font-medium text-cream">{t("wallet.history")}</h2>
         <div className="mt-2 flex flex-col gap-2">
           {transactions.length === 0 && (
-            <p className="py-8 text-center text-sm text-sage-muted">{t("wallet.noTransactions")}</p>
+            <p className="py-8 text-center text-sm text-sage-muted">Pas d&apos;historique</p>
           )}
           {transactions.map((tx) => (
             <div key={tx.id} className="flex items-center justify-between rounded-xl border border-ink-line bg-ink-surface px-4 py-3">
@@ -155,6 +182,7 @@ function DepositForm({ onDone }: { onDone: () => void }) {
       <CardHeader><CardTitle>{t("wallet.deposit")}</CardTitle></CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <QuickAmounts selected={Number(amount) || 0} onSelect={(v) => setAmount(String(v))} />
           <AmountInput label={t("wallet.depositLabel")} value={Number(amount) || 0} onChange={(v) => setAmount(String(v))} min={500} step={100} />
           {error && <p className="text-sm text-brick">{error}</p>}
           <Button type="submit" disabled={loading}>{loading ? "..." : t("wallet.depositContinue")}</Button>
@@ -205,6 +233,7 @@ function WithdrawForm({ onDone }: { onDone: () => void }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <QuickAmounts selected={Number(amount) || 0} onSelect={(v) => setAmount(String(v))} />
             <AmountInput label={t("wallet.withdrawLabel")} value={Number(amount) || 0} onChange={(v) => setAmount(String(v))} min={500} step={100} />
             {error && <p className="text-sm text-brick">{error}</p>}
             <Button type="submit" disabled={loading}>{loading ? "..." : t("wallet.withdraw")}</Button>

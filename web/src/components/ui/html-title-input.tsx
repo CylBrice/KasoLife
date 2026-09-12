@@ -70,7 +70,7 @@ export function HtmlTitleInput({
         maxLength={maxLength}
         disabled={disabled}
         rows={1}
-        className="w-full resize-none rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold leading-5 overflow-hidden"
+        className="w-full resize-none rounded-xl border border-ink-line bg-ink-raised px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold leading-5 overflow-hidden"
         style={{ minHeight: "2.5rem" }}
         onInput={(e) => {
           const el = e.currentTarget;
