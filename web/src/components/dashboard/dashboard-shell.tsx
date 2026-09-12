@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
-import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, SlidersHorizontal, User, Flag, FileText, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Crown, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, SlidersHorizontal, User, Flag, FileText, ArrowLeftRight, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { api } from "@/lib/api";
 
 export interface NavItem {
@@ -63,20 +64,6 @@ export function DashboardShell({
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem(storageKey, String(next));
-  };
-
-  /* Dark mode — persisté dans localStorage */
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem("kl_admin_dark") === "true";
-    setDark(saved);
-    document.documentElement.classList.toggle("dark", saved);
-  }, []);
-  const toggleDark = () => {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem("kl_admin_dark", String(next));
-    document.documentElement.classList.toggle("dark", next);
   };
 
   /* Cmd+K */
@@ -222,10 +209,7 @@ export function DashboardShell({
           {collapsed ? (
             /* Mode réduit — icônes uniquement */
             <div className="flex flex-col items-center gap-1">
-              <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+              <ThemeToggle />
               <Link href="/" title="Retour au site"
                 className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
                 <Home className="h-4 w-4" />
@@ -246,10 +230,7 @@ export function DashboardShell({
             <div className="space-y-0.5">
               {/* Ligne 1 : icônes thème + langue, centrées */}
               <div className="flex items-center justify-center gap-3 px-2 py-2">
-                <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </button>
+                <ThemeToggle />
                 <LanguageSwitcher />
               </div>
 
@@ -291,9 +272,7 @@ export function DashboardShell({
           <button onClick={openCmdk} className="rounded-xl border border-ink-line p-2 text-sage">
             <Search className="h-4 w-4" />
           </button>
-          <button onClick={toggleDark} className="rounded-xl border border-ink-line p-2 text-sage">
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+          <ThemeToggle />
           {isSuperAdmin && (
             <div className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5">
               <Crown className="h-3 w-3 text-gold" />
