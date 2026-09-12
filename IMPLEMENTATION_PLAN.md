@@ -32,6 +32,12 @@
 - Devises : XAF interne, tableau de conversion NGN/GHS/KES/ZAR/EUR/USD/GBP affiché
 - Admin exception (point 14) : ADMIN+ accède à tout contenu sans paiement, protections levées, chaque consultation auditée
 
+### Décisions techniques (session du 2026-09-12)
+
+- **Cookie refresh `kaso_rt`** : le flag `Secure` est dérivé du protocole réel de la requête (`x-forwarded-proto`, sinon `req.nextUrl.protocol`) et non plus de `NODE_ENV`. Un cookie `Secure` posé sur HTTP est rejeté par le navigateur → session non restaurable (refresh 401 en boucle) quand l'app est servie en clair (IP:port).
+- **Refresh access token single-flight** : une seule promesse partagée (`refreshAccessToken()` dans `web/src/lib/api.ts`) entre l'interceptor axios et `AuthProvider`. Le backend fait tourner le refresh token à chaque appel — deux refresh concurrents révoquent le token et cassent la session.
+- **`fetchMe` mémoïsé** (`useCallback`) dans `AuthProvider` → la fonction `refresh` du contexte est stable, évite les re-fetchs en boucle des effets consommateurs (page KYC, etc.).
+
 ---
 
 ## PHASE 1 — Fondations

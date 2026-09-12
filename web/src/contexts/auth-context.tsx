@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  createContext, useContext, useEffect, useState, type ReactNode,
+  createContext, useContext, useEffect, useState, useCallback, type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { api, setApiToken, clearApiToken, getApiToken, AUTH_UNAUTHORIZED_EVENT } from "@/lib/api";
+import { api, setApiToken, clearApiToken, getApiToken, refreshAccessToken, AUTH_UNAUTHORIZED_EVENT } from "@/lib/api";
 import type { UserProfile, Wallet } from "@/types";
 
 interface AuthContextType {
@@ -35,7 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchMe = async () => {
+  // Mémoïsé : `refresh` est exposé dans le contexte et utilisé dans les
+  // dépendances d'effets (ex: page KYC). Une identité instable provoquait
+  // une boucle de re-renders / re-fetchs.
+  const fetchMe = useCallback(async () => {
     const { data } = await api.get("/auth/me");
     setUser(data);
     try {
@@ -44,24 +47,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       setWallet(null);
     }
-  };
+  }, []);
 
   // Au démarrage de l'app : restaure la session depuis le cookie HttpOnly kaso_rt.
   // Le BFF /api/auth/refresh lit le cookie serveur-side et retourne un nouvel access token.
   useEffect(() => {
-    fetch("/api/auth/refresh", { method: "POST" })
-      .then(async (r) => {
-        if (!r.ok) return;
-        const { accessToken } = await r.json();
-        if (accessToken) {
-          setApiToken(accessToken);
-          await fetchMe();
-        }
-      })
+    refreshAccessToken()
+      .then(async (token) => { if (token) await fetchMe(); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchMe]);
 
   // Token expiré non-récupérable (refresh échoué) → déconnexion immédiate
   useEffect(() => {

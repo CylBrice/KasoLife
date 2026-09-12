@@ -24,6 +24,34 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Rafraîchit l'access token via le BFF (cookie HttpOnly). Une seule requête
+// en vol à la fois : AuthProvider et l'interceptor partagent la même promesse.
+// Le backend fait tourner le refresh token à chaque appel — deux refresh
+// concurrents avec le même cookie provoquent un 401 (token déjà révoqué).
+export function refreshAccessToken(): Promise<string | null> {
+  if (_refreshFailed) return Promise.resolve(null);
+  if (!_refreshing) {
+    _refreshing = fetch("/api/auth/refresh", { method: "POST" })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        const d = await r.json();
+        return (d.accessToken as string) ?? null;
+      })
+      .catch(() => null)
+      .then((token) => {
+        if (token) {
+          _token = token;
+          _refreshFailed = false;
+        } else {
+          _refreshFailed = true;
+        }
+        return token;
+      })
+      .finally(() => { _refreshing = null; });
+  }
+  return _refreshing;
+}
+
 // Sur 401 : tente un refresh silencieux, puis rejoue la requête originale.
 // Si le refresh échoue → événement global → AuthProvider redirige vers /connexion.
 api.interceptors.response.use(
@@ -33,27 +61,14 @@ api.interceptors.response.use(
     if (error.response?.status !== 401 || original._retry || _refreshFailed) return Promise.reject(error);
     original._retry = true;
 
-    if (!_refreshing) {
-      _refreshing = fetch("/api/auth/refresh", { method: "POST" })
-        .then(async (r) => {
-          if (!r.ok) throw new Error("refresh_failed");
-          const d = await r.json();
-          return d.accessToken as string;
-        })
-        .catch(() => null)
-        .finally(() => { _refreshing = null; });
-    }
-
-    const newToken = await _refreshing;
+    const newToken = await refreshAccessToken();
 
     if (!newToken) {
       _token = null;
-      _refreshFailed = true;
       if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
       return Promise.reject(error);
     }
 
-    _token = newToken;
     original.headers.Authorization = `Bearer ${newToken}`;
     return api(original);
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND, RT_COOKIE } from '@/lib/auth-bff';
+import { BACKEND, RT_COOKIE, rtCookieOptions, isSecureRequest } from '@/lib/auth-bff';
 
 export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get(RT_COOKIE)?.value;
@@ -18,6 +18,6 @@ export async function POST(req: NextRequest) {
   }
 
   const response = NextResponse.json({ success: true });
-  response.cookies.delete(RT_COOKIE);
+  response.cookies.set(RT_COOKIE, '', { ...rtCookieOptions(isSecureRequest(req)), maxAge: 0 });
   return response;
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND, RT_COOKIE, RT_COOKIE_OPTS } from '@/lib/auth-bff';
+import { BACKEND, RT_COOKIE, rtCookieOptions, isSecureRequest } from '@/lib/auth-bff';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,17 +15,18 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ refreshToken }),
     });
 
+    const secure = isSecureRequest(req);
     const data = await upstream.json();
 
     if (!upstream.ok) {
       const response = NextResponse.json(data, { status: upstream.status });
-      response.cookies.delete(RT_COOKIE);
+      response.cookies.set(RT_COOKIE, '', { ...rtCookieOptions(secure), maxAge: 0 });
       return response;
     }
 
     // Rotation : nouveau refresh token dans le cookie HttpOnly
     const response = NextResponse.json({ accessToken: data.accessToken });
-    response.cookies.set(RT_COOKIE, data.refreshToken, RT_COOKIE_OPTS);
+    response.cookies.set(RT_COOKIE, data.refreshToken, rtCookieOptions(secure));
     return response;
   } catch (err) {
     console.error('[BFF /auth/refresh]', err);
