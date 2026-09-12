@@ -323,12 +323,13 @@ export default function CreatorLivePage() {
       {/* Ligne 4 : Queue jouet (petite) + Onglets créateur (grand) */}
       <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
         {/* Queue jouet - colonne gauche petite */}
-        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
+        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4 min-h-[300px]">
           <ToyOverlay
             visible={showToyOverlay}
             onToggle={toggleOverlay}
             tips={toyTips}
             role="creator"
+            inline={true}
           />
         </div>
 
