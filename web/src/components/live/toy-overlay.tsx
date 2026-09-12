@@ -17,6 +17,7 @@ interface ToyOverlayProps {
   onToggle: () => void;
   tips: TipEntry[];
   role: "creator" | "fan"; // creator pour queue, fan pour paliers
+  inline?: boolean; // true = affiché dans la grille, false = overlay flottant fixe
   paliers?: Array<{
     palier: number;
     min: number;
@@ -32,6 +33,7 @@ export function ToyOverlay({
   onToggle,
   tips,
   role,
+  inline = false,
   paliers = [],
   onTipClick,
   isLoading = false,
@@ -44,6 +46,20 @@ export function ToyOverlay({
   }, []);
 
   if (!visible) {
+    // En mode inline : bouton de réouverture intégré dans la zone
+    if (inline) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-3">
+          <Zap className="h-6 w-6 text-gold/40" />
+          <button
+            onClick={onToggle}
+            className="rounded-xl bg-gold/10 border border-gold/30 px-3 py-1.5 text-xs text-gold hover:bg-gold/20 transition-colors"
+          >
+            Afficher la queue jouet
+          </button>
+        </div>
+      );
+    }
     return (
       <button
         onClick={onToggle}
@@ -55,9 +71,41 @@ export function ToyOverlay({
     );
   }
 
+  // Mode inline : affiché directement dans la grille (pas de position fixe)
+  if (inline && role === "creator") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-gold" />
+            <p className="text-sm font-medium text-gold">Queue jouet</p>
+          </div>
+          <button onClick={onToggle} className="text-sage hover:text-cream transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-2 text-xs mb-3">
+          {tips.length === 0 ? (
+            <p className="text-sage-muted text-center py-4">En attente de tips…</p>
+          ) : (
+            tips.slice(0, 10).map((tip) => (
+              <div key={tip.id} className="rounded-lg bg-ink-surface border border-gold/20 px-3 py-2">
+                <p className="text-cream font-medium">{tip.username}</p>
+                <p className="text-gold text-xs">{tip.amount} XCON → {tip.duration_s}s (Palier {tip.palier})</p>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="text-xs text-sage-muted border-t border-gold/20 pt-2">
+          Queue: {tips.length} tips
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 pointer-events-none z-30">
-      {/* Overlay semi-transparent (créateur) — position gauche */}
+      {/* Overlay flottant (créateur) — position gauche */}
       {role === "creator" && (
         <div className="absolute left-4 top-4 pointer-events-auto w-72 max-h-96 rounded-xl bg-black/80 backdrop-blur-sm border border-gold/30 p-4 flex flex-col">
           {/* Header */}
@@ -86,7 +134,7 @@ export function ToyOverlay({
                 >
                   <p className="text-cream font-medium">{tip.username}</p>
                   <p className="text-gold text-xs">
-                    {tip.amount} XAF → {tip.duration_s}s (Palier {tip.palier})
+                    {tip.amount} XCON → {tip.duration_s}s (Palier {tip.palier})
                   </p>
                 </div>
               ))
