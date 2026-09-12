@@ -223,15 +223,20 @@ export default function CreatorLivePage() {
     }
   };
 
+  // Charger les données du créateur au montage du composant
+  useEffect(() => {
+    loadCreatorData("");
+    loadAlbums();
+  }, [loadCreatorData, loadAlbums]);
+
+  // Charger et rafraîchir l'objectif pendant le live
   useEffect(() => {
     if (status === "live" && streamId) {
       loadGoal();
-      loadCreatorData(streamId);
-      loadAlbums();
       const interval = setInterval(() => loadGoal(), 2000);
       return () => clearInterval(interval);
     }
-  }, [status, streamId, loadCreatorData, loadAlbums]);
+  }, [status, streamId]);
 
   return (
     <div className="flex flex-col gap-4">
