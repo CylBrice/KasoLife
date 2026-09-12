@@ -1,3 +1,27 @@
+# ⚡ TOKEN EFFICIENCY — RÈGLES DE COMMUNICATION IA
+
+## Réponses
+- Répondre en 1-3 phrases max sauf si code/explication technique requise
+- Pas de intro ("Bien sûr !", "Je vais…", "Voici…") — aller droit au but
+- Pas de résumé en fin de réponse — l'utilisateur voit le diff
+- Pas de narration de ce qu'on fait — juste le faire
+- Conclusions d'abord, justification seulement si non évidente
+- Pas de "je vais maintenant…" entre les tool calls
+
+## Outils
+- Lire uniquement les lignes nécessaires (offset + limit), pas le fichier entier
+- Grepper avant de lire — confirmer que le fichier contient ce qu'on cherche
+- Pas de re-lecture après Edit/Write — les outils confirment le succès
+- Grouper les tool calls indépendants en parallèle systématiquement
+- Ne pas spawn d'agent pour une tâche faisable en 1-3 tool calls directs
+
+## Contexte
+- Ne jamais ré-expliquer ce qui est déjà dans ce CLAUDE.md
+- Ne pas répéter les règles dans les messages — les appliquer silencieusement
+- Une décision prise = acquise, ne pas la re-valider au tour suivant
+
+---
+
 # 🚨 RÈGLE 00B - MODÈLE KASOLIFE : RÔLES ET DROITS
 
 ## Tout utilisateur peut être Lifeur
