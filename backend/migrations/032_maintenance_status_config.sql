@@ -1,11 +1,9 @@
--- Migration 032 : ajouter la clé maintenance_status dans platform_config
--- La clé était référencée dans le frontend mais absente de la base
-
-INSERT INTO platform_config (key, value, type, description)
+-- Migration 032 : ajouter la cle MAINTENANCE_STATUS dans platform_config
+INSERT INTO platform_config (key, value, value_type, description)
 VALUES (
-  'maintenance_status',
+  'MAINTENANCE_STATUS',
   'false',
   'boolean',
-  'Mode maintenance global — désactive l''accès à la plateforme pour les utilisateurs non-admin'
+  'Mode maintenance global'
 )
 ON CONFLICT (key) DO NOTHING;
