@@ -38,18 +38,20 @@ const periodStart = (period) => {
 
 router.get('/stats', async (req, res) => {
   try {
+    // Utiliser RPC pour appeler des fonctions SQL optimisées (agrégats en base)
     const [users, creators, posts, revenue, wallets, activeSubs] = await Promise.all([
       supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'influencer'),
       supabase.from('posts').select('id', { count: 'exact', head: true }),
-      supabase.from('platform_revenue').select('amount_xcon'),
-      supabase.from('wallets').select('balance_xcon, pending_balance_xcon'),
+      // FIX: Utiliser RPC pour SUM au lieu de charger toutes les lignes
+      supabase.rpc('get_platform_revenue_total', {}),
+      supabase.rpc('get_wallets_totals', {}),
       supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
     ]);
 
-    const totalRevenue = (revenue.data || []).reduce((s, r) => s + r.amount_xcon, 0);
-    const totalBalances = (wallets.data || []).reduce((s, w) => s + (w.balance_xcon || 0), 0);
-    const totalPending  = (wallets.data || []).reduce((s, w) => s + (w.pending_balance_xcon || 0), 0);
+    const totalRevenue = revenue.data?.total_amount || 0;
+    const totalBalances = wallets.data?.total_balance || 0;
+    const totalPending = wallets.data?.total_pending || 0;
 
     res.json({
       total_users: users.count || 0,
@@ -67,28 +69,30 @@ router.get('/revenue', async (req, res) => {
   try {
     const { period = 'month' } = req.query;
     const since = periodStart(period);
-    const { data, error } = await supabase.from('platform_revenue')
-      .select('source_type, amount_xcon, created_at').gte('created_at', since);
-    if (error) throw error;
+
+    // FIX: Utiliser RPC pour agrégats SQL (pas de chargement de millions de lignes)
+    const [breakdown_result, daily_result] = await Promise.all([
+      supabase.rpc('get_revenue_breakdown', { since }),
+      supabase.rpc('get_daily_revenue_breakdown', { since }),
+    ]);
 
     const breakdown = {};
     let total = 0;
-    for (const row of data || []) {
-      breakdown[row.source_type] = (breakdown[row.source_type] || 0) + row.amount_xcon;
-      total += row.amount_xcon;
-    }
+    (breakdown_result.data || []).forEach(row => {
+      breakdown[row.source_type] = row.total_amount;
+      total += row.total_amount;
+    });
 
-    // Courbe par jour (30 derniers jours pour le graphe)
-    const dailyMap = {};
-    for (const row of data || []) {
-      const day = row.created_at.slice(0, 10);
-      if (!dailyMap[day]) dailyMap[day] = { total: 0 };
-      dailyMap[day].total += row.amount_xcon;
-      dailyMap[day][row.source_type] = (dailyMap[day][row.source_type] || 0) + row.amount_xcon;
-    }
-    const dailyCurve = Object.entries(dailyMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => ({ date, ...v }));
+    const dailyCurve = (daily_result.data || []).reduce((acc, row) => {
+      const existing = acc.find(d => d.date === row.date.toString());
+      if (existing) {
+        existing[row.source_type] = row.total_amount;
+        existing.total = (existing.total || 0) + row.total_amount;
+      } else {
+        acc.push({ date: row.date.toString(), total: row.total_amount, [row.source_type]: row.total_amount });
+      }
+      return acc;
+    }, []);
 
     // Top 5 sources par montant
     const topSources = Object.entries(breakdown)

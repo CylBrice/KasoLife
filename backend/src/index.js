@@ -106,7 +106,15 @@ app.set('trust proxy', 1);
 // ── Sécurité ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(hpp());
-app.use(compression());
+// Compression agressive (niveau 9, tous les types)
+app.use(compression({
+  level: 9,
+  threshold: 1024,  // Compresser seulement > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3004').split(',').filter(Boolean);
 app.use(cors({
