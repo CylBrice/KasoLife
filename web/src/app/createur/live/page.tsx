@@ -80,9 +80,10 @@ export default function CreatorLivePage() {
   const loadCreatorData = useCallback(async (id: string) => {
     try {
       const { data } = await api.get(`/creators/me`);
+      console.log("✅ Creator data loaded:", data);
       setCreatorData(data);
     } catch (err) {
-      console.error("Erreur loadCreatorData:", err);
+      console.error("❌ Erreur loadCreatorData:", err);
     }
   }, []);
 
@@ -289,11 +290,15 @@ export default function CreatorLivePage() {
         </div>
 
         {/* Creator Info Tabs - Right */}
-        {creatorData && (
-          <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden">
+        <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden bg-ink-raised">
+          {creatorData ? (
             <CreatorInfoTabs creator={creatorData} albums={albums} />
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-sm text-sage">Chargement des infos créateur...</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
