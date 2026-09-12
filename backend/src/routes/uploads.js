@@ -14,16 +14,28 @@ const {
 } = require('../services/mediaProcessing');
 const { moderateImage, generateTags, generateCaption, getAIConfig, checkCategoryConsistency } = require('../services/aiModeration');
 const { uploadAvatarToR2, deleteAvatarFromR2, uploadMediaToR2, deleteMediaFromR2, downloadMediaFromR2 } = require('../services/cloudflare');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
-const MAX_SIZES = {
-  avatar:     5  * 1024 * 1024,
-  banner:     8  * 1024 * 1024,
-  post_image: 15 * 1024 * 1024,
-  post_video: 200 * 1024 * 1024,
-  post_audio: 50 * 1024 * 1024,
-  thumbnail:  5  * 1024 * 1024,
+// Tailles par défaut — remplacées dynamiquement depuis platform_config
+const MAX_SIZES_DEFAULT = {
+  avatar:     5,
+  banner:     8,
+  post_image: 15,
+  post_video: 200,
+  post_audio: 50,
+  thumbnail:  5,
+};
+
+const getMaxSize = async (type) => {
+  const keyMap = {
+    avatar: 'max_upload_avatar_mb', banner: 'max_upload_banner_mb',
+    post_image: 'max_upload_image_mb', post_video: 'max_upload_video_mb',
+    post_audio: 'max_upload_audio_mb', thumbnail: 'max_upload_avatar_mb',
+  };
+  const mb = await configService.get(keyMap[type]) ?? MAX_SIZES_DEFAULT[type];
+  return mb * 1024 * 1024;
 };
 
 const ALLOWED_MIME = {
@@ -56,8 +68,9 @@ router.post('/:type', authMiddleware, upload.single('file'), async (req, res) =>
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier fourni' });
     if (!ALLOWED_MIME[type].includes(req.file.mimetype))
       return res.status(400).json({ error: `Format non supporté. Formats acceptés : ${ALLOWED_MIME[type].join(', ')}` });
-    if (req.file.size > MAX_SIZES[type])
-      return res.status(400).json({ error: `Fichier trop volumineux (max ${Math.round(MAX_SIZES[type] / (1024 * 1024))} Mo)` });
+    const maxSize = await getMaxSize(type);
+    if (req.file.size > maxSize)
+      return res.status(400).json({ error: `Fichier trop volumineux (max ${Math.round(maxSize / (1024 * 1024))} Mo)` });
 
     // ── AVATAR → R2 avec variantes (400, 240, 96px) ──────────────────────────
     if (type === 'avatar') {

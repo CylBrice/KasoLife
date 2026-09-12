@@ -11,8 +11,9 @@ const supabase  = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const { sendPushNotification } = require('../services/notifications');
 const {
-  KYC_MAX_ATTEMPTS, DIDIT_API_URL, REFERRAL_BONUS_FCFA,
+  KYC_MAX_ATTEMPTS, DIDIT_API_URL,
 } = require('../config/constants');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
@@ -168,8 +169,9 @@ router.post('/webhook', async (req, res) => {
         .select('id, parrain_id, bonus_filleul_given')
         .eq('filleul_id', userId).eq('bonus_filleul_given', false).single();
 
-      if (tracking && REFERRAL_BONUS_FCFA > 0) {
-        referralBonus = REFERRAL_BONUS_FCFA;
+      const referralBonusAmount = await configService.get('referral_bonus_fcfa');
+      if (tracking && referralBonusAmount > 0) {
+        referralBonus = referralBonusAmount;
         const { data: newBalance } = await supabase.rpc('credit_wallet', { p_user_id: userId, p_amount: referralBonus });
 
         await supabase.from('transactions').insert({

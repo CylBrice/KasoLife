@@ -581,14 +581,19 @@ router.post('/', authMiddleware, requireMinRole('influencer'), async (req, res) 
       return res.status(400).json({ error: `Niveau d'accès invalide — valeurs possibles : ${ACCESS_LEVELS.join(', ')}` });
     if (media_type !== 'TEXT' && !media_url)
       return res.status(400).json({ error: 'URL média requise pour ce type de contenu' });
-    if (caption && caption.length > 2000)
-      return res.status(400).json({ error: 'Légende trop longue (max 2000 caractères)' });
+    const maxCaption = await configService.get('max_caption_chars');
+    if (caption && caption.length > maxCaption)
+      return res.status(400).json({ error: `Légende trop longue (max ${maxCaption} caractères)` });
 
+    const [ppvMin, ppvMax] = await Promise.all([
+      configService.get('ppv_price_min'),
+      configService.get('ppv_price_max'),
+    ]);
     let price = 0;
     if (access_level === 'PPV') {
       price = Number(price_xcon);
-      if (!price || price < PPV_PRICE_MIN || price > PPV_PRICE_MAX)
-        return res.status(400).json({ error: `Le prix doit être entre ${PPV_PRICE_MIN} et ${PPV_PRICE_MAX} FCFA` });
+      if (!price || price < ppvMin || price > ppvMax)
+        return res.status(400).json({ error: `Le prix doit être entre ${ppvMin} et ${ppvMax} FCFA` });
     }
 
     const { data: profile } = await supabase.from('creator_profiles')

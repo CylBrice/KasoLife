@@ -7,6 +7,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
@@ -116,7 +117,8 @@ router.post('/', authMiddleware, async (req, res) => {
       ? 'AUDIO'
       : 'IMAGE';
 
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const storyHours = await configService.get('story_duration_hours');
+    const expiresAt = new Date(Date.now() + storyHours * 60 * 60 * 1000).toISOString();
 
     const { data: story, error } = await supabase.from('stories').insert({
       id: uuidv4(),

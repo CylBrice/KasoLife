@@ -108,13 +108,13 @@ export default function AdminIAPage() {
                     role="switch"
                     aria-checked={entry.enabled}
                     className={cn(
-                      "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50",
+                      "relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 disabled:opacity-50",
                       entry.enabled ? "bg-emerald" : "bg-ink-line"
                     )}
                   >
                     <span
                       className={cn(
-                        "absolute top-1 h-5 w-5 rounded-full bg-cream transition-transform",
+                        "absolute top-1 h-5 w-5 rounded-full bg-white transition-transform",
                         entry.enabled ? "translate-x-6" : "translate-x-1"
                       )}
                     />

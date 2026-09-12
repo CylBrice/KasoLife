@@ -70,19 +70,19 @@ function ConfigRow({ configKey, value, label, unit, onSave }: {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
+    <div className="grid grid-cols-[2fr_3fr] items-center gap-4 py-2.5">
       <p className="text-sm text-cream min-w-0 truncate">{label}</p>
-      <div className="flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-1">
-          <AmountInput value={Number(display) || 0} onChange={(v) => setEdit(String(v))} min={0} step={50} />
-          {unit && <span className="text-xs text-sage-muted">{unit}</span>}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2">
+          <AmountInput value={Number(display) || 0} onChange={(v) => setEdit(String(v))} min={0} step={50} className="flex-1" />
+          {unit && <span className="shrink-0 text-xs text-sage-muted">{unit}</span>}
         </div>
         {dirty && (
-          <Button size="sm" onClick={save} disabled={saving} className="h-7 px-2">
+          <Button size="sm" onClick={save} disabled={saving} className="h-7 shrink-0 px-2">
             {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
           </Button>
         )}
-        {saved && <Check className="h-4 w-4 text-emerald-bright" />}
+        {saved && <Check className="h-4 w-4 shrink-0 text-emerald-bright" />}
       </div>
     </div>
   );

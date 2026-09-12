@@ -14,6 +14,7 @@ const { sendPushNotification } = require('../services/notifications');
 const { invalidateAIConfigCache } = require('../services/aiModeration');
 const { extractWatermark }        = require('../services/steganographyService');
 const { downloadMediaFromR2, extractR2Key } = require('../services/cloudflare');
+const configService = require('../services/configService');
 const multer = require('multer');
 
 const router = express.Router();
@@ -474,6 +475,47 @@ router.get('/audit', requireMinRole('super_admin'), async (req, res) => {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
+// RECHERCHE GLOBALE (Cmd+K)
+// ════════════════════════════════════════════════════════════════════════════════
+
+router.get('/search', async (req, res) => {
+  try {
+    const { q = '' } = req.query;
+    const term = String(q).trim();
+    if (term.length < 2) return res.json({ users: [], reports: [], applications: [], transactions: [] });
+
+    const [usersRes, reportsRes, appsRes, txRes] = await Promise.all([
+      supabase.from('users')
+        .select('id, pseudo, name, role, is_active, kyc_status')
+        .or(`pseudo.ilike.%${term}%,name.ilike.%${term}%`)
+        .limit(5),
+
+      supabase.from('reports')
+        .select('id, reason, status, created_at, reporter:users!reports_reporter_id_fkey(pseudo), reported:users!reports_reported_id_fkey(pseudo)')
+        .or(`reason.ilike.%${term}%`)
+        .limit(5),
+
+      supabase.from('creator_applications')
+        .select('id, display_name, status, created_at, user:users(pseudo)')
+        .or(`display_name.ilike.%${term}%`)
+        .limit(5),
+
+      supabase.from('wallet_transactions')
+        .select('id, type, amount_xcon, created_at, user:users(pseudo)')
+        .or(`type.ilike.%${term}%,description.ilike.%${term}%`)
+        .limit(5),
+    ]);
+
+    res.json({
+      users:        usersRes.data        || [],
+      reports:      reportsRes.data      || [],
+      applications: appsRes.data         || [],
+      transactions: txRes.data           || [],
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════════════════════
 // GESTION UTILISATEURS
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -588,7 +630,8 @@ router.post('/creator-applications/:id/approve', async (req, res) => {
       return res.status(400).json({ error: "L'utilisateur doit avoir un KYC vérifié pour devenir créateur" });
     if (user.role === 'influencer') return res.status(400).json({ error: 'Cet utilisateur est déjà influenceur' });
 
-    let subscriptionPrice = 1000;
+    const defaultSubPrice = await configService.get('default_subscription_price');
+    let subscriptionPrice = defaultSubPrice ?? 1000;
     try {
       const parsed = JSON.parse(application.motivation);
       if (parsed?.subscription_price_xcon) subscriptionPrice = parsed.subscription_price_xcon;
@@ -1093,7 +1136,6 @@ router.put('/categories/:id', requireMinRole('super_admin'), async (req, res) =>
 // PAS DE CRON — versement toujours déclenché par un super_admin+
 // ════════════════════════════════════════════════════════════════════════════════
 
-const configService = require('../services/configService');
 const { Pool } = require('pg');
 const _pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
 

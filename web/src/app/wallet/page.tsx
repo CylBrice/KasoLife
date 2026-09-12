@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownToLine, ArrowUpFromLine, Wallet as WalletIcon } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Wallet as WalletIcon, Smartphone, History } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ function QuickAmounts({ onSelect, selected }: { onSelect: (v: number) => void; s
           key={v}
           type="button"
           onClick={() => onSelect(v)}
-          className={`rounded-xl border px-3 py-1.5 font-display text-sm font-medium transition-colors ${
+          className={`rounded-xl border px-3 py-1.5 font-mono text-sm font-medium transition-colors ${
             selected === v
               ? "border-gold bg-gold/10 text-gold"
               : "border-ink-line bg-ink-raised text-sage hover:border-gold/50 hover:text-cream"
@@ -67,7 +67,9 @@ export default function WalletPage() {
   return (
     <>
       <main className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-12">
-        <h1 className="font-display text-2xl font-medium text-cream">Wallet</h1>
+        <h1 className="flex items-center gap-2 font-display text-2xl font-medium text-cream">
+          <WalletIcon className="h-6 w-6 text-gold" /> Wallet
+        </h1>
 
         <Card className="mt-4">
           <CardContent className="flex flex-col gap-4 p-5">
@@ -103,23 +105,29 @@ export default function WalletPage() {
           <WithdrawForm onDone={() => { setMode("none"); refresh(); }} />
         )}
 
-        <h2 className="mt-6 font-display text-lg font-medium text-cream">Mobile Money</h2>
+        <h2 className="mt-6 flex items-center gap-2 font-display text-lg font-medium text-cream">
+          <Smartphone className="h-5 w-5 text-gold" /> Mobile Money
+        </h2>
         <div className="mt-2">
           <TabPaiements />
         </div>
 
-        <h2 className="mt-6 font-display text-lg font-medium text-cream">{t("wallet.history")}</h2>
-        <div className="mt-2 flex flex-col gap-2">
+        <h2 className="mt-6 flex items-center gap-2 font-display text-lg font-medium text-cream">
+          <History className="h-5 w-5 text-gold" /> {t("wallet.history")}
+        </h2>
+        <div className="mt-2 flex flex-col gap-1.5">
           {transactions.length === 0 && (
-            <p className="py-8 text-center text-sm text-sage-muted">Pas d&apos;historique</p>
+            <div className="rounded-xl border border-ink-line bg-white dark:bg-ink-surface px-4 py-8 text-center">
+              <p className="text-sm text-gray-400 dark:text-sage-muted">Pas d&apos;historique</p>
+            </div>
           )}
           {transactions.map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between rounded-xl border border-ink-line bg-ink-surface px-4 py-3">
+            <div key={tx.id} className="flex items-center justify-between rounded-xl border border-ink-line bg-white dark:bg-ink-surface px-4 py-3">
               <div>
-                <p className="text-sm text-cream">{t(`wallet.tx.${tx.type}`, {}) || tx.type}</p>
-                <p className="text-xs text-sage-muted">{formatRelativeDate(tx.created_at)}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-cream">{t(`wallet.tx.${tx.type}`, {}) || tx.type}</p>
+                <p className="text-xs text-gray-400 dark:text-sage-muted">{formatRelativeDate(tx.created_at)}</p>
               </div>
-              <p className={`font-mono text-sm tabular ${tx.amount_xcon >= 0 ? "text-emerald-bright" : "text-cream"}`}>
+              <p className={`font-mono text-sm tabular font-semibold ${tx.amount_xcon >= 0 ? "text-emerald-600 dark:text-emerald-bright" : "text-gray-700 dark:text-cream"}`}>
                 {tx.amount_xcon >= 0 ? "+" : ""}{formatFCFA(tx.amount_xcon)}
               </p>
             </div>

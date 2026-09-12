@@ -15,6 +15,7 @@ const CACHE_TTL_S  = 300; // 5 minutes
 
 // ── Valeurs par défaut (fallback si DB indisponible)
 const DEFAULTS = {
+  // Commissions
   commission_subscription:        constants.SUBSCRIPTION_COMMISSION_RATE,
   commission_tip:                 constants.TIP_COMMISSION_RATE,
   commission_ppv:                 constants.PPV_COMMISSION_RATE,
@@ -24,17 +25,49 @@ const DEFAULTS = {
   commission_referral:            0.10,
   commission_welcome_rate:        0.10,
   commission_welcome_days:        30,
+  // Bonus bienvenue
   bonus_welcome_enabled:          false,
   bonus_welcome_threshold_1_xcon: 150000,
   bonus_welcome_amount_1_xcon:    25000,
   bonus_welcome_threshold_2_xcon: 500000,
   bonus_welcome_amount_2_xcon:    50000,
   bonus_welcome_period_2_days:    60,
+  // Fan Club
   fanclub_level_1_min_price_xcon: 1500,
   fanclub_level_2_min_price_xcon: 4000,
   fanclub_level_3_min_price_xcon: 8000,
+  // Watermarks
   watermark_visible_enabled:      true,
   watermark_invisible_enabled:    true,
+  // Montants financiers
+  subscription_price_min:         constants.SUBSCRIPTION_PRICE_MIN,
+  subscription_price_max:         constants.SUBSCRIPTION_PRICE_MAX,
+  tip_min:                        constants.TIP_MIN,
+  tip_max:                        constants.TIP_MAX,
+  ppv_price_min:                  constants.PPV_PRICE_MIN,
+  ppv_price_max:                  constants.PPV_PRICE_MAX,
+  min_payout_amount:              constants.MIN_PAYOUT_AMOUNT,
+  min_wallet_withdraw_xcon:       500,
+  min_deposit_xcon:               2000,
+  retrait_max_day_xcon:           constants.RETRAIT_MAX_DAY_XCON,
+  default_subscription_price:     1000,
+  referral_bonus_fcfa:            constants.REFERRAL_BONUS_FCFA,
+  referral_max_per_day:           constants.REFERRAL_MAX_DAY,
+  // Limites utilisateur
+  pseudo_max_changes:             constants.PSEUDO_MAX_CHANGES,
+  otp_expiry_minutes:             10,
+  mobile_money_max_per_operator:  constants.MOBILE_MONEY_MAX_PER_OPERATOR,
+  mobile_money_max_total:         constants.MOBILE_MONEY_MAX_TOTAL,
+  story_duration_hours:           24,
+  // Limites de contenu
+  max_upload_avatar_mb:           5,
+  max_upload_banner_mb:           8,
+  max_upload_image_mb:            15,
+  max_upload_video_mb:            200,
+  max_upload_audio_mb:            50,
+  max_caption_chars:              2000,
+  max_message_chars:              2000,
+  max_comment_chars:              1000,
 };
 
 // Convertit une valeur texte selon son type déclaré

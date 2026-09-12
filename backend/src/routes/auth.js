@@ -24,6 +24,7 @@ const {
   detectMobileOperator, MOBILE_MONEY_MAX_PER_OPERATOR, MOBILE_MONEY_MAX_TOTAL,
   REFERRAL_BONUS_FCFA, INFLUENCER_CODE_PREFIX,
 } = require('../config/constants');
+const configService = require('../services/configService');
 
 const router = express.Router();
 
@@ -453,10 +454,11 @@ router.put('/pseudo', authMiddleware, async (req, res) => {
       .select('pseudo, pseudo_changes_count').eq('id', req.user.id).single();
 
     const changesCount = current?.pseudo_changes_count ?? 0;
+    const maxChanges   = await configService.get('pseudo_max_changes');
 
-    if (!isExempt && changesCount >= PSEUDO_MAX_CHANGES) {
+    if (!isExempt && changesCount >= maxChanges) {
       return res.status(403).json({
-        error: `Limite atteinte — vous avez utilisé vos ${PSEUDO_MAX_CHANGES} changements de pseudo autorisés à vie.`,
+        error: `Limite atteinte — vous avez utilisé vos ${maxChanges} changements de pseudo autorisés à vie.`,
         pseudo_changes_count: changesCount,
         pseudo_changes_remaining: 0,
       });
@@ -476,7 +478,7 @@ router.put('/pseudo', authMiddleware, async (req, res) => {
       message: 'Pseudonyme mis à jour',
       pseudo,
       pseudo_changes_count: newCount,
-      pseudo_changes_remaining: isExempt ? null : PSEUDO_MAX_CHANGES - newCount,
+      pseudo_changes_remaining: isExempt ? null : maxChanges - newCount,
     });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
@@ -537,9 +539,10 @@ router.post('/send-verification', sendVerifLimit, async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Numéro déjà utilisé' });
     await supabase.from('phone_verification_tokens').update({ used: true }).eq('phone', phone).eq('used', false);
     const otp        = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const otpMinutes = await configService.get('otp_expiry_minutes');
+    const expires_at = new Date(Date.now() + otpMinutes * 60 * 1000).toISOString();
     await supabase.from('phone_verification_tokens').insert({ phone, token: otp, expires_at });
-    await sendSMS(phone, `KASOLIFE - Code de vérification : ${otp}. Valable 10 minutes.`);
+    await sendSMS(phone, `KASOLIFE - Code de vérification : ${otp}. Valable ${otpMinutes} minutes.`);
     res.json({ message: 'Code envoyé par SMS' });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
@@ -567,7 +570,8 @@ router.post('/forgot-password', forgotPassLimit, async (req, res) => {
     if (!user || !user.is_active) return res.json({ message: 'Si ce numéro est enregistré, un code vous a été envoyé' });
     await supabase.from('password_reset_tokens').update({ used: true }).eq('user_id', user.id).eq('used', false);
     const otp = generateOTP();
-    await supabase.from('password_reset_tokens').insert({ user_id: user.id, token: otp, expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() });
+    const otpMinReset = await configService.get('otp_expiry_minutes');
+    await supabase.from('password_reset_tokens').insert({ user_id: user.id, token: otp, expires_at: new Date(Date.now() + otpMinReset * 60 * 1000).toISOString() });
     await sendPasswordResetOTP(phone, otp, user.language || 'fr');
     res.json({ message: 'Si ce numéro est enregistré, un code vous a été envoyé' });
   } catch (err) { res.status(500).json({ error: 'Erreur serveur' }); }
@@ -710,8 +714,9 @@ router.post('/2fa/send', async (req, res) => {
       .select('id, pseudo, email, twofa_method').eq('phone', encryptDeterministic(phone)).single();
     if (!user) return res.status(200).json({ message: 'Si ce compte existe, un code a été envoyé' });
 
+    const otpMinTwofa = await configService.get('otp_expiry_minutes');
     const otp     = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const expires = new Date(Date.now() + otpMinTwofa * 60 * 1000).toISOString();
     await supabase.from('otp_tokens').insert({
       id: uuidv4(), user_id: user.id, token: otp, type: '2FA', expires_at: expires,
     });
@@ -830,10 +835,11 @@ router.put('/change-phone', authMiddleware, phoneChangeLimit, async (req, res) =
     if (existing) return res.status(409).json({ error: 'Ce numéro est déjà utilisé par un autre compte' });
 
     await supabase.from('phone_verification_tokens').update({ used: true }).eq('phone', new_phone).eq('used', false);
+    const otpMinChange = await configService.get('otp_expiry_minutes');
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await supabase.from('phone_verification_tokens').insert({
       phone: new_phone, token: otp,
-      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + otpMinChange * 60 * 1000).toISOString(),
     });
     await sendSMS(new_phone, `KASOLIFE — Code de confirmation changement de numéro : ${otp}. Valable 10 minutes.`);
 

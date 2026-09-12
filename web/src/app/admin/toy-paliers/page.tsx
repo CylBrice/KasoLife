@@ -150,7 +150,7 @@ export default function AdminToyPaliersPage() {
                       max={100}
                       value={p.intensity_min}
                       onChange={(e) => updatePalier(idx, "intensity_min", e.target.value)}
-                      className="w-20 rounded-lg border border-ink-line bg-ink-surface px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
+                      className="w-full rounded-lg border border-ink-line bg-ink-surface px-2 py-1 font-mono text-sm text-cream focus:border-gold focus:outline-none"
                     />
                   </td>
                   <td className="px-4 py-3">
@@ -160,7 +160,7 @@ export default function AdminToyPaliersPage() {
                       max={100}
                       value={p.intensity_max}
                       onChange={(e) => updatePalier(idx, "intensity_max", e.target.value)}
-                      className="w-20 rounded-lg border border-ink-line bg-ink-surface px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
+                      className="w-full rounded-lg border border-ink-line bg-ink-surface px-2 py-1 font-mono text-sm text-cream focus:border-gold focus:outline-none"
                     />
                   </td>
                 </tr>

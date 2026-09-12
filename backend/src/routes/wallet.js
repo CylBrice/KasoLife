@@ -162,8 +162,9 @@ router.post('/withdraw', withdrawLimit, authMiddleware, requireKYC, requireNotWa
     const { montant_xcon, mobile_money_id } = req.body;
     const userId = req.user.id;
 
-    if (!montant_xcon || montant_xcon < 500)
-      return res.status(400).json({ error: 'Montant minimum: 500 xcon' });
+    const MIN_WITHDRAW = await configService.get('min_wallet_withdraw_xcon');
+    if (!montant_xcon || montant_xcon < MIN_WITHDRAW)
+      return res.status(400).json({ error: `Montant minimum: ${MIN_WITHDRAW} xcon` });
 
     // Point 2 : mobile_money_id obligatoire — plus de texte libre
     if (!mobile_money_id)
