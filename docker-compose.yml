@@ -79,6 +79,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: kasolife-backend
+    env_file:
+      - ./backend/.env
     depends_on:
       postgres:
         condition: service_healthy
