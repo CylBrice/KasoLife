@@ -45,10 +45,12 @@ const config: Config = {
         brick: "rgb(var(--c-brick) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
-        mono: ["var(--font-space-mono)", "monospace"],
-        brand: ["var(--font-jakarta)", "sans-serif"],
+        // 'Kaso Numeric' en tête de pile : tous les chiffres (0-9) sont rendus
+        // en Space Mono (zéro pointé) via unicode-range, quelle que soit la police.
+        display: ["'Kaso Numeric'", "var(--font-fraunces)", "serif"],
+        sans: ["'Kaso Numeric'", "var(--font-inter)", "sans-serif"],
+        mono: ["'Kaso Numeric'", "var(--font-space-mono)", "monospace"],
+        brand: ["'Kaso Numeric'", "var(--font-jakarta)", "sans-serif"],
       },
       backgroundImage: {
         "lattice": "url('/lattice.svg')",

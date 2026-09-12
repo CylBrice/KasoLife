@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Police des chiffres — Space Mono (zéro pointé) ─────────────────────────
+   Tous les caractères numériques (U+0030–U+0039) sont rendus en Space Mono,
+   quelle que soit la police de l'élément (Inter, Fraunces, Plus Jakarta…).
+   Le zéro de Space Mono contient un point central — contrairement à Inter,
+   Fraunces et Plus Jakarta Sans dont le zéro est plein.
+   Le reste du texte conserve sa police d'origine (unicode-range). */
+@font-face {
+  font-family: 'Kaso Numeric';
+  src: url('/fonts/space-mono-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+@font-face {
+  font-family: 'Kaso Numeric';
+  src: url('/fonts/space-mono-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
 @layer base {
   :root {
     --font-fraunces: 'Fraunces', serif;
