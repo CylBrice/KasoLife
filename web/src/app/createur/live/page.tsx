@@ -241,6 +241,7 @@ export default function CreatorLivePage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 font-display text-2xl font-medium text-cream">
@@ -262,11 +263,11 @@ export default function CreatorLivePage() {
         </p>
       )}
 
+      {/* Ligne 1 : Vidéo + Chat */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="overflow-hidden rounded-2xl border border-ink-line bg-ink-raised relative">
           <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full bg-black object-cover" />
         </div>
-
         <LiveChatTabs
           messages={messages}
           viewers={viewers}
@@ -277,30 +278,7 @@ export default function CreatorLivePage() {
         />
       </div>
 
-      {/* Bottom Section - Toy Queue + Creator Info */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Toy Queue - Left */}
-        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
-          <ToyOverlay
-            visible={showToyOverlay}
-            onToggle={toggleOverlay}
-            tips={toyTips}
-            role="creator"
-          />
-        </div>
-
-        {/* Creator Info Tabs - Right */}
-        <div className="aspect-video rounded-2xl border border-ink-line overflow-hidden bg-ink-raised">
-          {creatorData ? (
-            <CreatorInfoTabs creator={creatorData} albums={albums} />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-sage">Chargement des infos créateur...</p>
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Ligne 2 : Titre + Prix + Bouton démarrer/terminer */}
       <div className="flex items-center gap-3">
         {status === "idle" || status === "error" ? (
           <>
@@ -331,7 +309,7 @@ export default function CreatorLivePage() {
         )}
       </div>
 
-      {/* Goal Overlay */}
+      {/* Ligne 3 : Titre du défi (visible seulement pendant le live) */}
       {activeGoal && status === "live" && (
         <GoalOverlay
           title={activeGoal.title}
@@ -341,6 +319,30 @@ export default function CreatorLivePage() {
           role="creator"
         />
       )}
+
+      {/* Ligne 4 : Queue jouet (petite) + Onglets créateur (grand) */}
+      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        {/* Queue jouet - colonne gauche petite */}
+        <div className="bg-ink-raised rounded-2xl border border-ink-line p-4">
+          <ToyOverlay
+            visible={showToyOverlay}
+            onToggle={toggleOverlay}
+            tips={toyTips}
+            role="creator"
+          />
+        </div>
+
+        {/* Onglets créateur - colonne droite grande */}
+        <div className="min-h-[300px] rounded-2xl border border-ink-line overflow-hidden bg-ink-raised">
+          {creatorData ? (
+            <CreatorInfoTabs creator={creatorData} albums={albums} />
+          ) : (
+            <div className="flex items-center justify-center h-full min-h-[300px]">
+              <p className="text-sm text-sage">Chargement des infos créateur...</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Goal Modal */}
       {showGoalModal && status === "live" && (
