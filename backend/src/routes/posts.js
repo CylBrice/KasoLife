@@ -245,7 +245,8 @@ router.get('/discover', async (req, res) => {
     // ── Pool 3 : Découverte — créateurs avec <50 abonnés
     const { data: smallCreators } = await supabase.from('creator_profiles')
       .select('user_id, subscribers_count')
-      .lt('subscribers_count', 50);
+      .lt('subscribers_count', 50)
+      .limit(5000);
     const smallCreatorIds = (smallCreators || []).map((c) => c.user_id);
     const subscriberCountByCreator = Object.fromEntries(
       (smallCreators || []).map((c) => [c.user_id, c.subscribers_count || 0])
@@ -580,14 +581,19 @@ router.post('/', authMiddleware, requireMinRole('influencer'), async (req, res) 
       return res.status(400).json({ error: `Niveau d'accès invalide — valeurs possibles : ${ACCESS_LEVELS.join(', ')}` });
     if (media_type !== 'TEXT' && !media_url)
       return res.status(400).json({ error: 'URL média requise pour ce type de contenu' });
-    if (caption && caption.length > 2000)
-      return res.status(400).json({ error: 'Légende trop longue (max 2000 caractères)' });
+    const maxCaption = await configService.get('max_caption_chars');
+    if (caption && caption.length > maxCaption)
+      return res.status(400).json({ error: `Légende trop longue (max ${maxCaption} caractères)` });
 
+    const [ppvMin, ppvMax] = await Promise.all([
+      configService.get('ppv_price_min'),
+      configService.get('ppv_price_max'),
+    ]);
     let price = 0;
     if (access_level === 'PPV') {
       price = Number(price_xcon);
-      if (!price || price < PPV_PRICE_MIN || price > PPV_PRICE_MAX)
-        return res.status(400).json({ error: `Le prix doit être entre ${PPV_PRICE_MIN} et ${PPV_PRICE_MAX} FCFA` });
+      if (!price || price < ppvMin || price > ppvMax)
+        return res.status(400).json({ error: `Le prix doit être entre ${ppvMin} et ${ppvMax} FCFA` });
     }
 
     const { data: profile } = await supabase.from('creator_profiles')
@@ -668,11 +674,15 @@ router.put('/:id', authMiddleware, requireMinRole('influencer'), async (req, res
 // ── GET /posts/scheduled — récupérer tous les posts programmés du créateur
 router.get('/scheduled', authMiddleware, async (req, res) => {
   try {
+    const { limit = 100, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 100, 200);
+    const safeOfs = Math.max(Number(offset) || 0, 0);
     const { data: posts, error } = await supabase.from('posts')
       .select('id, caption, media_url, scheduled_at, created_at')
       .eq('creator_id', req.user.id)
       .eq('is_published', false)
-      .order('scheduled_at', { ascending: true });
+      .order('scheduled_at', { ascending: true })
+      .range(safeOfs, safeOfs + safeLmt - 1);
 
     if (error) throw error;
     res.json({ posts: posts || [] });
@@ -776,7 +786,8 @@ router.get('/:id/comments', async (req, res) => {
         const { data: replies } = await supabase.from('post_comments')
           .select('id, content, created_at, likes_count, is_pinned, parent_id, user:users(id, pseudo, avatar_url, role)')
           .eq('parent_id', comment.id)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true })
+          .limit(50);
 
         return {
           ...comment,

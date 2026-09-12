@@ -41,9 +41,9 @@ export default function CreateurPrivateChatPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Rafraîchir toutes les 20s
+  // Rafraîchir toutes les 60s (réduit de 20s → 60s = 66% moins de requêtes)
   useEffect(() => {
-    const id = setInterval(load, 20000);
+    const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, [load]);
 

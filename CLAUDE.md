@@ -1,3 +1,51 @@
+# ⚡ TOKEN EFFICIENCY — RÈGLES DE COMMUNICATION IA
+
+## Réponses
+- Répondre en 1-3 phrases max sauf si code/explication technique requise
+- Pas de intro ("Bien sûr !", "Je vais…", "Voici…") — aller droit au but
+- Pas de résumé en fin de réponse — l'utilisateur voit le diff
+- Pas de narration de ce qu'on fait — juste le faire
+- Conclusions d'abord, justification seulement si non évidente
+- Pas de "je vais maintenant…" entre les tool calls
+
+## Outils
+- Lire uniquement les lignes nécessaires (offset + limit), pas le fichier entier
+- Grepper avant de lire — confirmer que le fichier contient ce qu'on cherche
+- Pas de re-lecture après Edit/Write — les outils confirment le succès
+- Grouper les tool calls indépendants en parallèle systématiquement
+- Ne pas spawn d'agent pour une tâche faisable en 1-3 tool calls directs
+
+## Contexte
+- Ne jamais ré-expliquer ce qui est déjà dans ce CLAUDE.md
+- Ne pas répéter les règles dans les messages — les appliquer silencieusement
+- Une décision prise = acquise, ne pas la re-valider au tour suivant
+
+---
+
+# 🚨 RÈGLE 00B - MODÈLE KASOLIFE : RÔLES ET DROITS
+
+## Tout utilisateur peut être Lifeur
+- ✅ **N'importe quel user** peut publier du contenu, le rendre payant, diffuser en live
+- ❌ **JAMAIS** conditionner publication / monétisation / live au rôle `influencer`
+
+## Ce qui distingue un `influencer` d'un user classique
+- ✅ **Seul le rôle `influencer`** donne accès à la gestion des **codes promotionnels**
+- Tous les autres droits (contenu, live, monétisation) sont ouverts à tous les users
+
+---
+
+# 🚨 RÈGLE 00A - TERMINOLOGIE KASOLIFE : LIFEUR / LIFEUSE
+
+⛔ **INTERDICTION d'utiliser "Créateur" / "Créatrice" pour désigner les créateurs de contenu KasoLife**
+- ❌ **JAMAIS** "Créateur de contenu", "Créatrice de contenu" dans l'UI, les messages, les labels, les routes, les emails ou la documentation
+- ✅ **TOUJOURS** utiliser **Lifeur** (masculin) et **Lifeuse** (féminin)
+- ✅ Pluriel : **Lifeurs** / **Lifeuses** / **Lifeurs·euses** (inclusif)
+- ✅ En anglais : **Lifer** (singulier), **Lifers** (pluriel)
+- Cette règle s'applique à **toutes les surfaces** : UI frontend, messages backend, emails, notifications push, documentation, commentaires de code visibles par l'utilisateur
+- **Exception unique :** les noms de rôles en base de données (`influencer`) et les routes API internes restent inchangés pour ne pas casser le schéma existant
+
+---
+
 # 🖥️ ACCÈS SERVEUR VPS — INFOS DE CONNEXION
 
 **Serveur de production KasoLife**
@@ -42,6 +90,17 @@ psql "$(grep DATABASE_URL backend/.env | cut -d= -f2-)" -f backend/migrations/XX
 4. ✅ Documenter toute décision architecturale dans la section "Décisions" du fichier
 
 **Ce fichier est la mémoire inter-sessions du projet. Sans lui, le travail est perdu.**
+
+---
+
+# 🚨 RÈGLE 0 - DESIGN SYSTEM MODALS / POPUPS : TOUJOURS UTILISER `@/components/ui/modal.tsx`
+
+⛔ **INTERDICTION de créer des popups ou modals custom inline**
+- ❌ **JAMAIS** `<div className="fixed inset-0 z-50 ...">` ou équivalent en dehors du composant `Modal`
+- ✅ Utiliser **exclusivement** `Modal` de `@/components/ui/modal.tsx` pour toute boîte de dialogue, confirmation, ou formulaire modal
+- ✅ Pour les tooltips informatifs inline (non-bloquants), les `InfoPopup` locaux avec `position: absolute` sont acceptés
+- Cette règle s'applique à toutes les pages, tous les composants, tous les layouts
+- **Exception unique :** Goal modal dans `createur/live/page.tsx` → à migrer vers `<Modal>` lors du prochain refactor
 
 ---
 

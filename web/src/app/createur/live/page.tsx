@@ -6,10 +6,13 @@ import { Room, RoomEvent, createLocalTracks, type LocalTrack } from "livekit-cli
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AmountInput } from "@/components/ui/amount-input";
+import { StreamPriceInput, isStreamPriceInvalid } from "@/components/live/stream-price-input";
 import { ToyOverlay } from "@/components/live/toy-overlay";
 import { GoalOverlay } from "@/components/live/goal-overlay";
 import { LiveChatTabs } from "@/components/live/chat-tabs";
 import { CreatorInfoTabs } from "@/components/live/creator-info-tabs";
+import { MediaControls } from "@/components/live/media-controls";
+import { HtmlTitleInput, sanitizeHtmlTitle } from "@/components/ui/html-title-input";
 import { api, getApiToken } from "@/lib/api";
 
 type Status = "idle" | "starting" | "live" | "ending" | "ended" | "error";
@@ -36,9 +39,10 @@ export default function CreatorLivePage() {
   const [viewers, setViewers] = useState<Array<{ id: string; pseudo: string; gender?: string }>>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
   const [creatorData, setCreatorData] = useState<any>(null);
+  const [creatorDataError, setCreatorDataError] = useState<string | null>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [title, setTitle] = useState("");
-  const [priceXcon, setPriceXcon] = useState("");
+  const [priceXcon, setPriceXcon] = useState(0);
   const [showToyOverlay, setShowToyOverlay] = useState(true);
   const [toyTips, setToyTips] = useState<Array<{ id: string; username: string; amount: number; palier: number; duration_s: number; timestamp: number }>>([]);
   const [activeGoal, setActiveGoal] = useState<any>(null);
@@ -47,17 +51,13 @@ export default function CreatorLivePage() {
   const [goalAmount, setGoalAmount] = useState(5000);
   const [loadingGoal, setLoadingGoal] = useState(false);
 
-  // Aperçu caméra/micro avant de démarrer le direct
+  // Nettoyage des pistes médias au démontage
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ audio: true, video: true })
-      .then((s) => {
-        stream = s;
-        if (videoRef.current) videoRef.current.srcObject = s;
-      })
-      .catch(() => setError("Accès à la caméra/micro refusé — autorisez-les pour démarrer un direct."));
-    return () => stream?.getTracks().forEach((t) => t.stop());
+    return () => {
+      if (videoRef.current?.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      }
+    };
   }, []);
 
   const loadViewers = useCallback(() => {
@@ -77,13 +77,15 @@ export default function CreatorLivePage() {
     }
   }, []);
 
-  const loadCreatorData = useCallback(async (id: string) => {
+  const loadCreatorData = useCallback(async (_id: string) => {
     try {
+      setCreatorDataError(null);
       const { data } = await api.get(`/creators/me`);
-      console.log("✅ Creator data loaded:", data);
       setCreatorData(data);
-    } catch (err) {
-      console.error("❌ Erreur loadCreatorData:", err);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || "Erreur chargement profil";
+      setCreatorDataError(msg);
+      console.error("❌ Erreur loadCreatorData:", err?.response?.status, msg);
     }
   }, []);
 
@@ -121,8 +123,8 @@ export default function CreatorLivePage() {
     setStatus("starting");
     setError(null);
     try {
-      const pricePayload = priceXcon.trim() ? { price_xcon: parseInt(priceXcon, 10) } : {};
-      const { data } = await api.post("/live/start", { title: title || undefined, ...pricePayload });
+      const pricePayload = priceXcon > 0 ? { price_xcon: priceXcon } : {};
+      const { data } = await api.post("/live/start", { title: sanitizeHtmlTitle(title) || undefined, ...pricePayload });
       setStreamId(data.streamId);
 
       const room = new Room();
@@ -197,13 +199,13 @@ export default function CreatorLivePage() {
     try {
       const { data } = await api.post("/stream-goals", {
         stream_id: streamId,
-        title: goalTitle,
-        target_amount_xcon: parseInt(goalAmount, 10),
+        title: sanitizeHtmlTitle(goalTitle),
+        target_amount_xcon: goalAmount,
       });
       setActiveGoal(data.goal);
       setShowGoalModal(false);
       setGoalTitle("");
-      setGoalAmount("5000");
+      setGoalAmount(5000);
     } catch (err: any) {
       setError(err?.response?.data?.error || "Erreur création goal");
     } finally {
@@ -234,7 +236,7 @@ export default function CreatorLivePage() {
   useEffect(() => {
     if (status === "live" && streamId) {
       loadGoal();
-      const interval = setInterval(() => loadGoal(), 2000);
+      const interval = setInterval(() => loadGoal(), 5000); // Réduit de 2s → 5s (60% moins de requêtes)
       return () => clearInterval(interval);
     }
   }, [status, streamId]);
@@ -282,21 +284,24 @@ export default function CreatorLivePage() {
       <div className="flex items-center gap-3">
         {status === "idle" || status === "error" ? (
           <>
-            <input
+            <HtmlTitleInput
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre du direct (optionnel)"
-              className="flex-1 rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
+              onChange={setTitle}
+              placeholder="Titre du direct — HTML accepté : <b>gras</b>, <marquee>défilement</marquee>, <span style=&quot;color:red&quot;>couleur</span>…"
+              maxLength={300}
             />
-            <AmountInput
-              value={priceXcon ? Number(priceXcon) : 0}
-              onChange={(v) => setPriceXcon(v > 0 ? String(v) : "")}
-              min={100}
-              max={200000}
-              step={100}
-              label="Prix direct"
+            <MediaControls videoRef={videoRef} />
+            <StreamPriceInput
+              value={priceXcon}
+              onChange={setPriceXcon}
             />
-            <Button onClick={startLive}><Radio className="h-4 w-4" /> Démarrer le direct</Button>
+            <Button
+              onClick={startLive}
+              disabled={isStreamPriceInvalid(priceXcon)}
+              title={isStreamPriceInvalid(priceXcon) ? "Corrigez le prix avant de démarrer" : undefined}
+            >
+              <Radio className="h-4 w-4" /> Démarrer le direct
+            </Button>
           </>
         ) : status === "starting" ? (
           <Button disabled>Connexion en cours…</Button>
@@ -337,6 +342,17 @@ export default function CreatorLivePage() {
         <div className="min-h-[300px] rounded-2xl border border-ink-line overflow-hidden bg-ink-raised">
           {creatorData ? (
             <CreatorInfoTabs creator={creatorData} albums={albums} />
+          ) : creatorDataError ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-2 px-4">
+              <AlertCircle className="h-6 w-6 text-brick/60" />
+              <p className="text-sm text-brick text-center">{creatorDataError}</p>
+              <button
+                onClick={() => loadCreatorData("")}
+                className="text-xs text-gold hover:underline mt-1"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full min-h-[300px]">
               <p className="text-sm text-sage">Chargement des infos créateur...</p>
@@ -351,13 +367,11 @@ export default function CreatorLivePage() {
           <Card className="w-full max-w-md">
             <CardContent className="pt-6 space-y-4">
               <h3 className="font-display text-lg text-cream">Créer un objectif</h3>
-              <input
-                type="text"
+              <HtmlTitleInput
                 value={goalTitle}
-                onChange={(e) => setGoalTitle(e.target.value)}
-                placeholder="Ex: Take off my panties and..."
+                onChange={setGoalTitle}
+                placeholder="Titre du défi — HTML accepté : <b>gras</b>, <span style=&quot;color:gold&quot;>couleur</span>…"
                 maxLength={300}
-                className="w-full rounded-xl border border-ink-line bg-ink-surface px-3 py-2 text-sm text-cream placeholder:text-sage-muted focus:outline-none"
               />
               <AmountInput
                 label="Montant (min 1000 XAF)"

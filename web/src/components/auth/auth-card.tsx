@@ -35,9 +35,10 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
 
   const [loginCountry, setLoginCountry] = useState("CM");
   const [loginForm, setLoginForm] = useState({ phone: "", password: "" });
+  const [showPwdConfirm, setShowPwdConfirm] = useState(false);
   const [signupCountry, setSignupCountry] = useState("CM");
   const [signupForm, setSignupForm] = useState({
-    phone: "", pseudo: "", name: "", password: "", birth_date: "",
+    phone: "", pseudo: "", password: "", passwordConfirm: "", promoCode: "",
   });
 
   const switchTab = (next: Tab) => {
@@ -69,13 +70,18 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (signupForm.password !== signupForm.passwordConfirm) {
+      setError(t("auth.passwordMismatch"));
+      return;
+    }
     setLoading(true);
     try {
       await register({
-        ...signupForm,
         phone: buildE164(signupCountry, signupForm.phone),
+        pseudo: signupForm.pseudo,
+        password: signupForm.password,
         country_iso: signupCountry,
-        ref: referralCode,
+        ref: signupForm.promoCode.trim() || referralCode || undefined,
       });
       router.push("/");
     } catch (err: any) {
@@ -163,10 +169,17 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
             </form>
           ) : (
             <form onSubmit={handleSignup} className="flex flex-col gap-4">
-              <Input
-                label={t("auth.pseudo")} required placeholder={t("auth.pseudoHint")}
-                value={signupForm.pseudo} onChange={(e) => update("pseudo", e.target.value)}
-              />
+              {/* Pseudo */}
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  label={t("auth.pseudo")} required
+                  placeholder={t("auth.pseudoPlaceholder")}
+                  value={signupForm.pseudo} onChange={(e) => update("pseudo", e.target.value)}
+                />
+                <p className="text-xs text-sage-muted px-0.5">{t("auth.pseudoHint")}</p>
+              </div>
+
+              {/* Téléphone */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-cream">{t("auth.phone")}</label>
                 <div className="flex gap-2">
@@ -181,29 +194,47 @@ export function AuthCard({ initialTab, referralCode }: { initialTab: Tab; referr
                   />
                 </div>
               </div>
+
+              {/* Mot de passe */}
               <div className="relative">
                 <Input
                   label={t("auth.password")} type={showPwd ? "text" : "password"} required minLength={8}
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={signupForm.password} onChange={(e) => update("password", e.target.value)}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-3 top-9 text-sage-muted hover:text-sage"
-                  tabIndex={-1}
-                  aria-label={showPwd ? t("common.close") : t("auth.password")}
-                >
+                <button type="button" onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-3 top-9 text-sage-muted hover:text-sage" tabIndex={-1}
+                  aria-label={showPwd ? t("common.close") : t("auth.password")}>
                   {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <Input
-                label={t("auth.fullName")} required
-                value={signupForm.name} onChange={(e) => update("name", e.target.value)}
-              />
-              <Input
-                label={t("auth.birthDate")} type="date" required
-                value={signupForm.birth_date} onChange={(e) => update("birth_date", e.target.value)}
-              />
+
+              {/* Confirmation mot de passe */}
+              <div className="relative">
+                <Input
+                  label={t("auth.passwordConfirm")} type={showPwdConfirm ? "text" : "password"} required
+                  placeholder={t("auth.passwordConfirmPlaceholder")}
+                  value={signupForm.passwordConfirm} onChange={(e) => update("passwordConfirm", e.target.value)}
+                />
+                <button type="button" onClick={() => setShowPwdConfirm((v) => !v)}
+                  className="absolute right-3 top-9 text-sage-muted hover:text-sage" tabIndex={-1}
+                  aria-label={showPwdConfirm ? t("common.close") : t("auth.passwordConfirm")}>
+                  {showPwdConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* Code promo (optionnel) */}
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  label={t("auth.promoCode")}
+                  placeholder={t("auth.promoCodePlaceholder")}
+                  value={signupForm.promoCode}
+                  onChange={(e) => update("promoCode", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                />
+                <p className="text-xs text-sage-muted px-0.5">{t("auth.promoCodeHint")}</p>
+              </div>
+
               <Button type="submit" size="lg" disabled={loading} className="mt-2 gap-2">
                 {loading && <Loader2 size={18} className="animate-spin" />}
                 {loading ? t("auth.signingUp") : t("auth.signupButton")}

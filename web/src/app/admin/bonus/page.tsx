@@ -49,16 +49,14 @@ function NumberField({
   onChange: (v: number) => void; suffix?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="min-w-0 flex-1">
+    <div className="grid grid-cols-[2fr_3fr] items-center gap-4">
+      <div className="min-w-0">
         <p className="text-sm font-medium text-cream">{label}</p>
         {description && <p className="text-xs text-sage-muted">{description}</p>}
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-28">
-          <AmountInput value={value} onChange={onChange} min={0} step={100} />
-        </div>
-        {suffix && <span className="text-xs text-sage">{suffix}</span>}
+        <AmountInput value={value} onChange={onChange} min={0} step={100} className="flex-1" />
+        {suffix && <span className="shrink-0 text-xs text-sage">{suffix}</span>}
       </div>
     </div>
   );
@@ -270,7 +268,7 @@ export default function AdminBonusPage() {
             </div>
             <button
               onClick={() => set("bonus_welcome_enabled", !current("bonus_welcome_enabled"))}
-              className="text-2xl"
+              className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1"
             >
               {current("bonus_welcome_enabled")
                 ? <ToggleRight className="h-8 w-8 text-emerald" />

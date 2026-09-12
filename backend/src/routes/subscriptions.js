@@ -16,7 +16,9 @@ const SUBSCRIPTION_PERIOD_DAYS = 30;
 // ── GET /subscriptions/me — abonnements actifs de l'utilisateur (fan)
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, limit = 50, offset = 0 } = req.query;
+    const safeLmt = Math.min(Number(limit) || 50, 100);
+    const safeOfs = Math.max(Number(offset) || 0, 0);
     let query = supabase.from('subscriptions')
       .select(`
         id, price_xcon, status, started_at, current_period_end, auto_renew, cancelled_at,
@@ -26,7 +28,8 @@ router.get('/me', authMiddleware, async (req, res) => {
         )
       `)
       .eq('fan_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(safeOfs, safeOfs + safeLmt - 1);
 
     if (status) query = query.eq('status', status);
 

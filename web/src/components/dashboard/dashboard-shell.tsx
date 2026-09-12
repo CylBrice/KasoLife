@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
-import { Crown, Moon, Sun, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, SlidersHorizontal } from "lucide-react";
+import { Crown, Search, PanelLeftClose, PanelLeftOpen, LogOut, Home, User, Flag, FileText, ArrowLeftRight, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { api } from "@/lib/api";
 
 export interface NavItem {
   href: string;
@@ -64,27 +66,21 @@ export function DashboardShell({
     localStorage.setItem(storageKey, String(next));
   };
 
-  /* Dark mode — persisté dans localStorage */
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem("kl_admin_dark") === "true";
-    setDark(saved);
-    document.documentElement.classList.toggle("dark", saved);
-  }, []);
-  const toggleDark = () => {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem("kl_admin_dark", String(next));
-    document.documentElement.classList.toggle("dark", next);
-  };
-
   /* Cmd+K */
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [cmdkQuery, setCmdkQuery] = useState("");
+  const [cmdkLoading, setCmdkLoading] = useState(false);
+  const [cmdkResults, setCmdkResults] = useState<{
+    users: {id: string; pseudo: string; name: string; role: string; is_active: boolean}[];
+    reports: {id: string; reason: string; status: string; reporter?: {pseudo: string}; reported?: {pseudo: string}}[];
+    applications: {id: string; display_name: string; status: string; user?: {pseudo: string}}[];
+    transactions: {id: string; type: string; amount_xcon: number; user?: {pseudo: string}}[];
+  } | null>(null);
   const cmdkRef = useRef<HTMLInputElement>(null);
+  const cmdkDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const openCmdk = useCallback(() => { setCmdkOpen(true); setCmdkQuery(""); }, []);
-  const closeCmdk = useCallback(() => { setCmdkOpen(false); setCmdkQuery(""); }, []);
+  const openCmdk = useCallback(() => { setCmdkOpen(true); setCmdkQuery(""); setCmdkResults(null); }, []);
+  const closeCmdk = useCallback(() => { setCmdkOpen(false); setCmdkQuery(""); setCmdkResults(null); }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -99,7 +95,21 @@ export function DashboardShell({
     if (cmdkOpen) setTimeout(() => cmdkRef.current?.focus(), 40);
   }, [cmdkOpen]);
 
-  const cmdkFiltered = CMDK_ITEMS.filter(
+  useEffect(() => {
+    if (cmdkDebounce.current) clearTimeout(cmdkDebounce.current);
+    if (cmdkQuery.trim().length < 2) { setCmdkResults(null); return; }
+    setCmdkLoading(true);
+    cmdkDebounce.current = setTimeout(async () => {
+      try {
+        const { data } = await api.get(`/admin/search?q=${encodeURIComponent(cmdkQuery.trim())}`);
+        setCmdkResults(data);
+      } catch { setCmdkResults(null); }
+      finally { setCmdkLoading(false); }
+    }, 300);
+    return () => { if (cmdkDebounce.current) clearTimeout(cmdkDebounce.current); };
+  }, [cmdkQuery]);
+
+  const cmdkNavFiltered = CMDK_ITEMS.filter(
     (i) => !cmdkQuery || i.label.toLowerCase().includes(cmdkQuery.toLowerCase())
   );
 
@@ -199,20 +209,11 @@ export function DashboardShell({
           {collapsed ? (
             /* Mode réduit — icônes uniquement */
             <div className="flex flex-col items-center gap-1">
-              <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+              <ThemeToggle />
               <Link href="/" title="Retour au site"
                 className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
                 <Home className="h-4 w-4" />
               </Link>
-              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
-                <Link href="/admin" title="Admin Dashboard"
-                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  <SlidersHorizontal className="h-4 w-4" />
-                </Link>
-              )}
               <button onClick={logout} title="Déconnexion"
                 className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-brick/10 hover:text-brick transition-colors">
                 <LogOut className="h-4 w-4" />
@@ -221,32 +222,36 @@ export function DashboardShell({
           ) : (
             /* Mode étendu */
             <div className="space-y-0.5">
-              {/* Ligne 1 : icônes thème + langue, centrées */}
-              <div className="flex items-center justify-center gap-3 px-2 py-2">
-                <button onClick={toggleDark} title={dark ? "Mode clair" : "Mode sombre"}
-                  className="flex items-center justify-center rounded-xl p-2 text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </button>
+              {/* Ligne 1 : avatar + pseudo */}
+              <div className="flex items-center gap-2.5 px-3 py-2">
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.pseudo ?? ""}
+                    className="h-8 w-8 shrink-0 rounded-lg object-cover border border-ink-line/60"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ink-line/60 bg-ink-raised text-xs font-bold text-sage uppercase">
+                    {(user?.pseudo ?? "?")[0]}
+                  </div>
+                )}
+                <span className="truncate text-sm font-medium text-cream">@{user?.pseudo}</span>
+              </div>
+
+              {/* Ligne 2 : thème + langue */}
+              <div className="flex items-center justify-center gap-3 px-2 pb-2">
+                <ThemeToggle />
                 <LanguageSwitcher />
               </div>
 
               <div className="mx-1 my-1 h-px bg-ink-line/40" />
 
-              {/* Ligne 2 : Retour au site */}
+              {/* Retour au site */}
               <Link href="/"
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
                 <Home className="h-4 w-4 shrink-0" />
                 Retour au site
               </Link>
-
-              {/* Ligne 3 : Admin Dashboard (si admin) */}
-              {user && ["admin","super_admin","root_admin"].includes(user.role) && (
-                <Link href="/admin"
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-sage hover:bg-ink-raised hover:text-cream transition-colors">
-                  <SlidersHorizontal className="h-4 w-4 shrink-0" />
-                  Admin Dashboard
-                </Link>
-              )}
 
               <div className="mx-1 my-1 h-px bg-ink-line/40" />
 
@@ -268,9 +273,7 @@ export function DashboardShell({
           <button onClick={openCmdk} className="rounded-xl border border-ink-line p-2 text-sage">
             <Search className="h-4 w-4" />
           </button>
-          <button onClick={toggleDark} className="rounded-xl border border-ink-line p-2 text-sage">
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+          <ThemeToggle />
           {isSuperAdmin && (
             <div className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5">
               <Crown className="h-3 w-3 text-gold" />
@@ -312,33 +315,109 @@ export function DashboardShell({
           onClick={closeCmdk}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-ink-line bg-ink-surface shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-ink-line bg-ink-surface shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 border-b border-ink-line px-4 py-3">
-              <Search className="h-4 w-4 shrink-0 text-sage-muted" />
+              {cmdkLoading
+                ? <Loader2 className="h-4 w-4 shrink-0 text-gold animate-spin" />
+                : <Search className="h-4 w-4 shrink-0 text-sage-muted" />
+              }
               <input
                 ref={cmdkRef}
                 value={cmdkQuery}
                 onChange={(e) => setCmdkQuery(e.target.value)}
-                placeholder="Rechercher une section…"
+                placeholder="Rechercher utilisateur, signalement, candidature…"
                 className="flex-1 bg-transparent text-sm text-cream placeholder:text-sage-muted focus:outline-none"
               />
               <kbd className="rounded bg-ink-line px-1.5 py-0.5 text-[10px] font-mono text-sage-muted">ESC</kbd>
             </div>
-            <div className="max-h-72 overflow-y-auto p-2">
-              {cmdkFiltered.length === 0 ? (
+            <div className="max-h-[480px] overflow-y-auto p-2">
+              {/* Résultats backend */}
+              {cmdkResults && (
+                <>
+                  {cmdkResults.users.length > 0 && (
+                    <div className="mb-1">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Utilisateurs</p>
+                      {cmdkResults.users.map((u) => (
+                        <button key={u.id}
+                          onClick={() => { router.push(`/admin/utilisateurs/${u.id}`); closeCmdk(); }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left">
+                          <User className="h-3.5 w-3.5 shrink-0 text-sage-muted" />
+                          <span className="flex-1">@{u.pseudo} {u.name && <span className="text-sage-muted">— {u.name}</span>}</span>
+                          <span className={`text-[10px] rounded-full px-1.5 py-0.5 ${u.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-brick/10 text-brick'}`}>{u.role}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {cmdkResults.applications.length > 0 && (
+                    <div className="mb-1">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Candidatures</p>
+                      {cmdkResults.applications.map((a) => (
+                        <button key={a.id}
+                          onClick={() => { router.push(`/admin/candidatures`); closeCmdk(); }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left">
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-sage-muted" />
+                          <span className="flex-1">{a.display_name} {a.user?.pseudo && <span className="text-sage-muted">(@{a.user.pseudo})</span>}</span>
+                          <span className="text-[10px] text-sage-muted">{a.status}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {cmdkResults.reports.length > 0 && (
+                    <div className="mb-1">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Signalements</p>
+                      {cmdkResults.reports.map((r) => (
+                        <button key={r.id}
+                          onClick={() => { router.push(`/admin/signalements`); closeCmdk(); }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left">
+                          <Flag className="h-3.5 w-3.5 shrink-0 text-brick/70" />
+                          <span className="flex-1 truncate">{r.reason}</span>
+                          <span className="text-[10px] text-sage-muted">{r.status}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {cmdkResults.transactions.length > 0 && (
+                    <div className="mb-1">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Transactions</p>
+                      {cmdkResults.transactions.map((tx) => (
+                        <button key={tx.id}
+                          onClick={() => { router.push(`/admin/revenus`); closeCmdk(); }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left">
+                          <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-sage-muted" />
+                          <span className="flex-1">{tx.type} {tx.user?.pseudo && <span className="text-sage-muted">(@{tx.user.pseudo})</span>}</span>
+                          <span className="font-mono text-[11px] text-gold">{tx.amount_xcon > 0 ? '+' : ''}{tx.amount_xcon}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!cmdkResults.users.length && !cmdkResults.reports.length && !cmdkResults.applications.length && !cmdkResults.transactions.length && (
+                    <p className="py-4 text-center text-sm text-sage-muted">Aucun résultat pour « {cmdkQuery} »</p>
+                  )}
+                  <div className="my-1 h-px bg-ink-line/50" />
+                </>
+              )}
+
+              {/* Navigation sections */}
+              {cmdkNavFiltered.length > 0 && (
+                <>
+                  {cmdkResults && <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-sage-muted">Sections</p>}
+                  {cmdkNavFiltered.map((item) => (
+                    <button
+                      key={item.href}
+                      onClick={() => { router.push(item.href); closeCmdk(); }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-gold/60 shrink-0" />
+                      {item.label}
+                    </button>
+                  ))}
+                </>
+              )}
+              {cmdkNavFiltered.length === 0 && !cmdkResults && (
                 <p className="py-6 text-center text-sm text-sage-muted">Aucun résultat</p>
-              ) : cmdkFiltered.map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => { router.push(item.href); closeCmdk(); }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream hover:bg-ink-raised transition-colors text-left"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-gold/60 shrink-0" />
-                  {item.label}
-                </button>
-              ))}
+              )}
             </div>
           </div>
         </div>

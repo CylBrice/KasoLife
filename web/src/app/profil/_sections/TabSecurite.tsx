@@ -338,7 +338,7 @@ export function TabSecurite() {
               type="button" role="switch" aria-checked={twofa}
               onClick={handleToggle2FA}
               disabled={twofaSaving}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${twofa ? "bg-gold" : "bg-ink-line"} disabled:opacity-50`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 ${twofa ? "bg-gold" : "bg-toggle-off"} disabled:opacity-50`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${twofa ? "translate-x-6" : "translate-x-1"}`} />
             </button>

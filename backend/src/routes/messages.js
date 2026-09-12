@@ -113,7 +113,8 @@ router.post('/:userId', authMiddleware, async (req, res) => {
     if (!content && !media_url) return res.status(400).json({ error: 'Message vide' });
     // Vue unique uniquement sur les médias (pas sur le texte seul)
     if (view_once && !media_url) return res.status(400).json({ error: 'La vue unique nécessite un média' });
-    if (content && content.length > 2000) return res.status(400).json({ error: 'Message trop long (max 2000 caractères)' });
+    const maxMsg = await configService.get('max_message_chars');
+    if (content && content.length > maxMsg) return res.status(400).json({ error: `Message trop long (max ${maxMsg} caractères)` });
 
     const { data: receiver } = await supabase.from('users').select('id, is_active').eq('id', userId).single();
     if (!receiver || !receiver.is_active) return res.status(404).json({ error: 'Destinataire introuvable' });

@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgeCheck, Wallet, Coins, Layers, ChevronRight,
-  UserCircle, Shield, CreditCard, BarChart3, Settings, Users, ShoppingBag,
+  UserCircle, Shield, BarChart3, Settings, Users, ShoppingBag,
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,10 @@ import { useLocale } from "@/i18n/locale-context";
 import { formatFCFA } from "@/lib/utils";
 import { TabIdentite } from "./_sections/TabIdentite";
 import { TabSecurite } from "./_sections/TabSecurite";
-import { TabPaiements } from "./_sections/TabPaiements";
 import { TabStats } from "./_sections/TabStats";
 import { TabConfig } from "./_sections/TabConfig";
 
-type Tab = "identite" | "securite" | "paiements" | "stats" | "config";
+type Tab = "identite" | "securite" | "stats" | "config";
 
 const ROLE_LABELS: Record<string, string> = {
   user: "Fan",
@@ -68,11 +67,10 @@ export default function ProfilPage() {
   const isCreator = CREATOR_ROLES.includes(user.role);
 
   const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: "identite",  label: isEn ? "Identity"   : "Identité",     icon: UserCircle },
-    { key: "securite",  label: isEn ? "Security"   : "Sécurité",     icon: Shield     },
-    { key: "paiements", label: isEn ? "Payments"   : "Paiements",    icon: CreditCard },
-    { key: "stats",     label: isEn ? "Statistics" : "Statistiques", icon: BarChart3  },
-    { key: "config",    label: isEn ? "Settings"   : "Config",       icon: Settings   },
+    { key: "identite", label: isEn ? "Identity"   : "Identité",     icon: UserCircle },
+    { key: "securite", label: isEn ? "Security"   : "Sécurité",     icon: Shield     },
+    { key: "stats",    label: isEn ? "Statistics" : "Statistiques", icon: BarChart3  },
+    { key: "config",   label: isEn ? "Settings"   : "Config",       icon: Settings   },
   ];
 
   return (
@@ -200,11 +198,10 @@ export default function ProfilPage() {
 
         {/* ── Contenu onglet ──────────────────────────────────────── */}
         <div className="mt-4">
-          {tab === "identite"  && <TabIdentite />}
-          {tab === "securite"  && <TabSecurite />}
-          {tab === "paiements" && <TabPaiements />}
-          {tab === "stats"     && <TabStats />}
-          {tab === "config"    && <TabConfig />}
+          {tab === "identite" && <TabIdentite />}
+          {tab === "securite" && <TabSecurite />}
+          {tab === "stats"    && <TabStats />}
+          {tab === "config"   && <TabConfig />}
         </div>
 
       </main>

@@ -16,8 +16,8 @@ function Toggle({ enabled, onChange, disabled = false }: {
       type="button"
       onClick={() => !disabled && onChange(!enabled)}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed ${
-        enabled ? "bg-gold" : "bg-ink-line"
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 disabled:cursor-not-allowed ${
+        enabled ? "bg-gold" : "bg-toggle-off"
       }`}
       role="switch"
       aria-checked={enabled}

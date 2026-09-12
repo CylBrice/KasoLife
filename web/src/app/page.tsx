@@ -212,7 +212,7 @@ function HomeFeed() {
     api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
     const interval = setInterval(() => {
       api.get("/live").then(({ data }) => setLiveCount(data?.streams?.length ?? 0)).catch(() => {});
-    }, 30000);
+    }, 120000); // Réduit de 30s → 120s (4x moins de requêtes)
     return () => clearInterval(interval);
   }, []);
 

@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const configService = require('../services/configService');
+const { sanitizeHtmlTitle } = require('../services/htmlSanitizer');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -61,7 +62,7 @@ router.post('/', async (req, res) => {
         id: uuidv4(),
         stream_id,
         creator_id: creatorId,
-        title: String(title).slice(0, 300),
+        title: sanitizeHtmlTitle(String(title)).slice(0, 300),
         target_amount_xcon,
         current_amount_xcon: 0,
         status: 'ACTIVE',
@@ -110,7 +111,7 @@ router.patch('/:id', async (req, res) => {
     const { data: updated, error } = await supabase
       .from('stream_goals')
       .update({
-        title: title ? String(title).slice(0, 300) : goal.title,
+        title: title ? sanitizeHtmlTitle(String(title)).slice(0, 300) : goal.title,
         target_amount_xcon: target_amount_xcon || goal.target_amount_xcon,
       })
       .eq('id', goalId)
