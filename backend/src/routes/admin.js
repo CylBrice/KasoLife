@@ -173,6 +173,85 @@ router.put('/config/:key', requireMinRole('super_admin'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── POST /admin/verify-password — vérifie le mot de passe de l'admin connecté
+router.post('/verify-password', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Mot de passe requis' });
+
+    const { data: user } = await supabase.from('users')
+      .select('password_hash').eq('id', req.user.id).single();
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Mot de passe incorrect' });
+
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PATCH /admin/config/batch — modifier plusieurs clés + 1 email groupé
+router.patch('/config/batch', requireMinRole('super_admin'), async (req, res) => {
+  try {
+    const { changes, section, action } = req.body;
+    // changes: [{ key, old_value, new_value }]
+    if (!Array.isArray(changes) || changes.length === 0)
+      return res.status(400).json({ error: 'Aucune modification fournie' });
+
+    const { sendAdminEmail } = require('../services/email');
+    const now = new Date().toISOString();
+    const errors = [];
+
+    for (const { key, new_value } of changes) {
+      const { data: existing } = await supabase.from('platform_config')
+        .select('key').eq('key', key).single();
+      if (!existing) { errors.push(key); continue; }
+      await supabase.from('platform_config').update({
+        value: String(new_value), updated_at: now, updated_by: req.user.id,
+      }).eq('key', key);
+    }
+
+    invalidateAIConfigCache();
+
+    // Audit groupé
+    await supabase.from('admin_actions').insert({
+      admin_id: req.user.id, action: 'BATCH_UPDATE_CONFIG',
+      target_type: 'platform',
+      metadata: { section, action, changes, errors_count: errors.length },
+    });
+
+    // Email groupé
+    const { data: adminUser } = await supabase.from('users')
+      .select('email, pseudo, name').eq('id', req.user.id).single();
+    if (adminUser?.email) {
+      const actionLabel = action === 'reset' ? 'Réinitialisation aux valeurs par défaut' : 'Sauvegarde groupée';
+      const rows = changes.map(({ key, old_value, new_value }) =>
+        `<tr><td style="padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace;font-size:13px;">${key}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#888;">${old_value}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;color:#0F9488;">→ ${new_value}</td></tr>`
+      ).join('');
+      const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#F4F6FB;padding:32px 16px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #E2E8F0;">
+  <h2 style="color:#0B2545;margin-top:0;">⚙️ Configuration modifiée — ${section}</h2>
+  <p style="color:#4A6FA5;"><strong>Action :</strong> ${actionLabel}</p>
+  <p style="color:#4A6FA5;"><strong>Effectuée par :</strong> ${adminUser.pseudo || adminUser.name}</p>
+  <p style="color:#4A6FA5;"><strong>Date :</strong> ${new Date().toLocaleString('fr-FR', { timeZone: 'UTC' })} UTC</p>
+  <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+    <thead><tr style="background:#F4F6FB;">
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6B85A3;">CLÉ</th>
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6B85A3;">AVANT</th>
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6B85A3;">APRÈS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${errors.length > 0 ? `<p style="color:#DC2626;margin-top:16px;">⚠️ ${errors.length} clé(s) introuvable(s) : ${errors.join(', ')}</p>` : ''}
+</div></body></html>`;
+      await sendAdminEmail(adminUser.email, `[KasoLife Admin] Config ${section} — ${changes.length} modification(s)`, html);
+    }
+
+    res.json({ updated: changes.length - errors.length, errors });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 
 // ════════════════════════════════════════════════════════════════════════════════
 // TAUX DE CHANGE — SUPERADMIN uniquement

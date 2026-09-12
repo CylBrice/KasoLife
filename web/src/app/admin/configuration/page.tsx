@@ -107,7 +107,7 @@ const LABELS: Record<string, string> = {
   AI_TRANSLATION_ENABLED:          "Traduction automatique des messages",
   AI_SENTIMENT_ANALYSIS_ENABLED:   "Analyse de sentiment commentaires",
   AI_THUMBNAIL_AB_TESTING_ENABLED: "Test A/B vignettes automatique",
-  maintenance_status:          "Mode maintenance",
+  MAINTENANCE_STATUS:          "Mode maintenance",
   watermark_visible_enabled:   "Watermark visible (ID + timestamp)",
   watermark_invisible_enabled: "Watermark invisible (stéganographie)",
 };

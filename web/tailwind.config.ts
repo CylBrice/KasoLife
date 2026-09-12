@@ -19,6 +19,7 @@ const config: Config = {
           raised: "rgb(var(--c-ink-raised) / <alpha-value>)",
           line: "rgb(var(--c-ink-line) / <alpha-value>)",
         },
+        "toggle-off": "rgb(var(--c-toggle-off) / <alpha-value>)",
         paper: {
           DEFAULT: "#FBF8F3",   // fond clair (formulaires, admin) — volontairement fixe
           surface: "#F2EDE3",
