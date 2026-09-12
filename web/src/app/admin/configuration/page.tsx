@@ -107,7 +107,7 @@ const LABELS: Record<string, string> = {
   AI_TRANSLATION_ENABLED:          "Traduction automatique des messages",
   AI_SENTIMENT_ANALYSIS_ENABLED:   "Analyse de sentiment commentaires",
   AI_THUMBNAIL_AB_TESTING_ENABLED: "Test A/B vignettes automatique",
-  MAINTENANCE_STATUS:          "Mode maintenance",
+  maintenance_status:          "Mode maintenance",
   watermark_visible_enabled:   "Watermark visible (ID + timestamp)",
   watermark_invisible_enabled: "Watermark invisible (stéganographie)",
 };
@@ -318,7 +318,7 @@ function ConfigItem({
             role="switch" aria-checked={current === "true"}
             className={`relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-1 ${current === "true" ? "bg-gold" : "bg-toggle-off"}`}
           >
-            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${current === "true" ? "translate-x-6" : "translate-x-1"}`} />
+            <span className={`absolute top-1 h-5 w-5 rounded-full shadow-md transition-transform ${current === "true" ? "translate-x-6 bg-white" : "translate-x-1 bg-cream dark:bg-ink-raised"}`} />
           </button>
         ) : (
           <input

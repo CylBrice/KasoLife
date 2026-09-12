@@ -114,8 +114,10 @@ export default function AdminIAPage() {
                   >
                     <span
                       className={cn(
-                        "absolute top-1 h-5 w-5 rounded-full bg-white transition-transform",
-                        entry.enabled ? "translate-x-6" : "translate-x-1"
+                        "absolute top-1 h-5 w-5 rounded-full shadow-md transition-transform",
+                        entry.enabled
+                          ? "translate-x-6 bg-white"
+                          : "translate-x-1 bg-cream dark:bg-ink-raised"
                       )}
                     />
                   </button>
